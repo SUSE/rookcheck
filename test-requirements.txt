@@ -1,0 +1,7 @@
+#apache-libcloud
+flake8
+mypy
+pytest
+
+# FIXME(jhesketh): Hack until apache-libcloud update is released
+requests
