@@ -18,6 +18,7 @@ rook_cluster_instance = {}
 
 
 def test_debug_scope_order(rook_cluster):
+    return
     print("We'll deliberately fail in this job to provide some useful output")
     print("We only see stdout from failing jobs.")
     print("We also only see the stdout from the fixture setup at a module"
