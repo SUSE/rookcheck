@@ -26,6 +26,7 @@ def hardware():
     # NOTE(jhesketh): The Hardware() object is expected to take care of any
     # cloud provider abstraction. It primarily does this via libcloud.
     with Hardware() as hardware:
+        hardware.boot_nodes()
         yield hardware
 
 

@@ -17,6 +17,8 @@
 import uuid
 
 import libcloud.security
+from libcloud.compute.base import NodeAuthSSHKey
+from libcloud.compute.deployment import MultiStepDeployment, ScriptDeployment
 from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
 
@@ -35,6 +37,7 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+
 class Hardware():
     def __init__(self):
         # Boot nodes
@@ -42,17 +45,28 @@ class Hardware():
         print(self)
         self.nodes = {}
         self.hardware_uuid = str(uuid.uuid4())[:8]
-        self.libcloud_driver = self.get_driver()
+        self.libcloud_conn = self.get_driver_connection()
+
+        self._image_cache = {}
+        self._size_cache = {}
+
+        self._ex_network_cache = {}
+
+        return
         # Quick test to prove driver is working
         print("*"*120)
         print(self.libcloud_driver.list_sizes())
 
-    def get_driver(self):
-        driver = None
+    def get_driver_connection(self):
+        """ Get a libcloud connection object for the configured driver """
+        connection = None
         if config.CLOUD_PROVIDER == 'OPENSTACK':
-            OpenStack = get_driver(Provider.OPENSTACK)
+            # TODO(jhesketh): Provide a sensible way to allow configuration
+            #                 of extended options on a per-provider level.
+            #                 For example, the setting of OpenStack networks.
+            OpenStackDriver = get_driver(Provider.OPENSTACK)
 
-            driver = OpenStack(
+            connection = OpenStackDriver(
                 config.OS_USERNAME,
                 config.OS_PASSWORD,
                 ex_force_auth_url=config.OS_AUTH_URL,
@@ -65,19 +79,83 @@ class Hardware():
             )
         else:
             raise Exception("Cloud provider not yet supported by smoke_rook")
-        return driver
+        return connection
 
-    def boot_nodes(self, n=3):
+    def deployment_steps(self):
+        """ The base deployment steps to perform on each node """
+        yield ScriptDeployment('echo "hi" && touch ~/i_was_here')
+
+    def get_image_by_name(self, name):
+        if name in self._image_cache:
+            return self._image_cache[name]
+        self._image_cache[name] = self.libcloud_conn.get_image(name)
+        return self._image_cache[name]
+
+    def get_size_by_name(self, name):
+        if self._size_cache:
+            sizes = self._size_cache
+        else:
+            sizes = self.libcloud_conn.list_sizes()
+            self._size_cache = sizes
+
+        for node_size in sizes:
+            if node_size.name == name:
+                return node_size
+
+        return None
+
+    def get_ex_network_by_name(self, name):
+        if self._ex_network_cache:
+            networks = self._ex_network_cache
+        else:
+            networks = self.libcloud_conn.ex_list_networks()
+            self._ex_network_cache = networks
+
+        for network in networks:
+            if network.name == name:
+                return network
+
+        return None
+
+    def boot_nodes(self, n=1):
         # Create n nodes for the cluster
         for _ in range(n):
             node_name = "%s%s_%d" % (
                 config.CLUSTER_PREFIX, self.hardware_uuid, n)
-            self.nodes[node_name] = {}
+            kwargs = {}
+            kwargs['networks'] = [self.get_ex_network_by_name('user')] #TODO FIXME
+
+            # Can't use deploy_node because there is no public ip yet
+            self.nodes[node_name] = self.libcloud_conn.create_node(
+                name=node_name,
+                size=self.get_size_by_name(config.NODE_SIZE),
+                image=self.get_image_by_name("e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
+                auth=NodeAuthSSHKey('ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCtigffNrwHUJEVWZib/AKyYRRAlrK5Mjjw7VX8R79cM3/vzXGq+lWqEc6zweVf1lSriPGiA577sD+II8Wqg55dhhTWy/38eL3q8y7japmg/c41/75z5o9APh7KxTHIulsYysnZznBm1eDmbYY12mqUO1cR7TETG/uIraNdgkmAuwAURgy7GqyvveE3Ee+ig3C09EeJ2bnHn6PGG1xy+VFuYNkZBvGR0x1ACx9kPfyKzX2GOUe2JQLRsKaOGhKaZVtvISl7ac/Q4eOKccfRiYubslF3UgYieKfzsbpcCOGTKg0DmMu57NylirWGMpq41E4busNchZkMoroV3ar9FS+kCyYqfe0eitFlhiqhDRDWWqr6G5iJZvMICaOMKxrSScCIS66277gbCfvNcHoTnXN1ksABqR6GJeEOvs1QaGYr18FhsYusNhvFuqZIqYmfUcESAJloumTKJuzWrKW4zxrfzNqxFJ5pCZ1/wN7pX89He2N1rcv8NicHGfl2GAvJx0zCOzI4xS1fVw5zZZN2/PSOpem6DDh3njsuLCTWKpg/n1d0A/y8Crb1t34iLujKdzxTZg6N8F63iz0XD+tkQrq6yK0Bf08lv+JT/kNetHWELt9Rz1oR0jQ/vPj1tFcZbFWsejT+2M74LmtrigXRbcRNVxxdRqLL3/fxDMzJocs5zw== josh@nitrotech.org'),
+                **kwargs,
+            )
+            print("Created node: ")
+            print(self.nodes[node_name])
+
+            # FIXME
+            floating_ip = self.libcloud_conn.ex_create_floating_ip('floating')
+            print("Created floating IP: ")
+            print(floating_ip)
+            import time
+            time.sleep(30)
+            self.libcloud_conn.ex_attach_floating_ip_to_node(
+                self.nodes[node_name], floating_ip)
+            self._floating_ip = floating_ip
+
+            # Need to create a way to ssh into the node ourselves at this point
 
     def destroy(self):
         # Remove nodes
         print("destroy nodes")
         print(self)
+        return
+        for node in self.nodes.values():
+            node.destroy()
+        self._floating_ip.delete()
 
     def __enter__(self):
         return self

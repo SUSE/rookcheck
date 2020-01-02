@@ -32,10 +32,10 @@ CLOUD_PROVIDER = os.getenv('CLOUD_PROVIDER', 'OPENSTACK')
 CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % os.getlogin())
 
 # The node image by name known to the provider
-NODE_IMAGE = os.getenv('NODE_IMAGE', 'opensuse')
+NODE_IMAGE = os.getenv('NODE_IMAGE', 'openSUSE-Leap-15.1-OpenStack')
 
 # The node size or flavour name as known by the provider
-NODE_SIZE = os.getenv('NODE_SIZE', 'small')
+NODE_SIZE = os.getenv('NODE_SIZE', 'm1.medium')
 
 ##############################
 # Provider specific settings #
