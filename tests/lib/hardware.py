@@ -64,7 +64,7 @@ class Hardware():
                 secure=config.VERIFY_SSL_CERT,
             )
         else:
-            raise Exception("Cloud provider not supported by smoke_rook")
+            raise Exception("Cloud provider not yet supported by smoke_rook")
         return driver
 
     def boot_nodes(self, n=3):
