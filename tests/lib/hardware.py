@@ -46,6 +46,7 @@ class Hardware():
         print("boot nodes")
         print(self)
         self.nodes = {}
+        self.floating_ips = {}
         self.hardware_uuid = str(uuid.uuid4())[:8]
         self.libcloud_conn = self.get_driver_connection()
 
@@ -125,9 +126,11 @@ class Hardware():
         return ("%s %s" % (key.get_name(), key.get_base64()),
                 private_string.getvalue())
 
-    def boot_nodes(self, n=1):
+    def boot_nodes(self, n=3):
         """
         Boot n nodes
+
+        TODO(jhesketh): Boot each node in parallel/thread.
         """
 
         print(self.pubkey)
@@ -139,9 +142,9 @@ class Hardware():
             sshkey_name, self.pubkey)
 
         # Create n nodes for the cluster
-        for _ in range(n):
+        for i in range(n):
             node_name = "%s%s_%d" % (
-                config.CLUSTER_PREFIX, self.hardware_uuid, n)
+                config.CLUSTER_PREFIX, self.hardware_uuid, i)
 
             # TODO(jhesketh): Move cloud-specific configuration elsewhere
             kwargs = {}
@@ -162,6 +165,7 @@ class Hardware():
 
             # TODO(jhesketh): Move cloud-specific configuration elsewhere
             floating_ip = self.libcloud_conn.ex_create_floating_ip('floating')
+            self.floating_ips[node_name] = floating_ip
 
             print("Created floating IP: ")
             print(floating_ip)
@@ -171,8 +175,7 @@ class Hardware():
             import time
             time.sleep(30)
             self.libcloud_conn.ex_attach_floating_ip_to_node(
-                self.nodes[node_name], floating_ip)
-            self._floating_ip = floating_ip
+                self.nodes[node_name], self.floating_ips[node_name])
 
     def destroy(self):
         # Remove nodes
@@ -184,7 +187,10 @@ class Hardware():
 
         for node in self.nodes.values():
             node.destroy()
-        self._floating_ip.delete()
+
+        for floating_ip in self.floating_ips.values():
+            floating_ip.delete()
+
         self.libcloud_conn.delete_key_pair(self._ex_os_key)
 
     def __enter__(self):
