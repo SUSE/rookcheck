@@ -20,6 +20,19 @@
 # implementation may need to require a certain base OS. For example, skuba
 # would require SLE and can raise an exception if that isn't provided.
 
+from abc import ABC, abstractmethod
+
+
+class Deploy(ABC):
+    @abstractmethod
+    def something(self):
+        pass
+
+
+class DeploySUSE(Deploy):
+    pass
+
+
 class VanillaKubernetes():
     def __init__(self, hardware):
         self.hardware = hardware

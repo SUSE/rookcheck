@@ -27,6 +27,7 @@ def hardware():
     # cloud provider abstraction. It primarily does this via libcloud.
     with Hardware() as hardware:
         hardware.boot_nodes()
+        hardware.prepare_nodes()
         yield hardware
 
 

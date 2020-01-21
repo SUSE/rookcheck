@@ -37,6 +37,9 @@ NODE_IMAGE = os.getenv('NODE_IMAGE', 'openSUSE-Leap-15.1-OpenStack')
 # The node size or flavour name as known by the provider
 NODE_SIZE = os.getenv('NODE_SIZE', 'm1.medium')
 
+# The distro used on the underlying nodes
+DISTRO = os.getenv('DISTRO', 'SUSE')
+
 ##############################
 # Provider specific settings #
 ##############################
