@@ -1,5 +1,7 @@
+ansible
 apache-libcloud>=2.7.0
 flake8
 mypy
 paramiko
 pytest
+pyyaml

@@ -25,14 +25,25 @@
 # expected state.
 
 from abc import ABC, abstractmethod
-from io import StringIO
+import os
+import shutil
+import tempfile
 import threading
 import time
 import uuid
+import yaml
 
+from ansible.module_utils.common.collections import ImmutableDict
+from ansible.parsing.dataloader import DataLoader
+from ansible.vars.manager import VariableManager
+from ansible.inventory.manager import InventoryManager
+from ansible.playbook.play import Play
+from ansible.executor.task_queue_manager import TaskQueueManager
+from ansible.plugins.callback import CallbackBase
+from ansible import context as ansible_context
+import ansible.constants as C
 import libcloud.security
-from libcloud.compute.base import NodeAuthSSHKey
-from libcloud.compute.deployment import MultiStepDeployment, ScriptDeployment
+from libcloud.compute.deployment import ScriptDeployment
 from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
@@ -41,6 +52,137 @@ import paramiko.rsakey
 from tests import config
 
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
+
+
+class ResultCallback(CallbackBase):
+    """This callback stores the latest results for a run in an instance
+    variable (host_ok, host_unreachable, host_failed).
+    It is intended to be instanciated for each individual run.
+    """
+    def __init__(self, *args, **kwargs):
+        super(ResultCallback, self).__init__(*args, **kwargs)
+        self.host_ok = {}
+        self.host_unreachable = {}
+        self.host_failed = {}
+
+    def v2_runner_on_unreachable(self, result):
+        self.host_unreachable[result._host.get_name()] = result
+
+    def v2_runner_on_ok(self, result, *args, **kwargs):
+        self.host_ok[result._host.get_name()] = result
+
+    def v2_runner_on_failed(self, result, *args, **kwargs):
+        self.host_failed[result._host.get_name()] = result
+
+
+class AnsibleRunner(object):
+    def __init__(self, nodes):
+        # since the API is constructed for CLI it expects certain options to
+        # always be set in the context object
+        ansible_context.CLIARGS = ImmutableDict(
+            connection='paramiko_ssh', module_path=[''], forks=10,
+        )
+        #os.environ['ANSIBLE_HOST_KEY_CHECKING'] = 'False'
+
+        # Takes care of finding and reading yaml, json and ini files
+        self.loader = DataLoader()
+        self.passwords = dict(vault_pass='secret')
+
+        # create inventory, use path to host config file as source or hosts in
+        # a comma separated string
+        self.inventory_file = self.create_inventory(nodes)
+        self.inventory = InventoryManager(
+            loader=self.loader, sources=self.inventory_file)
+
+        # variable manager takes care of merging all the different sources to
+        # give you a unified view of variables available in each context
+        self.variable_manager = VariableManager(
+            loader=self.loader, inventory=self.inventory)
+
+    def create_inventory(self, nodes):
+        fd = tempfile.NamedTemporaryFile(
+            mode='a',
+            prefix="%s" % config.CLUSTER_PREFIX,
+            suffix=".yaml",
+            delete=False
+        )
+        inv = {
+            'all': {
+                'children': {
+                    'n': {
+                        'hosts': {}
+                    }
+                }
+            }
+        }
+
+        # TODO(jhesketh): Map the hosts onto tags
+        for node in nodes.values():
+            inv['all']['children']['n']['hosts'][node.name] = \
+                node.ansible_inventory_vars()
+
+        yaml.dump(inv, fd)
+
+        # NOTE(jhesketh): The inventory file is never cleaned up. This is
+        # somewhat deliberate to keep the private key if it is needed for
+        # debugging.
+        fd.close()
+
+        return fd.name
+
+    def run_play(self, play_source):
+        # Create a new results instance for each run
+        # Instantiate our ResultCallback for handling results as they come in.
+        # Ansible expects this to be one of its main display outlets
+        results_callback = ResultCallback()
+
+        # Create play object, playbook objects use .load instead of init or new
+        # methods,
+        # this will also automatically create the task objects from the info
+        # provided in play_source
+        play = Play().load(play_source, variable_manager=self.variable_manager,
+                           loader=self.loader)
+
+        # Run it - instantiate task queue manager, which takes care of forking
+        # and setting up all objects to iterate over host list and tasks
+
+        # TODO(jhesketh): the results callback could be a new instance each
+        # time storing the run's specific feedback to return as a dict in this
+        # method.
+        tqm = None
+        result = -1
+        try:
+            tqm = TaskQueueManager(
+                inventory=self.inventory,
+                variable_manager=self.variable_manager,
+                loader=self.loader,
+                passwords=self.passwords,
+                stdout_callback=results_callback,
+            )
+            result = tqm.run(play)
+        finally:
+            # we always need to cleanup child procs and the structures we use
+            # to communicate with them
+            if tqm is not None:
+                tqm.cleanup()
+
+            # Remove ansible tmpdir
+            shutil.rmtree(C.DEFAULT_LOCAL_TMP, True)
+
+        # TODO(jhesketh): Return the results of this run individually
+        if result != 0:
+            # TODO(jhesketh): Provide more useful information
+            # *0* -- OK or no hosts matched
+            # *1* -- Error
+            # *2* -- One or more hosts failed
+            # *3* -- One or more hosts were unreachable
+            # *4* -- Parser error
+            # *5* -- Bad or incomplete options
+            # *99* -- User interrupted execution
+            # *250* -- Unexpected error
+            Exception("An error occurred running playbook")
+
+        return results_callback
 
 
 class Distro(ABC):
@@ -82,7 +224,6 @@ class Node():
             name=self.name,
             size=size,
             image=image,
-            #auth=NodeAuthSSHKey(self.pubkey),
             **kwargs
         )
 
@@ -124,6 +265,8 @@ class Node():
         """
         Executes a command over SSH
         return_value: (stdin, stdout, stderr)
+
+        (Warning, this method is untested)
         """
         if not self._ssh_client:
             self._ssh_client = SSHClient()
@@ -138,6 +281,17 @@ class Node():
                 look_for_keys=False,
             )
         return self._ssh_client.exec_command(command)
+
+    def ansible_inventory_vars(self):
+        return {
+            'ansible_host': self._get_ssh_ip(),
+            'ansible_user': 'opensuse', #FIXME
+            'ansible_ssh_private_key_file': self.private_key,
+            'ansible_become': True,
+            'ansible_become_method': 'sudo',
+            'ansible_become_user': 'root',
+            'ansible_host_key_checking': False,
+        }
 
 
 class Hardware():
@@ -229,13 +383,21 @@ class Hardware():
         Generatees a public and private key
         """
         key = paramiko.rsakey.RSAKey.generate(2048)
-        private_string = StringIO()
-        key.write_private_key(private_string)
+        key_file = tempfile.NamedTemporaryFile(
+            mode='a',
+            prefix="%s%s" % (config.CLUSTER_PREFIX, self.hardware_uuid),
+            suffix=".key",
+            delete=False
+        )
+        key.write_private_key(key_file)
+        key_file.close()
+        # NOTE(jhesketh): The key_file is never cleaned up. This is somewhat
+        # deliberate to keep the private key if it is needed for debugging.
 
         self.sshkey_name = \
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
-        self.private_key = private_string.getvalue()
+        self.private_key = key_file.name
 
         self._ex_os_key = self.libcloud_conn.import_key_pair_from_string(
             self.sshkey_name, self.pubkey)
