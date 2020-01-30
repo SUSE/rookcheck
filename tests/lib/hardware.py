@@ -25,7 +25,6 @@
 # expected state.
 
 from abc import ABC, abstractmethod
-import os
 import shutil
 import tempfile
 import threading
@@ -82,7 +81,6 @@ class AnsibleRunner(object):
         ansible_context.CLIARGS = ImmutableDict(
             connection='paramiko_ssh', module_path=[''], forks=10,
         )
-        #os.environ['ANSIBLE_HOST_KEY_CHECKING'] = 'False'
 
         # Takes care of finding and reading yaml, json and ini files
         self.loader = DataLoader()
@@ -108,18 +106,20 @@ class AnsibleRunner(object):
         )
         inv = {
             'all': {
-                'children': {
-                    'n': {
-                        'hosts': {}
-                    }
-                }
+                'hosts': {},
+                'children': {}
             }
         }
 
-        # TODO(jhesketh): Map the hosts onto tags
         for node in nodes.values():
-            inv['all']['children']['n']['hosts'][node.name] = \
-                node.ansible_inventory_vars()
+            if not node.tags:
+                inv['all']['hosts'][node.name] = node.ansible_inventory_vars()
+            else:
+                for tag in node.tags:
+                    if tag not in inv['all']['children']:
+                        inv['all']['children'][tag] = {'hosts': {}}
+                    inv['all']['children'][tag]['hosts'][node.name] = \
+                        node.ansible_inventory_vars()
 
         yaml.dump(inv, fd)
 
