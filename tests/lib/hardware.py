@@ -313,6 +313,9 @@ class Hardware():
         self._ex_os_key = None
         self.generate_keys()
 
+        self.ansible_runner = None
+        self._ansible_runner_nodes = None
+
         print(self.pubkey)
         print(self.private_key)
 
@@ -402,8 +405,20 @@ class Hardware():
         self._ex_os_key = self.libcloud_conn.import_key_pair_from_string(
             self.sshkey_name, self.pubkey)
 
-    def execute_ansible(self, host_tags):
-        pass
+    def execute_ansible_tasks(self, tasks, hosts='all'):
+        if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
+            # Create a new AnsibleRunner if the nodes dict has changed (to
+            # generate a new inventory).
+            self.ansible_runner = AnsibleRunner(self.nodes)
+            self._ansible_runner_nodes = self.nodes.copy()
+
+        play_source = dict(
+                name="Ansible Play",
+                hosts=hosts,
+                tasks=tasks
+            )
+
+        return self.ansible_runner.run_play(play_source)
 
     def create_node(self, node_name):
         node = Node(
@@ -420,7 +435,7 @@ class Hardware():
         node.create_and_attach_floating_ip(self.libcloud_conn)
         self.nodes[node_name] = node
 
-    def boot_nodes(self, n=3, offset=0):
+    def boot_nodes(self, controllers=1, workers=2, offset=0):
         """
         Boot n nodes
         Start them at a number offset
@@ -428,11 +443,14 @@ class Hardware():
         # Warm the caches
         self.get_ex_network_by_name()
         self.get_size_by_name()
+        self._boot_nodes(['controller'], controllers, suffix='controller_')
+        self._boot_nodes(['worker'], workers, suffix='worker_')
 
+    def _boot_nodes(self, tags, n, offset=0, suffix=""):
         threads = []
         for i in range(n):
-            node_name = "%s%s_%d" % (
-                config.CLUSTER_PREFIX, self.hardware_uuid, i+offset)
+            node_name = "%s%s_%s%d" % (
+                config.CLUSTER_PREFIX, self.hardware_uuid, suffix, i+offset)
             thread = threading.Thread(
                 target=self.create_node, args=(node_name,))
             threads.append(thread)
