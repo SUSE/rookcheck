@@ -53,6 +53,144 @@ from tests import config
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
+class Distro(ABC):
+    @abstractmethod
+    def bootstrap_play(self):
+        pass
+
+
+class SUSE(Distro):
+    def bootstrap_play(self):
+        tasks = []
+        print("Installing dependencies")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='zypper',
+                    args=dict(
+                        name=['bash-completion',
+                              'ca-certificates',
+                              'conntrack-tools',
+                              'curl',
+                              'docker',
+                              'ebtables',
+                              'ethtool',
+                              'lvm2',
+                              'lsof',
+                              'ntp',
+                              'socat',
+                              'tree',
+                              'vim',
+                              'wget',
+                              'xfsprogs'],
+                        state='present',
+                        extra_args_precommand='--non-interactive '
+                                              '--gpg-auto-import-keys',
+                        update_cache='yes',
+                    )
+                )
+            )
+        )
+
+        print("Updating kernel")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='zypper',
+                    args=dict(
+                        name='kernel-default',
+                        state='latest',
+                        extra_args_precommand='--non-interactive '
+                                              '--gpg-auto-import-keys',
+                    )
+                )
+            )
+        )
+
+        print("Removing anti-dependencies ")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='zypper',
+                    args=dict(
+                        name='firewalld',
+                        state='absent',
+                        extra_args_precommand='--non-interactive '
+                                              '--gpg-auto-import-keys',
+                    )
+                )
+            )
+        )
+
+        print("Enabling docker")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd="systemctl enable --now docker",
+                    )
+                )
+            )
+        )
+
+        # TODO(jhesketh): These commands are lifted from dev-rook-ceph. However
+        # it appears that the sysctl settings are reset after reboot so they
+        # may not be useful here.
+        print("Raising max open files")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd="sysctl -w fs.file-max=1200000",
+                    )
+                )
+            )
+        )
+
+        print("Minimize swappiness")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd="sysctl -w vm.swappiness=0",
+                    )
+                )
+            )
+        )
+
+        print("Reboot nodes")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='reboot',
+                )
+            )
+        )
+
+        print("Setting iptables on nodes to be permissive")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd="iptables -I INPUT -j ACCEPT && "
+                            "iptables -P INPUT ACCEPT",
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+                name="Prepare nodes",
+                hosts="all",
+                tasks=tasks
+            )
+        return play_source
+
+
 class ResultCallback(CallbackBase):
     """This callback stores the latest results for a run in an instance
     variable (host_ok, host_unreachable, host_failed).
@@ -65,13 +203,19 @@ class ResultCallback(CallbackBase):
         self.host_failed = {}
 
     def v2_runner_on_unreachable(self, result):
-        self.host_unreachable[result._host.get_name()] = result
+        if result._host.get_name() not in self.host_unreachable:
+            self.host_unreachable[result._host.get_name()] = []
+        self.host_unreachable[result._host.get_name()].append(result)
 
     def v2_runner_on_ok(self, result, *args, **kwargs):
-        self.host_ok[result._host.get_name()] = result
+        if result._host.get_name() not in self.host_ok:
+            self.host_ok[result._host.get_name()] = []
+        self.host_ok[result._host.get_name()].append(result)
 
     def v2_runner_on_failed(self, result, *args, **kwargs):
-        self.host_failed[result._host.get_name()] = result
+        if result._host.get_name() not in self.host_failed:
+            self.host_failed[result._host.get_name()] = []
+        self.host_failed[result._host.get_name()].append(result)
 
 
 class AnsibleRunner(object):
@@ -80,6 +224,7 @@ class AnsibleRunner(object):
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
             connection='paramiko_ssh', module_path=[''], forks=10,
+            gather_facts='no',
         )
 
         # Takes care of finding and reading yaml, json and ini files
@@ -183,17 +328,6 @@ class AnsibleRunner(object):
             Exception("An error occurred running playbook")
 
         return results_callback
-
-
-class Distro(ABC):
-    @abstractmethod
-    def bootstrap(self):
-        pass
-
-
-class SUSE(Distro):
-    def boostrap(self, node):
-        pass
 
 
 class Node():
@@ -405,18 +539,12 @@ class Hardware():
         self._ex_os_key = self.libcloud_conn.import_key_pair_from_string(
             self.sshkey_name, self.pubkey)
 
-    def execute_ansible_tasks(self, tasks, hosts='all'):
+    def execute_ansible_play(self, play_source):
         if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
             self.ansible_runner = AnsibleRunner(self.nodes)
             self._ansible_runner_nodes = self.nodes.copy()
-
-        play_source = dict(
-                name="Ansible Play",
-                hosts=hosts,
-                tasks=tasks
-            )
 
         return self.ansible_runner.run_play(play_source)
 
@@ -443,8 +571,9 @@ class Hardware():
         # Warm the caches
         self.get_ex_network_by_name()
         self.get_size_by_name()
-        self._boot_nodes(['controller'], controllers, suffix='controller_')
-        self._boot_nodes(['worker'], workers, suffix='worker_')
+        self._boot_nodes(['controller'], controllers, offset=offset,
+                         suffix='controller_')
+        self._boot_nodes(['worker'], workers, offset=offset, suffix='worker_')
 
     def _boot_nodes(self, tags, n, offset=0, suffix=""):
         threads = []
@@ -456,7 +585,7 @@ class Hardware():
             threads.append(thread)
             thread.start()
 
-            # FIXME(jhesketh): libcloud apparently is not thread-safe. liblcoud
+            # FIXME(jhesketh): libcloud apparently is not thread-safe. libcloud
             # expects to be able to look up a response in the Connection
             # object but if multiple requests were sent the wrong one may be
             # set. Instead of removing the threading code, we'll just rejoin
@@ -493,11 +622,16 @@ class Hardware():
         """
         Install any dependencies, set firewall etc.
         """
-        pass
-        # Determine which nodes have which roles (controller vs worker etc)
-        # distro = Get distro/flavour driver
-        #    distro.bootstrap(node)
-        # for node in self.nodes.values():
+        if config.DISTRO == 'SUSE':
+            d = SUSE()
+        else:
+            raise Exception("OS yet to be implemented/unsupport.")
+
+        r = self.execute_ansible_play(d.bootstrap_play())
+
+        if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
 
     def __enter__(self):
         return self
