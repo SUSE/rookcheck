@@ -1,8 +1,96 @@
-This repository is currently an example of how jobs may be structured. It is
-not complete and requires a lot more work. However, given the other paths that
-we have been exploring this is a similar amount of work.
+==========
+smoke_rook
+==========
 
-Theory and rational:
+> This repository is currently an example of how jobs may be structured. It is
+> not complete and requires a lot more work. However, given the other paths
+> that we have been exploring this is a similar amount of work.
+
+`smoke_rook` is a testing platform for rook.io. The intention is to provide
+developers with a way to simulate various environments and scenarios that may
+occur within them.
+
+For example, smoke_rook can perform tests such as adding new nodes to your
+kubernetes cluster and ensuring that they are correctly enrolled and handled by
+rook.io.
+
+Additionally smoke_rook can handle disaster testing such as kernel panics,
+physically removed nodes, and so forth.
+
+Because a test may need to interact with the underlying hardware the unit tests
+will set up and configure the nodes, distros, kubernetes, and rook itself.
+These are then exposed to the test writer to interact with further or to verify
+the environment.
+
+smoke_rook requires VM's from `libcloud` to set up and perform the tests
+against.
+
+*****
+Usage
+*****
+
+
+Installing requirements::
+
+    # zypper in python-pip
+    # pip install tox
+    $ PROFILE=libvirt
+    $ tox -e bindep ${PROFILE}
+    # zypper in <indicated missing package names>
+
+
+You will need to configure the platform that the tests are ran against::
+
+    cp configuration.env my.env
+    vim my.env # Make any changes needed
+    source my.env
+
+Running tests::
+
+    $ tox -e py37
+
+
+*********
+Structure
+*********
+
+Currently there are [at least] 4 abstractions that need to be available:
+
+* Hardware (VM's, etc),
+* Operating Systems (packages/configuration etc),
+* Kubernetes (deployment/packages etc),
+* Rook (packaging etc).
+
+To begin with, each of these is being implemented targeting OpenStack,
+openSUSE, Upstream Kubernetes, and Upstream rook.io respectfully. It is
+intended that each of these are easy to swap out for other platforms depending
+on the testing environment. Therefore the code is being written in a
+generic/pluggable way.
+
+ * Uses `pytest <https://docs.pytest.org/en/latest/>`_
+ * Each aforementioned abstraction is set up as a
+   `pytest fixture <https://docs.pytest.org/en/latest/fixture.html>`_
+
+ * `tests/conftest.py` sets up the required fixtures
+
+   * The fixtures are generally scoped to the module
+   * This means a file such as `test/test_my_grouped_tests.py` can do serial
+     tests against the same cluster
+   * When the fixtures are 'exited' they clean up their resources
+
+ * Tests are thread-safe at a module level. Each test module will have its own
+   deployment created to perform tests against.
+
+*************
+Writing tests
+*************
+
+TODO some examples
+
+
+*******************
+Theory and rational
+*******************
 
 Use either libcloud or kcli to abstract away the hardware.
 Extend either library for our needs.
@@ -34,16 +122,3 @@ rather than setting up new nodes for each individual test.
 We can also eventually break things out of py.test to allow devs to build and
 debug clusters etc. as well as providing tools for checking any rogue resources
 left behind by tests and so on.
-
-
-Installing requirements:
-
-# zypper in python-pip
-# pip install tox
-$ PROFILE=libvirt
-$ tox -e bindep ${PROFILE}
-# zypper in <indicated missing package names>
-
-
-Running tests:
-$ tox -e py37
