@@ -297,6 +297,29 @@ class DeploySUSE(Deploy):
             )
         return play_source
 
+    def join_workers_to_master(self, join_command):
+        tasks = []
+
+        print("join worker nodes to Kubernetes cluster")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        # for idempotency, do not run init if docker is already running kube resources
+                        cmd="if ! docker ps -a | grep -q kube; then {join_command} ; fi".format(join_command=join_command)
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+                name="Enroll workers",
+                hosts="worker",
+                tasks=tasks
+            )
+        return play_source
+
 
 class VanillaKubernetes():
     def __init__(self, hardware):
@@ -330,6 +353,17 @@ class VanillaKubernetes():
         r2 = self.hardware.execute_ansible_play(d.setup_master_play())
 
         if r2.host_failed or r2.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
+        # TODO(jhesketh): Figure out a better way to get ansible output/results
+        join_command = r2.host_ok[list(r2.host_ok.keys())[0]][-1]._result['stdout']
+
+
+        r3 = self.hardware.execute_ansible_play(
+            d.join_workers_to_master(join_command))
+
+        if r3.host_failed or r3.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
