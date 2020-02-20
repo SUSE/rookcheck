@@ -22,6 +22,7 @@
 
 from abc import ABC, abstractmethod
 import os
+import tempfile
 
 from tests import config
 
@@ -169,10 +170,10 @@ class DeploySUSE(Deploy):
         )
 
         play_source = dict(
-                name="Install kubeadm",
-                hosts="all",
-                tasks=tasks
-            )
+            name="Install kubeadm",
+            hosts="all",
+            tasks=tasks
+        )
         return play_source
 
     def setup_master_play(self):
@@ -314,10 +315,34 @@ class DeploySUSE(Deploy):
         )
 
         play_source = dict(
-                name="Enroll workers",
-                hosts="worker",
-                tasks=tasks
+            name="Enroll workers",
+            hosts="worker",
+            tasks=tasks
+        )
+        return play_source
+
+    def fetch_kubeconfig(self, destination):
+        tasks = []
+
+        print("download kubeconfig from master")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='fetch',
+                    args=dict(
+                        src="/root/.kube/config",
+                        dest="%s/" % destination,
+                        flat=True
+                    )
+                )
             )
+        )
+
+        play_source = dict(
+            name="Download kubeconfig",
+            hosts="first_master",
+            tasks=tasks
+        )
         return play_source
 
 
@@ -338,7 +363,7 @@ class VanillaKubernetes():
         # TODO(jhesketh): Uninstall kubernetes
         pass
 
-    def install_kubeadm(self):
+    def install_kubernetes(self):
         if config.DISTRO == 'SUSE':
             d = DeploySUSE()
         else:
@@ -359,13 +384,23 @@ class VanillaKubernetes():
         # TODO(jhesketh): Figure out a better way to get ansible output/results
         join_command = r2.host_ok[list(r2.host_ok.keys())[0]][-1]._result['stdout']
 
-
         r3 = self.hardware.execute_ansible_play(
             d.join_workers_to_master(join_command))
 
         if r3.host_failed or r3.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
+
+        td = tempfile.mkdtemp(
+            prefix="%s%s" % (config.CLUSTER_PREFIX, self.hardware.hardware_uuid))
+
+        r4 = self.hardware.execute_ansible_play(d.fetch_kubeconfig(td))
+
+        if r4.host_failed or r4.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
+        self.kubeconfig = os.path.join(td, 'config')
 
     def __enter__(self):
         return self
