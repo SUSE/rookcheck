@@ -1,0 +1,10 @@
+# Kubeadm config for `kubeadm init`; does not apply to join commands
+
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+networking:
+  podSubnet: "10.244.0.0/16" # flannel
+  # podSubnet: "10.217.0.0/16" # cilium
+apiServer:
+  extraArgs:
+    enable-admission-plugins: PodSecurityPolicy

@@ -169,11 +169,134 @@ class DeploySUSE(Deploy):
         )
 
         play_source = dict(
-                name="Prepare nodes",
+                name="Install kubeadm",
                 hosts="all",
                 tasks=tasks
             )
         return play_source
+
+    def setup_master_play(self):
+        tasks = []
+
+        print("copy config files to cluster")
+        kubeadm_init_file = os.path.join(self.basedir, 'assets/kubeadm-init-config.yaml')
+        tasks.append(
+            dict(
+                action=dict(
+                    module='copy',
+                    args=dict(
+                        src=kubeadm_init_file,
+                        dest="/root/.setup-kube/"
+                    )
+                )
+            )
+        )
+        cluster_psp_file = os.path.join(self.basedir, 'assets/cluster-psp.yaml')
+        tasks.append(
+            dict(
+                action=dict(
+                    module='copy',
+                    args=dict(
+                        src=cluster_psp_file,
+                        dest="/root/.setup-kube/"
+                    )
+                )
+            )
+        )
+
+        print("Run 'kubeadm init' on first master")
+        # init config file has extra API server args to enable psp access control
+        init_command = "kubeadm init --config=/root/.setup-kube/kubeadm-init-config.yaml"
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        # for idempotency, do not run init if docker is already running kube resources
+                        cmd="if ! docker ps -a | grep -q kube; then {init_command} ; fi".format(init_command=init_command)
+                    )
+                )
+            )
+        )
+
+        print("setup root user on first master as Kubernetes administrator")
+        grouped_commands = [
+            "mkdir -p /root/.kube",
+            "ln -f -s /etc/kubernetes/admin.conf /root/.kube/config",
+            "kubectl completion bash > ~/.kube/kubectl-completion.sh",
+            "chmod +x ~/.kube/kubectl-completion.sh",
+        ]
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd=" && ".join(grouped_commands)
+                    )
+                )
+            )
+        )
+
+        # FIXME(jhesketh): Wait for services to be ready
+        # wait_for "kubernetes master services to be ready" 90 "${OCTOPUS} --host-groups first_master run \
+        #  'kubectl get nodes'"
+        tasks.append(
+            dict(
+                action=dict(
+                    module='pause',
+                    args=dict(
+                        seconds=90
+                    )
+                )
+            )
+        )
+
+        print("setup default cluster pod security policies (PSPs)")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        # for idempotency, do not run init if docker is already running kube resources
+                        cmd="kubectl apply -f /root/.setup-kube/cluster-psp.yaml"
+                    )
+                )
+            )
+        )
+
+        print("setup cluster overlay network CNI")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        # for idempotency, do not run init if docker is already running kube resources
+                        cmd="kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+                    )
+                )
+            )
+        )
+
+        print("get join command")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        # for idempotency, do not run init if docker is already running kube resources
+                        cmd="kubeadm token create --print-join-command | grep 'kubeadm join'"
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+                name="Set up master",
+                hosts="first_master",
+                tasks=tasks
+            )
+        return play_source
+
 
 class VanillaKubernetes():
     def __init__(self, hardware):
@@ -201,6 +324,12 @@ class VanillaKubernetes():
         r = self.hardware.execute_ansible_play(d.install_kubeadm_play())
 
         if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
+        r2 = self.hardware.execute_ansible_play(d.setup_master_play())
+
+        if r2.host_failed or r2.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
