@@ -155,7 +155,7 @@ class DeploySUSE(Deploy):
         )
 
         print("copy config files to cluster")
-        extra_args_file = os.path.join(basedir, 'assets/KUBELET_EXTRA_ARGS')
+        extra_args_file = os.path.join(self.basedir, 'assets/KUBELET_EXTRA_ARGS')
         tasks.append(
             dict(
                 action=dict(
