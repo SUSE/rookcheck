@@ -563,7 +563,7 @@ class Hardware():
         node.create_and_attach_floating_ip(self.libcloud_conn)
         self.nodes[node_name] = node
 
-    def boot_nodes(self, controllers=1, workers=2, offset=0):
+    def boot_nodes(self, masters=1, workers=2, offset=0):
         """
         Boot n nodes
         Start them at a number offset
@@ -571,8 +571,11 @@ class Hardware():
         # Warm the caches
         self.get_ex_network_by_name()
         self.get_size_by_name()
-        self._boot_nodes(['controller'], controllers, offset=offset,
-                         suffix='controller_')
+        if masters:
+            self._boot_nodes(['master', 'first_master'], 1, offset=offset,
+                             suffix='master_')
+            masters -= 1
+            self._boot_nodes(['master'], 1, offset=offset+1, suffix='master_')
         self._boot_nodes(['worker'], workers, offset=offset, suffix='worker_')
 
     def _boot_nodes(self, tags, n, offset=0, suffix=""):
