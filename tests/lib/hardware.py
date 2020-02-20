@@ -548,9 +548,10 @@ class Hardware():
 
         return self.ansible_runner.run_play(play_source)
 
-    def create_node(self, node_name):
+    def create_node(self, node_name, tags=[]):
         node = Node(
-            name=node_name, pubkey=self.pubkey, private_key=self.private_key)
+            name=node_name, pubkey=self.pubkey, private_key=self.private_key,
+            tags=tags)
         node.boot(
             libcloud_conn=self.libcloud_conn,
             size=self.get_size_by_name(config.NODE_SIZE),
@@ -575,7 +576,8 @@ class Hardware():
             self._boot_nodes(['master', 'first_master'], 1, offset=offset,
                              suffix='master_')
             masters -= 1
-            self._boot_nodes(['master'], 1, offset=offset+1, suffix='master_')
+            self._boot_nodes(['master'], masters, offset=offset+1,
+                             suffix='master_')
         self._boot_nodes(['worker'], workers, offset=offset, suffix='worker_')
 
     def _boot_nodes(self, tags, n, offset=0, suffix=""):
@@ -584,7 +586,7 @@ class Hardware():
             node_name = "%s%s_%s%d" % (
                 config.CLUSTER_PREFIX, self.hardware_uuid, suffix, i+offset)
             thread = threading.Thread(
-                target=self.create_node, args=(node_name,))
+                target=self.create_node, args=(node_name, tags))
             threads.append(thread)
             thread.start()
 
