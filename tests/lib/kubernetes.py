@@ -24,6 +24,7 @@ from abc import ABC, abstractmethod
 import os
 import tempfile
 
+import kubernetes
 from tests import config
 
 
@@ -156,14 +157,14 @@ class DeploySUSE(Deploy):
         )
 
         print("copy config files to cluster")
-        extra_args_file = os.path.join(self.basedir, 'assets/KUBELET_EXTRA_ARGS')
+        extra_args_file = os.path.join(self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
         tasks.append(
             dict(
                 action=dict(
-                    module='copy',
+                    module='template',
                     args=dict(
                         src=extra_args_file,
-                        dest="/root/"
+                        dest="/root/KUBELET_EXTRA_ARGS"
                     )
                 )
             )
@@ -180,14 +181,25 @@ class DeploySUSE(Deploy):
         tasks = []
 
         print("copy config files to cluster")
-        kubeadm_init_file = os.path.join(self.basedir, 'assets/kubeadm-init-config.yaml')
         tasks.append(
             dict(
                 action=dict(
-                    module='copy',
+                    module='shell',
+                    args=dict(
+                        # for idempotency, do not run init if docker is already running kube resources
+                        cmd="mkdir /root/.setup-kube"
+                    )
+                )
+            )
+        )
+        kubeadm_init_file = os.path.join(self.basedir, 'assets/kubeadm-init-config.yaml.j2')
+        tasks.append(
+            dict(
+                action=dict(
+                    module='template',
                     args=dict(
                         src=kubeadm_init_file,
-                        dest="/root/.setup-kube/"
+                        dest="/root/.setup-kube/kubeadm-init-config.yaml"
                     )
                 )
             )
@@ -349,6 +361,8 @@ class DeploySUSE(Deploy):
 class VanillaKubernetes():
     def __init__(self, hardware):
         self.hardware = hardware
+        self.kubeconfig = None
+        self.v1 = None
         print("kube init")
         print(self)
         print(self.hardware)
@@ -401,6 +415,10 @@ class VanillaKubernetes():
             raise Exception("One or more hosts failed")
 
         self.kubeconfig = os.path.join(td, 'config')
+
+    def configure_kubernetes_client(self):
+        kubernetes.config.load_kube_config(self.kubeconfig)
+        self.v1 = kubernetes.client.CoreV1Api()
 
     def __enter__(self):
         return self

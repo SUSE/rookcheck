@@ -161,6 +161,22 @@ class SUSE(Distro):
             )
         )
 
+        print("Add floating IP to eth0")
+        # TODO(jhesketh): Figure out if this is appropriate for all OpenStack
+        #                 clouds
+        config = "\nIPADDR_0={{ ansible_host }}/32"
+        config += "\nLABEL_0=Floating\n"
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd='printf "%s" >> /etc/sysconfig/network/ifcfg-eth0' % config,
+                    )
+                )
+            )
+        )
+
         print("Reboot nodes")
         tasks.append(
             dict(

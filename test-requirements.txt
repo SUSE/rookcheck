@@ -1,6 +1,7 @@
 ansible
 apache-libcloud>=2.7.0
 flake8
+kubernetes
 mypy
 paramiko
 pytest

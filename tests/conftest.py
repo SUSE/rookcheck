@@ -40,6 +40,7 @@ def kubernetes(hardware):
     # etc), we should do them from an ABC so to ensure the interfaces are
     # correct.
     with VanillaKubernetes(hardware) as kubernetes:
+        kubernetes.install_kubernetes()
         yield kubernetes
 
 

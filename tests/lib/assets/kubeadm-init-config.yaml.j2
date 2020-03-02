@@ -1,6 +1,13 @@
 # Kubeadm config for `kubeadm init`; does not apply to join commands
 
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+localAPIEndpoint:
+  advertiseAddress: "{{ ansible_host }}"
+
+---
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 networking:
   podSubnet: "10.244.0.0/16" # flannel
