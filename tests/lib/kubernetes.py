@@ -35,7 +35,7 @@ class Deploy(ABC):
 
 
 class DeploySUSE(Deploy):
-    basedir = os.path.dirname(__file__)
+    basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 
     def install_kubeadm_play(self):
         tasks = []
