@@ -16,23 +16,10 @@
 
 import os
 
-class BuildRook():
-    def build_play(self):
-        tasks = []
 
-        print("Create temporary builddir")
-        tasks.append(
-            dict(
-                action=dict(
-                    module='tempfile',
-                    args=dict(
-                        state="directory",
-                        suffix="build"
-                    )
-                ),
-                register="builddir"
-            )
-        )
+class BuildRook():
+    def build_play(self, builddir):
+        tasks = []
 
         print("Checkout rook")
         # TODO(jhesketh): Allow setting rook version
@@ -42,7 +29,7 @@ class BuildRook():
                     module='git',
                     args=dict(
                         repo="https://github.com/rook/rook.git",
-                        dest="{{ builddir.path }}/src/github.com/rook/rook",
+                        dest="%s/src/github.com/rook/rook" % builddir,
                         #version=...
                     )
                 )
@@ -55,7 +42,7 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd="GOPATH={{ builddir.path }} make --directory='{{ builddir.path }}/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build"
+                        cmd="GOPATH={builddir} make --directory='{builddir}/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build".format(builddir=builddir)
                     )
                 )
             )
@@ -68,7 +55,7 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd='docker save rook-build/ceph-amd64 | gzip > {{ builddir.path }}/rook-ceph.tar.gz'
+                        cmd='docker save rook-build/ceph-amd64 | gzip > %s/rook-ceph.tar.gz' % builddir
                     )
                 )
             )
@@ -99,6 +86,8 @@ class BuildRook():
 
         print("load rook ceph image")
         # TODO(jhesketh): build arch may differ
+        # TODO(jhesketh): Check the image doesn't need tagging to rook/ceph:master
+        #                 to ensure that we're actually testing the built image
         tasks.append(
             dict(
                 action=dict(
@@ -143,18 +132,20 @@ class RookCluster():
         self.destroy()
 
     def build_rook(self):
+        self.builddir = os.path.join(
+            self.kubernetes.hardware.working_dir, 'rook_build')
+        os.mkdir(self.builddir)
+
         d = BuildRook()
-        r = self.kubernetes.hardware.execute_ansible_play(d.build_play())
+        r = self.kubernetes.hardware.execute_ansible_play(
+            d.build_play(self.builddir))
 
         if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-        # TODO(jhesketh): Find a better way of pulling out builddir
-        builddir = r.host_ok['localhost'][1]._result['path']
-
         r2 = self.kubernetes.hardware.execute_ansible_play(
-            d.upload_image_play(builddir))
+            d.upload_image_play(self.builddir))
 
         if r2.host_failed or r2.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking

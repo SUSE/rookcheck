@@ -22,7 +22,6 @@
 
 from abc import ABC, abstractmethod
 import os
-import tempfile
 
 import kubernetes
 from tests import config
@@ -405,10 +404,8 @@ class VanillaKubernetes():
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-        td = tempfile.mkdtemp(
-            prefix="%s%s" % (config.CLUSTER_PREFIX, self.hardware.hardware_uuid))
-
-        r4 = self.hardware.execute_ansible_play(d.fetch_kubeconfig(td))
+        r4 = self.hardware.execute_ansible_play(
+            d.fetch_kubeconfig(self.hardware.working_dir))
 
         if r4.host_failed or r4.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking

@@ -25,6 +25,7 @@
 # expected state.
 
 from abc import ABC, abstractmethod
+import os
 import shutil
 import tempfile
 import threading
@@ -235,7 +236,7 @@ class ResultCallback(CallbackBase):
 
 
 class AnsibleRunner(object):
-    def __init__(self, nodes):
+    def __init__(self, nodes, working_dir=None):
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
@@ -249,7 +250,7 @@ class AnsibleRunner(object):
 
         # create inventory, use path to host config file as source or hosts in
         # a comma separated string
-        self.inventory_file = self.create_inventory(nodes)
+        self.inventory_file = self.create_inventory(nodes, working_dir)
         self.inventory = InventoryManager(
             loader=self.loader, sources=self.inventory_file)
 
@@ -258,13 +259,13 @@ class AnsibleRunner(object):
         self.variable_manager = VariableManager(
             loader=self.loader, inventory=self.inventory)
 
-    def create_inventory(self, nodes):
-        fd = tempfile.NamedTemporaryFile(
-            mode='a',
-            prefix="%s" % config.CLUSTER_PREFIX,
-            suffix=".yaml",
-            delete=False
-        )
+    def create_inventory(self, nodes, working_dir=None):
+        if not working_dir:
+            # NOTE(jhesketh): The working dir is never cleaned up. This is
+            # somewhat deliberate to keep the private key if it is needed for
+            # debugging.
+            working_dir = tempfile.mkdtemp()
+
         inv = {
             'all': {
                 'hosts': {},
@@ -282,14 +283,11 @@ class AnsibleRunner(object):
                     inv['all']['children'][tag]['hosts'][node.name] = \
                         node.ansible_inventory_vars()
 
-        yaml.dump(inv, fd)
+        inv_path = os.path.join(working_dir, "inventory")
+        with open(inv_path, 'w') as inv_file:
+            yaml.dump(inv, inv_file)
 
-        # NOTE(jhesketh): The inventory file is never cleaned up. This is
-        # somewhat deliberate to keep the private key if it is needed for
-        # debugging.
-        fd.close()
-
-        return fd.name
+        return inv_path
 
     def run_play(self, play_source):
         # Create a new results instance for each run
@@ -457,6 +455,12 @@ class Hardware():
         self._size_cache = {}
         self._ex_network_cache = {}
 
+
+        # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
+        # deliberate to keep the private key if it is needed for debugging.
+        self.working_dir = tempfile.mkdtemp(
+            prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
+
         self.sshkey_name = None
         self.pubkey = None
         self.private_key = None
@@ -536,21 +540,13 @@ class Hardware():
         Generatees a public and private key
         """
         key = paramiko.rsakey.RSAKey.generate(2048)
-        key_file = tempfile.NamedTemporaryFile(
-            mode='a',
-            prefix="%s%s" % (config.CLUSTER_PREFIX, self.hardware_uuid),
-            suffix=".key",
-            delete=False
-        )
-        key.write_private_key(key_file)
-        key_file.close()
-        # NOTE(jhesketh): The key_file is never cleaned up. This is somewhat
-        # deliberate to keep the private key if it is needed for debugging.
+        self.private_key = os.path.join(self.working_dir, 'private.key')
+        with open(self.private_key, 'w') as key_file:
+            key.write_private_key(key_file)
 
         self.sshkey_name = \
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
-        self.private_key = key_file.name
 
         self._ex_os_key = self.libcloud_conn.import_key_pair_from_string(
             self.sshkey_name, self.pubkey)
@@ -559,7 +555,7 @@ class Hardware():
         if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self.ansible_runner = AnsibleRunner(self.nodes)
+            self.ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
             self._ansible_runner_nodes = self.nodes.copy()
 
         return self.ansible_runner.run_play(play_source)
@@ -653,6 +649,8 @@ class Hardware():
         if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
+
+        return r
 
     def __enter__(self):
         return self
