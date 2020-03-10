@@ -81,6 +81,42 @@ class BuildRook():
         )
         return play_source
 
+    def upload_image_play(self, buildpath):
+        tasks = []
+
+        print("Copy Rook Ceph image to cluster nodes")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='copy',
+                    args=dict(
+                        src=os.path.join(buildpath, "rook-ceph.tar.gz"),
+                        dest="/root/.images/"
+                    )
+                )
+            )
+        )
+
+        print("load rook ceph image")
+        # TODO(jhesketh): build arch may differ
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd='docker load --input /root/.images/rook-ceph.tar.gz'
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+            name="Build rook",
+            hosts="all",
+            tasks=tasks
+        )
+        return play_source
+
 
 class RookCluster():
     def __init__(self, kubernetes):
@@ -111,5 +147,15 @@ class RookCluster():
         r = self.kubernetes.hardware.execute_ansible_play(d.build_play())
 
         if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
+        # TODO(jhesketh): Find a better way of pulling out builddir
+        builddir = r.host_ok['localhost'][1]._result['path']
+
+        r2 = self.kubernetes.hardware.execute_ansible_play(
+            d.upload_image_play(builddir))
+
+        if r2.host_failed or r2.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
