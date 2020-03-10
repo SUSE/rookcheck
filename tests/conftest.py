@@ -41,6 +41,7 @@ def kubernetes(hardware):
     # correct.
     with VanillaKubernetes(hardware) as kubernetes:
         kubernetes.install_kubernetes()
+        kubernetes.configure_kubernetes_client()
         yield kubernetes
 
 

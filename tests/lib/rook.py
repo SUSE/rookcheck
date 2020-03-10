@@ -14,6 +14,73 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import os
+
+class BuildRook():
+    def build_play(self):
+        tasks = []
+
+        print("Create temporary builddir")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='tempfile',
+                    args=dict(
+                        state="directory",
+                        suffix="build"
+                    )
+                ),
+                register="builddir"
+            )
+        )
+
+        print("Checkout rook")
+        # TODO(jhesketh): Allow setting rook version
+        tasks.append(
+            dict(
+                action=dict(
+                    module='git',
+                    args=dict(
+                        repo="https://github.com/rook/rook.git",
+                        dest="{{ builddir.path }}/src/github.com/rook/rook",
+                        #version=...
+                    )
+                )
+            )
+        )
+
+        print("make rook")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd="GOPATH={{ builddir.path }} make --directory='{{ builddir.path }}/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build"
+                    )
+                )
+            )
+        )
+
+        print("save image tar")
+        # TODO(jhesketh): build arch may differ
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd='docker save rook-build/ceph-amd64 | gzip > {{ builddir.path }}/rook-ceph.tar.gz'
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+            name="Build rook",
+            hosts="localhost",
+            tasks=tasks
+        )
+        return play_source
+
 
 class RookCluster():
     def __init__(self, kubernetes):
@@ -38,3 +105,11 @@ class RookCluster():
 
     def __exit__(self, type, value, traceback):
         self.destroy()
+
+    def build_rook(self):
+        d = BuildRook()
+        r = self.kubernetes.hardware.execute_ansible_play(d.build_play())
+
+        if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
