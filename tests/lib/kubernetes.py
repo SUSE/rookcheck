@@ -22,6 +22,8 @@
 
 from abc import ABC, abstractmethod
 import os
+import stat
+import wget
 
 import kubernetes
 from tests import config
@@ -342,7 +344,7 @@ class DeploySUSE(Deploy):
                     module='fetch',
                     args=dict(
                         src="/root/.kube/config",
-                        dest="%s/" % destination,
+                        dest="%s/kubeconfig" % destination,
                         flat=True
                     )
                 )
@@ -355,7 +357,6 @@ class DeploySUSE(Deploy):
             tasks=tasks
         )
         return play_source
-
 
 class VanillaKubernetes():
     def __init__(self, hardware):
@@ -411,11 +412,42 @@ class VanillaKubernetes():
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-        self.kubeconfig = os.path.join(td, 'config')
+        self.kubeconfig = os.path.join(self.hardware.working_dir, 'kubeconfig')
+        self.download_kubectl()
+        self.untaint_master()
 
     def configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
+
+    def create_from_yaml(self, yaml_file):
+        # NOTE(jhesketh): This works for most things, but expects CRD's to be
+        #                 available via the kubernetes-client python. As such
+        #                 for most manifests it will be easier to use kubectl
+        #                 directly (helper function).
+        kubernetes.utils.create_from_yaml(self.v1.api_client, yaml_file)
+
+    def download_kubectl(self):
+        # Download specific kubectl version
+        # TODO(jhesketh): Allow setting version
+        self.kubectl_exec = os.path.join(self.hardware.working_dir, 'kubeadm')
+        wget.download(
+            "https://storage.googleapis.com/kubernetes-release/release/v1.17.3/bin/linux/amd64/kubectl",
+            self.kubectl_exec
+        )
+        st = os.stat(self.kubectl_exec)
+        os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)
+
+    def kubectl(self, command):
+        # Execute kubectl command
+        return os.system(
+            " ".join([self.kubectl_exec, "--kubeconfig", self.kubeconfig, command]))
+
+    def kubectl_apply(self, yaml_file):
+        return self.kubectl("apply -f %s" % yaml_file)
+
+    def untaint_master(self):
+        self.kubectl("taint nodes --all node-role.kubernetes.io/master-")
 
     def __enter__(self):
         return self

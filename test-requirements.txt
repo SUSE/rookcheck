@@ -6,3 +6,4 @@ mypy
 paramiko
 pytest
 pyyaml
+wget
