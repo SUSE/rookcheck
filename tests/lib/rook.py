@@ -15,6 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import os
+import time
 
 
 class BuildRook():
@@ -42,7 +43,19 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd="GOPATH={builddir} make --directory='{builddir}/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build".format(builddir=builddir)
+                        cmd="GOPATH={builddir} make --directory='{builddir}/src/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build".format(builddir=builddir)
+                    )
+                )
+            )
+        )
+
+        print("tag image")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd='docker tag "rook-build/ceph-amd64" rook/ceph:master'
                     )
                 )
             )
@@ -86,8 +99,6 @@ class BuildRook():
 
         print("load rook ceph image")
         # TODO(jhesketh): build arch may differ
-        # TODO(jhesketh): Check the image doesn't need tagging to rook/ceph:master
-        #                 to ensure that we're actually testing the built image
         tasks.append(
             dict(
                 action=dict(
@@ -150,3 +161,15 @@ class RookCluster():
         if r2.host_failed or r2.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
+
+    def install_rook(self):
+        # TODO(jhesketh): We may want to provide ways for tests to override these
+        ceph_dir = os.path.join(self.builddir, 'src/github.com/rook/rook/cluster/examples/kubernetes/ceph')
+        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'common.yaml'))
+        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'operator.yaml'))
+        # TODO(jhesketh): Check if sleeping is necessary
+        time.sleep(10)
+        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'cluster.yaml'))
+        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
+        time.sleep(3)
+        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
