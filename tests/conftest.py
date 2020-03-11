@@ -15,6 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import pytest
+import time
 
 from tests.lib.hardware import Hardware
 from tests.lib.kubernetes import VanillaKubernetes
@@ -27,6 +28,8 @@ def hardware():
     # cloud provider abstraction. It primarily does this via libcloud.
     with Hardware() as hardware:
         hardware.boot_nodes()
+        # TODO(jhesketh): Replace the sleep with a check for nodes being up
+        time.sleep(20)
         hardware.prepare_nodes()
         yield hardware
 
@@ -49,4 +52,6 @@ def kubernetes(hardware):
 def rook_cluster(kubernetes):
     # (See above re implementation options)
     with RookCluster(kubernetes) as rook_cluster:
+        rook_cluster.build_rook()
+        rook_cluster.install_rook()
         yield rook_cluster
