@@ -543,6 +543,7 @@ class Hardware():
         self.private_key = os.path.join(self.working_dir, 'private.key')
         with open(self.private_key, 'w') as key_file:
             key.write_private_key(key_file)
+        os.chmod(self.private_key, 0o400)
 
         self.sshkey_name = \
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
