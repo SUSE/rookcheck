@@ -431,7 +431,7 @@ class VanillaKubernetes():
     def download_kubectl(self):
         # Download specific kubectl version
         # TODO(jhesketh): Allow setting version
-        self.kubectl_exec = os.path.join(self.hardware.working_dir, 'kubeadm')
+        self.kubectl_exec = os.path.join(self.hardware.working_dir, 'kubectl')
         wget.download(
             "https://storage.googleapis.com/kubernetes-release/release/v1.17.3/bin/linux/amd64/kubectl",
             self.kubectl_exec
