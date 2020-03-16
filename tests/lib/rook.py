@@ -173,3 +173,39 @@ class RookCluster():
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
         time.sleep(3)
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
+
+
+        ##### TODO:
+
+
+        # # Wait for all osd prepare pods to be completed
+        # num_osd_nodes=$((NUM_WORKERS + NUM_MASTERS))
+        # wait_for "Ceph to be installed" ${INSTALL_TIMEOUT} \
+        # "[[ \$(kubectl get --namespace ${ROOK_NAMESPACE} pods 2>&1 | grep -c 'rook-ceph-osd-prepare.*Completed') -eq $num_osd_nodes ]]"
+
+        # # osd_count="$(kubectl --namespace ${ROOK_NAMESPACE} get pod | grep -c osd-[[:digit:]] || true)"
+
+
+        # echo ''
+        # echo 'SETTING UP CEPHFS AND INSTALLING MDSES'
+        # ( cd ${ROOK_CONFIG_DIR}/ceph
+        # kubectl create -f filesystem.yaml
+        # )
+
+        # # Wait for 2 mdses to start
+        # wait_for "mdses to start" 90 \
+        # "kubectl get --namespace ${ROOK_NAMESPACE} pods | grep -q 'rook-ceph-mds-myfs-b.*Running'"
+
+
+
+        # wait_for "myfs to be active" 60 \
+        # "exec_in_toolbox_pod 'ceph fs status myfs 2>&1 | grep -q active' &> /dev/null"
+        # # must use 'bash -c "...stuff..."' to use pipes within kubectl exec
+        # # for whatever reason, 'ceph fs status' returns info on stderr ... ?
+        # # above will print 'command terminated with exit code #' if stderr isn't sent to /dev/null
+
+
+
+        # ...
+
+        # kubectl --namespace rook-ceph exec "rook-ceph-tools-7f96779fb9-bx4kl" -- bash -c "ceph fs status myfs"
