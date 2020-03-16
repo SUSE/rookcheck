@@ -413,6 +413,7 @@ class VanillaKubernetes():
             raise Exception("One or more hosts failed")
 
         self.kubeconfig = os.path.join(self.hardware.working_dir, 'kubeconfig')
+        self.configure_kubernetes_client()
         self.download_kubectl()
         self.untaint_master()
 
