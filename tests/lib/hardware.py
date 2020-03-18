@@ -572,7 +572,7 @@ class Hardware():
             image=self.get_image_by_name(
                 "e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
             sshkey_name=self.sshkey_name,
-            external_networks=[self.get_ex_network_by_name('user')],
+            external_networks=[self.get_ex_network_by_name(config.OS_NETWORK)],
         )
         node.create_and_attach_floating_ip(self.libcloud_conn)
         self.nodes[node_name] = node

@@ -60,6 +60,7 @@ OS_USER_DOMAIN = os.getenv('OS_USER_DOMAIN', 'default')
 OS_PROJECT = os.getenv('OS_PROJECT', 'default')
 OS_PROJECT_DOMAIN = os.getenv('OS_PROJECT_DOMAIN', 'default')
 OS_REGION = os.getenv('OS_REGION', None)
+OS_NETWORK = os.getenv('OS_NETWORK', 'user')
 
 VERIFY_SSL_CERT = bool(distutils.util.strtobool(
     os.getenv('VERIFY_SSL_CERT', 'TRUE')))
