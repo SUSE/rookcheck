@@ -278,18 +278,31 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("setup cluster overlay network CNI")
-        tasks.append(
-            dict(
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        # for idempotency, do not run init if docker is already running kube resources
-                        cmd="kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
-                    )
-                )
-            )
-        )
+        # print("setup cluster overlay network CNI")
+        # tasks.append(
+        #     dict(
+        #         action=dict(
+        #             module='shell',
+        #             args=dict(
+        #                 # for idempotency, do not run init if docker is already running kube resources
+        #                 cmd="kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
+        #             )
+        #         )
+        #     )
+        # )
+
+        # print("setup cluster overlay network CNI")
+        # tasks.append(
+        #     dict(
+        #         action=dict(
+        #             module='shell',
+        #             args=dict(
+        #                 # for idempotency, do not run init if docker is already running kube resources
+        #                 cmd="kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+        #             )
+        #         )
+        #     )
+        # )
 
         print("get join command")
         tasks.append(
@@ -358,6 +371,7 @@ class DeploySUSE(Deploy):
         )
         return play_source
 
+
 class VanillaKubernetes():
     def __init__(self, hardware):
         self.hardware = hardware
@@ -416,6 +430,12 @@ class VanillaKubernetes():
         self.configure_kubernetes_client()
         self.download_kubectl()
         self.untaint_master()
+        self.setup_flannel()
+
+    def setup_flannel(self):
+        for node in self.hardware.nodes.values():
+            self.kubectl("annotate node %s flannel.alpha.coreos.com/public-ip-overwrite=%s --overwrite" % (node.name.replace("_", "-"), node._get_ssh_ip()))
+        self.kubectl_apply("https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml")
 
     def configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)

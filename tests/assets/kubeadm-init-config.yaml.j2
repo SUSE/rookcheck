@@ -12,6 +12,7 @@ kind: ClusterConfiguration
 networking:
   podSubnet: "10.244.0.0/16" # flannel
   # podSubnet: "10.217.0.0/16" # cilium
+  # podSubnet: "192.168.0.0/16" # Calico
 apiServer:
   extraArgs:
     enable-admission-plugins: PodSecurityPolicy
