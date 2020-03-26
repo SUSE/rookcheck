@@ -44,7 +44,7 @@ from ansible import context as ansible_context
 import ansible.constants as C
 import libcloud.security
 from libcloud.compute.deployment import ScriptDeployment
-from libcloud.compute.types import Provider
+from libcloud.compute.types import Provider, NodeState
 from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
 import paramiko.rsakey
@@ -345,18 +345,19 @@ class AnsibleRunner(object):
 
 
 class Node():
-    def __init__(self, name, pubkey=None, private_key=None, tags=[]):
+    def __init__(self, libcloud_conn, name, pubkey=None, private_key=None, tags=[]):
         self.name = name
+        self.libcloud_conn = libcloud_conn
         self.libcloud_node = None
         self.floating_ips = []
+        self.volumes = []
         self.tags = tags
         self.pubkey = pubkey
         self.private_key = private_key
 
         self._ssh_client = None
 
-    def boot(self, libcloud_conn, size, image, sshkey_name=None,
-             external_networks=[]):
+    def boot(self, size, image, sshkey_name=None, external_networks=[]):
         if self.libcloud_node:
             raise Exception("A node has already been booted")
 
@@ -368,7 +369,7 @@ class Node():
             kwargs['ex_keyname'] = sshkey_name
 
         # Can't use deploy_node because there is no public ip yet
-        self.libcloud_node = libcloud_conn.create_node(
+        self.libcloud_node = self.libcloud_conn.create_node(
             name=self.name,
             size=size,
             image=image,
@@ -379,9 +380,9 @@ class Node():
         print(self)
         print(self.libcloud_node)
 
-    def create_and_attach_floating_ip(self, libcloud_conn):
+    def create_and_attach_floating_ip(self):
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
-        floating_ip = libcloud_conn.ex_create_floating_ip('floating')
+        floating_ip = self.libcloud_conn.ex_create_floating_ip('floating')
 
         print("Created floating IP: ")
         print(floating_ip)
@@ -389,9 +390,36 @@ class Node():
 
         # TODO(jhesketh): Find a better way to wait for the node before
         #                 assigning floating ip's
-        time.sleep(10)
-        libcloud_conn.ex_attach_floating_ip_to_node(
+        self.wait_until_state("any")
+        self.libcloud_conn.ex_attach_floating_ip_to_node(
             self.libcloud_node, floating_ip)
+
+    def create_and_attach_volume(self, size=10):
+        vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
+        volume = self.libcloud_conn.create_volume(size=size, name=vol_name)
+        self.libcloud_conn.attach_volume(self.libcloud_node, volume, device=None)
+        self.volumes.append(volume)
+
+    def wait_until_state(self, state=NodeState.RUNNING, timeout=120, interval=3, uuid=None):
+        # state can be NodeState, "any", or None (for not existant)
+        if not uuid:
+            uuid = self.libcloud_node.uuid
+        for _ in range(int(timeout / interval)):
+            nodes = self.libcloud_conn.list_nodes()
+            for node in nodes:
+                if node.uuid == uuid:
+                    if state == "any":
+                        # Special case where we just want to see the node in
+                        # node_list in any state.
+                        return True
+                    if node.state == state:
+                        return True
+                    break
+            if state is None:
+                return True
+            time.sleep(interval)
+
+        raise Exception("Timeout waiting for node to be ready")
 
     def destroy(self):
         if self._ssh_client:
@@ -399,8 +427,12 @@ class Node():
         for floating_ip in self.floating_ips:
             floating_ip.delete()
         if self.libcloud_node:
+            uuid = self.libcloud_node.uuid
             self.libcloud_node.destroy()
             self.libcloud_node = None
+            self.wait_until_state(None, uuid=uuid)
+        for volume in self.volumes:
+            volume.destroy()
 
     def _get_ssh_ip(self):
         """
@@ -563,10 +595,11 @@ class Hardware():
 
     def create_node(self, node_name, tags=[]):
         node = Node(
+            libcloud_conn=self.libcloud_conn,
             name=node_name, pubkey=self.pubkey, private_key=self.private_key,
             tags=tags)
+        # TODO(jhesketh): Create fixed network as part of build and security group
         node.boot(
-            libcloud_conn=self.libcloud_conn,
             size=self.get_size_by_name(config.NODE_SIZE),
             # TODO(jhesketh): FIXME
             image=self.get_image_by_name(
@@ -574,7 +607,11 @@ class Hardware():
             sshkey_name=self.sshkey_name,
             external_networks=[self.get_ex_network_by_name(config.OS_NETWORK)],
         )
-        node.create_and_attach_floating_ip(self.libcloud_conn)
+        node.create_and_attach_floating_ip()
+        # Wait for node to be ready
+        node.wait_until_state(NodeState.RUNNING)
+        # Attach a 10GB disk
+        node.create_and_attach_volume(10)
         self.nodes[node_name] = node
 
     def boot_nodes(self, masters=1, workers=2, offset=0):
