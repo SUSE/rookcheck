@@ -67,7 +67,7 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd="GOPATH={builddir} make --directory='{builddir}/src/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build".format(builddir=builddir)
+                        cmd="PATH={builddir}/go/bin:$PATH GOPATH={builddir} make --directory='{builddir}/src/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build".format(builddir=builddir)
                     )
                 )
             )
