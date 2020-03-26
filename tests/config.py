@@ -42,8 +42,8 @@ DISTRO = os.getenv('DISTRO', 'SUSE')
 
 # The type of kubernetes deployment
 KUBERNETES_DEPLOYMENT = os.getenv('KUBERNETES_DEPLOYMENT', 'upstream') # Probably don't need this
-CRICTL_VERSION = os.getenv('CRICTL_VERSION', 'v1.16.0')
-K8S_VERSION = os.getenv('K8S_VERSION', 'v1.16.3')
+CRICTL_VERSION = os.getenv('CRICTL_VERSION', 'v1.17.0')
+K8S_VERSION = os.getenv('K8S_VERSION', 'v1.17.4')
 
 ##############################
 # Provider specific settings #
