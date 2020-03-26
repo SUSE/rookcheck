@@ -32,7 +32,8 @@ Usage
 
 Installing requirements::
 
-    # zypper in python-pip
+    # zypper in python-pip docker
+    # systemctl start docker
     # pip install tox
     $ PROFILE=libvirt
     $ tox -e bindep ${PROFILE}
