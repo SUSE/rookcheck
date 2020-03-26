@@ -16,11 +16,35 @@
 
 import os
 import time
+import yaml
 
 
 class BuildRook():
     def build_play(self, builddir):
         tasks = []
+
+        print("Download go")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='get_url',
+                    args=dict(
+                        url="https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
+                        dest="%s/go-amd64.tar.gz" % builddir
+                    )
+                )
+            )
+        )
+        tasks.append(
+            dict(
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd="tar -C {builddir} -xzf {builddir}/go-amd64.tar.gz".format(builddir=builddir)
+                    )
+                )
+            )
+        )
 
         print("Checkout rook")
         # TODO(jhesketh): Allow setting rook version
