@@ -65,6 +65,19 @@ class Distro(ABC):
 class SUSE(Distro):
     def bootstrap_play(self):
         tasks = []
+
+        print("Wait for connection to hosts")
+        tasks.append(
+            dict(
+                action=dict(
+                    module='wait_for_connection',
+                    args=dict(
+                        timeout=300
+                    )
+                )
+            )
+        )
+
         print("Installing dependencies")
         tasks.append(
             dict(
