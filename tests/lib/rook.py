@@ -186,21 +186,63 @@ class RookCluster():
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
+    # def install_rook(self):
+    #     # TODO(jhesketh): We may want to provide ways for tests to override these
+    #     ceph_dir = os.path.join(self.builddir, 'src/github.com/rook/rook/cluster/examples/kubernetes/ceph')
+    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'common.yaml'))
+
+    #     # Modify operator.yaml to use host networking:
+    #     with open(os.path.join(ceph_dir, 'operator.yaml')) as f:
+    #         operator_contents = f.read()
+
+    #     # Replace the target string
+    #     operator_contents = operator_contents.replace('#hostNetwork: true', 'hostNetwork: true')
+
+    #     # Write the file out again
+    #     with open(os.path.join(ceph_dir, 'operator-modified.yaml'), "w") as f:
+    #         f.write(operator_contents)
+
+    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'operator-modified.yaml'))
+
+    #     # TODO(jhesketh): Check if sleeping is necessary
+    #     time.sleep(10)
+
+    #     # Modify cluster.yaml to use host networking:
+    #     with open(os.path.join(ceph_dir, 'cluster.yaml')) as f:
+    #         cluster = yaml.load(f, Loader=yaml.FullLoader)
+
+    #     cluster['spec']['network']['hostNetwork'] = True
+
+    #     with open(os.path.join(ceph_dir, 'cluster-modified.yaml'), "w") as f:
+    #         yaml.dump(cluster, f)
+
+    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'cluster-modified.yaml'))
+    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
+    #     time.sleep(3)
+    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
+
     def install_rook(self):
         # TODO(jhesketh): We may want to provide ways for tests to override these
         ceph_dir = os.path.join(self.builddir, 'src/github.com/rook/rook/cluster/examples/kubernetes/ceph')
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'common.yaml'))
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'operator.yaml'))
+
         # TODO(jhesketh): Check if sleeping is necessary
         time.sleep(10)
+
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'cluster.yaml'))
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
         time.sleep(3)
+
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
+
+        # Wait for OSD prepare to complete
+
 
 
         ##### TODO:
 
+        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'filesystem.yaml'))
 
         # # Wait for all osd prepare pods to be completed
         # num_osd_nodes=$((NUM_WORKERS + NUM_MASTERS))
