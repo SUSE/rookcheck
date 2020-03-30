@@ -253,17 +253,19 @@ class DeploySUSE(Deploy):
             )
         )
 
-        # FIXME(jhesketh): Wait for services to be ready
-        # wait_for "kubernetes master services to be ready" 90 "${OCTOPUS} --host-groups first_master run \
-        #  'kubectl get nodes'"
+        print("Wait until kubernetes is ready")
         tasks.append(
             dict(
                 action=dict(
-                    module='pause',
+                    module='command',
                     args=dict(
-                        seconds=90
+                        cmd="kubectl get nodes",
                     )
-                )
+                ),
+                retries=20,
+                delay=5,
+                register="cmd_result",
+                until="cmd_result.rc == 0",
             )
         )
 
