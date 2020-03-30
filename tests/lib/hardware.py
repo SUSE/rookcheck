@@ -411,20 +411,49 @@ class Node():
         print(floating_ip)
         self.floating_ips.append(floating_ip)
 
-        # TODO(jhesketh): Find a better way to wait for the node before
-        #                 assigning floating ip's
-        self.wait_until_state("any")
+        # Wait until the node is running before assigning IP
+        self.wait_until_state()
         self.libcloud_conn.ex_attach_floating_ip_to_node(
             self.libcloud_node, floating_ip)
 
     def create_and_attach_volume(self, size=10):
         vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
         volume = self.libcloud_conn.create_volume(size=size, name=vol_name)
+        print("Created volume: ")
+        print(volume)
+
+        # Wait for volume to be ready before attaching
+        self.wait_until_volume_state(volume.uuid)
+
         self.libcloud_conn.attach_volume(self.libcloud_node, volume, device=None)
         self.volumes.append(volume)
 
+    def wait_until_volume_state(self, volume_uuid, state=StorageVolumeState.AVAILABLE, timeout=120, interval=3):
+        # `state` can be StorageVolumeState, "any", or None (for not existant)
+        # `state` can also be a list of NodeState's, any matching will pass
+        for _ in range(int(timeout / interval)):
+            volumes = self.libcloud_conn.list_volumes()
+            for volume in volumes:
+                if volume.uuid == volume_uuid:
+                    if state == "any":
+                        # Special case where we just want to see the volume in
+                        # volume_list in any state.
+                        return True
+                    elif type(state) is list:
+                        if volume.state in state:
+                            return True
+                    elif state == volume.state:
+                        return True
+                    break
+            if state is None:
+                return True
+            time.sleep(interval)
+
+        raise Exception("Timeout waiting for volume to be state `%s`" % state)
+
     def wait_until_state(self, state=NodeState.RUNNING, timeout=120, interval=3, uuid=None):
-        # state can be NodeState, "any", or None (for not existant)
+        # `state` can be NodeState, "any", or None (for not existant)
+        # `state` can also be a list of NodeState's, any matching will pass
         if not uuid:
             uuid = self.libcloud_node.uuid
         for _ in range(int(timeout / interval)):
@@ -435,14 +464,17 @@ class Node():
                         # Special case where we just want to see the node in
                         # node_list in any state.
                         return True
-                    if node.state == state:
+                    elif type(state) is list:
+                        if node.state in state:
+                            return True
+                    elif state == node.state:
                         return True
                     break
             if state is None:
                 return True
             time.sleep(interval)
 
-        raise Exception("Timeout waiting for node to be ready")
+        raise Exception("Timeout waiting for node to be state `%s`" % state)
 
     def destroy(self):
         if self._ssh_client:
