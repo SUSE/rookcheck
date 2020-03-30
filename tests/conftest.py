@@ -28,8 +28,6 @@ def hardware():
     # cloud provider abstraction. It primarily does this via libcloud.
     with Hardware() as hardware:
         hardware.boot_nodes()
-        # TODO(jhesketh): Replace the sleep with a check for nodes being up
-        time.sleep(20)
         hardware.prepare_nodes()
         yield hardware
 
