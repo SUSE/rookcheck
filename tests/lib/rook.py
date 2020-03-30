@@ -101,7 +101,9 @@ class BuildRook():
         play_source = dict(
             name="Build rook",
             hosts="localhost",
-            tasks=tasks
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
         )
         return play_source
 
@@ -137,7 +139,9 @@ class BuildRook():
         play_source = dict(
             name="Build rook",
             hosts="all",
-            tasks=tasks
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
         )
         return play_source
 

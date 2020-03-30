@@ -174,7 +174,9 @@ class DeploySUSE(Deploy):
         play_source = dict(
             name="Install kubeadm",
             hosts="all",
-            tasks=tasks
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
         )
         return play_source
 
@@ -185,10 +187,10 @@ class DeploySUSE(Deploy):
         tasks.append(
             dict(
                 action=dict(
-                    module='shell',
+                    module='file',
                     args=dict(
-                        # for idempotency, do not run init if docker is already running kube resources
-                        cmd="mkdir /root/.setup-kube"
+                        path="/root/.setup-kube",
+                        state="directory"
                     )
                 )
             )
@@ -318,10 +320,12 @@ class DeploySUSE(Deploy):
         )
 
         play_source = dict(
-                name="Set up master",
-                hosts="first_master",
-                tasks=tasks
-            )
+            name="Set up master",
+            hosts="first_master",
+            tasks=tasks,
+            gather_facts="no",
+            #strategy="free",
+        )
         return play_source
 
     def join_workers_to_master(self, join_command):
@@ -343,7 +347,9 @@ class DeploySUSE(Deploy):
         play_source = dict(
             name="Enroll workers",
             hosts="worker",
-            tasks=tasks
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
         )
         return play_source
 
@@ -367,7 +373,9 @@ class DeploySUSE(Deploy):
         play_source = dict(
             name="Download kubeconfig",
             hosts="first_master",
-            tasks=tasks
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
         )
         return play_source
 

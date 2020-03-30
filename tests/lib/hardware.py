@@ -27,9 +27,11 @@
 from abc import ABC, abstractmethod
 import os
 import shutil
+import tarfile
 import tempfile
 import threading
 import time
+import urllib.request
 import uuid
 import yaml
 
@@ -39,12 +41,12 @@ from ansible.vars.manager import VariableManager
 from ansible.inventory.manager import InventoryManager
 from ansible.playbook.play import Play
 from ansible.executor.task_queue_manager import TaskQueueManager
-from ansible.plugins.callback import CallbackBase
+from ansible.plugins.callback.default import CallbackModule
 from ansible import context as ansible_context
 import ansible.constants as C
 import libcloud.security
 from libcloud.compute.deployment import ScriptDeployment
-from libcloud.compute.types import Provider, NodeState
+from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
 import paramiko.rsakey
@@ -201,20 +203,24 @@ class SUSE(Distro):
         )
 
         play_source = dict(
-                name="Prepare nodes",
-                hosts="all",
-                tasks=tasks
-            )
+            name="Prepare nodes",
+            hosts="all",
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
+        )
         return play_source
 
 
-class ResultCallback(CallbackBase):
+class ResultCallback(CallbackModule):
     """This callback stores the latest results for a run in an instance
     variable (host_ok, host_unreachable, host_failed).
     It is intended to be instanciated for each individual run.
     """
-    def __init__(self, *args, **kwargs):
-        super(ResultCallback, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super(ResultCallback, self).__init__()
+        self._load_name = "CustomResultCallback"
+        self.set_options()
         self.host_ok = {}
         self.host_unreachable = {}
         self.host_failed = {}
@@ -223,16 +229,19 @@ class ResultCallback(CallbackBase):
         if result._host.get_name() not in self.host_unreachable:
             self.host_unreachable[result._host.get_name()] = []
         self.host_unreachable[result._host.get_name()].append(result)
+        super(ResultCallback, self).v2_runner_on_unreachable(result)
 
-    def v2_runner_on_ok(self, result, *args, **kwargs):
+    def v2_runner_on_ok(self, result):
         if result._host.get_name() not in self.host_ok:
             self.host_ok[result._host.get_name()] = []
         self.host_ok[result._host.get_name()].append(result)
+        super(ResultCallback, self).v2_runner_on_ok(result)
 
-    def v2_runner_on_failed(self, result, *args, **kwargs):
+    def v2_runner_on_failed(self, result, ignore_errors=False):
         if result._host.get_name() not in self.host_failed:
             self.host_failed[result._host.get_name()] = []
         self.host_failed[result._host.get_name()].append(result)
+        super(ResultCallback, self).v2_runner_on_failed(result, ignore_errors)
 
 
 class AnsibleRunner(object):
@@ -241,7 +250,8 @@ class AnsibleRunner(object):
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
             connection='paramiko_ssh', module_path=[''], forks=10,
-            gather_facts='no',
+            gather_facts='no', host_key_checking=False,
+            use_persistent_connections=True,
         )
 
         # Takes care of finding and reading yaml, json and ini files
