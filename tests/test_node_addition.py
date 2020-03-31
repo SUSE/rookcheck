@@ -14,6 +14,13 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import os
+
 
 def test_debug_scope_order(rook_cluster):
-    return
+    with os.fdopen(os.dup(1), "w") as stdout:
+        stdout.write("\nPress Enter to continue...")
+
+    with os.fdopen(os.dup(2), "r") as stdin:
+        return stdin.readline()
+
