@@ -102,3 +102,6 @@ my.env
 
 # editors
 .vscode
+
+# Cache
+.kube/
