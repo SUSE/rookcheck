@@ -41,9 +41,9 @@ class DeploySUSE(Deploy):
     def install_kubeadm_play(self):
         tasks = []
 
-        print("start required IPVS kernel modules")
         tasks.append(
             dict(
+                name="Start required IPVS kernel modules",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -54,7 +54,6 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("download and install crictl")
         grouped_commands = [
             "wget https://github.com/kubernetes-sigs/cri-tools/releases/download/{CRICTL_VERSION}/crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
             "tar -C /usr/bin -xf crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
@@ -63,6 +62,7 @@ class DeploySUSE(Deploy):
         ]
         tasks.append(
             dict(
+                name="Download and install crictl",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -74,7 +74,6 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("downloading and installing kubeadm binaries")
         for binary in ['kubeadm', 'kubectl', 'kubelet']:
             grouped_commands = [
                 "curl -LO https://storage.googleapis.com/kubernetes-release/release/{K8S_VERSION}/bin/linux/amd64/{binary}",
@@ -83,6 +82,7 @@ class DeploySUSE(Deploy):
             ]
             tasks.append(
                 dict(
+                    name="Download and install %s" % binary,
                     action=dict(
                         module='shell',
                         args=dict(
@@ -96,7 +96,6 @@ class DeploySUSE(Deploy):
                 )
             )
 
-        print("download and install CNI plugins")
         # CNI plugins are required for most network addons
         # https://github.com/containernetworking/plugins/releases
         CNI_VERSION = "v0.7.5"
@@ -109,6 +108,7 @@ class DeploySUSE(Deploy):
         ]
         tasks.append(
             dict(
+                name="Download and install CNI plugins",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -121,10 +121,10 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("setting up kubelet service")
         service_file = os.path.join(self.basedir, 'assets/kubelet.service')
         tasks.append(
             dict(
+                name="Set up kubelet service",
                 action=dict(
                     module='copy',
                     args=dict(
@@ -136,6 +136,7 @@ class DeploySUSE(Deploy):
         )
         tasks.append(
             dict(
+                name="Enable kubelet service",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -145,9 +146,9 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("disable apparmor")
         tasks.append(
             dict(
+                name="Disable apparmor",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -157,10 +158,10 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("copy config files to cluster")
         extra_args_file = os.path.join(self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
         tasks.append(
             dict(
+                name="Copy config files",
                 action=dict(
                     module='template',
                     args=dict(
@@ -183,9 +184,9 @@ class DeploySUSE(Deploy):
     def setup_master_play(self):
         tasks = []
 
-        print("copy config files to cluster")
         tasks.append(
             dict(
+                name="Create /root/.setup-kube dir",
                 action=dict(
                     module='file',
                     args=dict(
@@ -198,6 +199,7 @@ class DeploySUSE(Deploy):
         kubeadm_init_file = os.path.join(self.basedir, 'assets/kubeadm-init-config.yaml.j2')
         tasks.append(
             dict(
+                name="Copy kubeadm-init-config.yaml",
                 action=dict(
                     module='template',
                     args=dict(
@@ -210,6 +212,7 @@ class DeploySUSE(Deploy):
         cluster_psp_file = os.path.join(self.basedir, 'assets/cluster-psp.yaml')
         tasks.append(
             dict(
+                name="Copy cluster-psp.yaml",
                 action=dict(
                     module='copy',
                     args=dict(
@@ -220,11 +223,11 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("Run 'kubeadm init' on first master")
         # init config file has extra API server args to enable psp access control
         init_command = "kubeadm init --config=/root/.setup-kube/kubeadm-init-config.yaml"
         tasks.append(
             dict(
+                name="Run 'kubeadm init'",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -235,7 +238,6 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("setup root user on first master as Kubernetes administrator")
         grouped_commands = [
             "mkdir -p /root/.kube",
             "ln -f -s /etc/kubernetes/admin.conf /root/.kube/config",
@@ -244,6 +246,7 @@ class DeploySUSE(Deploy):
         ]
         tasks.append(
             dict(
+                name="Set up root user as Kubernetes administrator",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -253,9 +256,9 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("Wait until kubernetes is ready")
         tasks.append(
             dict(
+                name="Wait until kubernetes is ready",
                 action=dict(
                     module='command',
                     args=dict(
@@ -269,9 +272,9 @@ class DeploySUSE(Deploy):
             )
         )
 
-        print("setup default cluster pod security policies (PSPs)")
         tasks.append(
             dict(
+                name="Set up default cluster pod security policies (PSPs)",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -308,9 +311,9 @@ class DeploySUSE(Deploy):
         #     )
         # )
 
-        print("get join command")
         tasks.append(
             dict(
+                name="Get join command",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -326,16 +329,18 @@ class DeploySUSE(Deploy):
             hosts="first_master",
             tasks=tasks,
             gather_facts="no",
-            #strategy="free",
+            # Only one host, so more helpful to see current step with linear
+            # strategy
+            strategy="linear",
         )
         return play_source
 
     def join_workers_to_master(self, join_command):
         tasks = []
 
-        print("join worker nodes to Kubernetes cluster")
         tasks.append(
             dict(
+                name="Join node to Kubernetes cluster",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -358,9 +363,9 @@ class DeploySUSE(Deploy):
     def fetch_kubeconfig(self, destination):
         tasks = []
 
-        print("download kubeconfig from master")
         tasks.append(
             dict(
+                name="Download kubeconfig",
                 action=dict(
                     module='fetch',
                     args=dict(
@@ -377,7 +382,9 @@ class DeploySUSE(Deploy):
             hosts="first_master",
             tasks=tasks,
             gather_facts="no",
-            strategy="free",
+            # Only one host, so more helpful to see current step with linear
+            # strategy
+            strategy="linear",
         )
         return play_source
 

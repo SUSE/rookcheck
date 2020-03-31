@@ -23,9 +23,9 @@ class BuildRook():
     def build_play(self, builddir):
         tasks = []
 
-        print("Download go")
         tasks.append(
             dict(
+                name="Download go",
                 action=dict(
                     module='get_url',
                     args=dict(
@@ -37,6 +37,7 @@ class BuildRook():
         )
         tasks.append(
             dict(
+                name="Unpack go",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -46,10 +47,10 @@ class BuildRook():
             )
         )
 
-        print("Checkout rook")
         # TODO(jhesketh): Allow setting rook version
         tasks.append(
             dict(
+                name="Checkout rook",
                 action=dict(
                     module='git',
                     args=dict(
@@ -61,9 +62,9 @@ class BuildRook():
             )
         )
 
-        print("make rook")
         tasks.append(
             dict(
+                name="Make rook",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -73,9 +74,9 @@ class BuildRook():
             )
         )
 
-        print("tag image")
         tasks.append(
             dict(
+                name="Tag image",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -85,10 +86,10 @@ class BuildRook():
             )
         )
 
-        print("save image tar")
         # TODO(jhesketh): build arch may differ
         tasks.append(
             dict(
+                name="Save image tar",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -110,9 +111,9 @@ class BuildRook():
     def upload_image_play(self, buildpath):
         tasks = []
 
-        print("Copy Rook Ceph image to cluster nodes")
         tasks.append(
             dict(
+                name="Copy Rook Ceph image to cluster nodes",
                 action=dict(
                     module='copy',
                     args=dict(
@@ -123,10 +124,10 @@ class BuildRook():
             )
         )
 
-        print("load rook ceph image")
         # TODO(jhesketh): build arch may differ
         tasks.append(
             dict(
+                name="Load rook ceph image",
                 action=dict(
                     module='shell',
                     args=dict(

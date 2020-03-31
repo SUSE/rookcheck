@@ -66,9 +66,9 @@ class SUSE(Distro):
     def bootstrap_play(self):
         tasks = []
 
-        print("Wait for connection to hosts")
         tasks.append(
             dict(
+                name="Wait for connection to hosts",
                 action=dict(
                     module='wait_for_connection',
                     args=dict(
@@ -78,9 +78,9 @@ class SUSE(Distro):
             )
         )
 
-        print("Installing dependencies")
         tasks.append(
             dict(
+                name="Installing dependencies",
                 action=dict(
                     module='zypper',
                     args=dict(
@@ -108,9 +108,9 @@ class SUSE(Distro):
             )
         )
 
-        print("Updating kernel")
         tasks.append(
             dict(
+                name="Updating kernel",
                 action=dict(
                     module='zypper',
                     args=dict(
@@ -123,9 +123,9 @@ class SUSE(Distro):
             )
         )
 
-        print("Removing anti-dependencies ")
         tasks.append(
             dict(
+                name="Removing anti-dependencies",
                 action=dict(
                     module='zypper',
                     args=dict(
@@ -138,9 +138,9 @@ class SUSE(Distro):
             )
         )
 
-        print("Enabling docker")
         tasks.append(
             dict(
+                name="Enabling docker",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -153,9 +153,9 @@ class SUSE(Distro):
         # TODO(jhesketh): These commands are lifted from dev-rook-ceph. However
         # it appears that the sysctl settings are reset after reboot so they
         # may not be useful here.
-        print("Raising max open files")
         tasks.append(
             dict(
+                name="Raising max open files",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -165,9 +165,9 @@ class SUSE(Distro):
             )
         )
 
-        print("Minimize swappiness")
         tasks.append(
             dict(
+                name="Minimize swappiness",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -177,13 +177,13 @@ class SUSE(Distro):
             )
         )
 
-        print("Add floating IP to eth0")
         # TODO(jhesketh): Figure out if this is appropriate for all OpenStack
-        #                 clouds
+        #                 clouds.
         config = "\nIPADDR_0={{ ansible_host }}/32"
         config += "\nLABEL_0=Floating\n"
         tasks.append(
             dict(
+                name="Add floating IP to eth0",
                 action=dict(
                     module='shell',
                     args=dict(
@@ -193,18 +193,25 @@ class SUSE(Distro):
             )
         )
 
-        print("Reboot nodes")
+        # Alternate approach that likely doesn't require setting --node-ip with
+        # kubelet (as it'll default to the floating ip).
+        # Set static IP to be the floating,
+        # add second IP for the internal network,
+        # Create default route,
+        # Set up DNS again
+
         tasks.append(
             dict(
+                name="Reboot nodes",
                 action=dict(
                     module='reboot',
                 )
             )
         )
 
-        print("Setting iptables on nodes to be permissive")
         tasks.append(
             dict(
+                name="Setting iptables on nodes to be permissive",
                 action=dict(
                     module='shell',
                     args=dict(
