@@ -508,8 +508,9 @@ class VanillaKubernetes():
 
     def kubectl(self, command, print_out=True):
         # Execute kubectl command
+        parts = command.split(" ")
         out = subprocess.check_output(
-            [self.kubectl_exec, "--kubeconfig", self.kubeconfig, command]
+            [self.kubectl_exec, "--kubeconfig", self.kubeconfig] + parts
         )
         if print_out:
             print(out.decode())
