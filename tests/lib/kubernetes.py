@@ -515,7 +515,7 @@ class VanillaKubernetes():
         return subprocess.run(
             "%s --kubeconfig %s %s"
             % (self.kubectl_exec, self.kubeconfig, command),
-            shell=True, check=True
+            shell=True, check=True, text=True, capture_output=True
         )
 
     def kubectl_apply(self, yaml_file):
