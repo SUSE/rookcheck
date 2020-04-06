@@ -19,11 +19,13 @@ import time
 
 
 def test_file_creation(rook_cluster):
+    # Create direct-mount deployment
     rook_cluster.kubernetes.kubectl_apply(
         os.path.join(rook_cluster.ceph_dir, 'direct-mount.yaml'))
 
     time.sleep(5)
 
+    # Mount myfs in pod and put a test string into a file
     rook_cluster.kubernetes.execute_in_pod_by_label("""
         # Create the directory
         mkdir /tmp/registry
@@ -44,6 +46,9 @@ def test_file_creation(rook_cluster):
         rmdir /tmp/registry
     """, label="rook-direct-mount")
 
+    # Scale the direct mount deployment down and back up again to recreate the
+    # pod (to ensure that we haven't left anything on the container volume
+    # and therefore to be sure we are writing to the cephfs)
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=0 -n rook-ceph")
 
@@ -52,11 +57,7 @@ def test_file_creation(rook_cluster):
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=1 -n rook-ceph")
 
-    direct_mount_pod = rook_cluster.kubernetes.kubectl(
-        "--namespace rook-ceph get pod -l app=rook-direct-mount"
-        " --output custom-columns=name:metadata.name --no-headers"
-    ).stdout.strip()
-
+    # Mount myfs again and output the contents
     result = rook_cluster.kubernetes.execute_in_pod_by_label("""
         # Create the directory
         mkdir /tmp/registry
@@ -74,8 +75,10 @@ def test_file_creation(rook_cluster):
         rmdir /tmp/registry
     """, label="rook-direct-mount")
 
+    # Assert that the contents is as expected, confirming that writing to the
+    # cephfs is working as expected
     assert result.stdout.strip() == "Hello Rook"
 
-    # Uninstall rook-direct-mount
+    # Cleanup: Uninstall rook-direct-mount
     rook_cluster.kubernetes.kubectl(
         "delete deployment.apps/rook-direct-mount -n rook-ceph")
