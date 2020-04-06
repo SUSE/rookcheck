@@ -467,7 +467,11 @@ class VanillaKubernetes():
         self.kubeconfig = os.path.join(self.hardware.working_dir, 'kubeconfig')
         self.configure_kubernetes_client()
         self.download_kubectl()
-        self.untaint_master()
+        try:
+            self.untaint_master()
+        except subprocess.CalledProcessError:
+            # Untainting returns exit status 1 since not all nodes are tainted.
+            pass
         self.setup_flannel()
 
     def setup_flannel(self):
@@ -506,18 +510,16 @@ class VanillaKubernetes():
         st = os.stat(self.kubectl_exec)
         os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)
 
-    def kubectl(self, command, print_out=True):
+    def kubectl(self, command):
         # Execute kubectl command
-        parts = command.split(" ")
-        out = subprocess.check_output(
-            [self.kubectl_exec, "--kubeconfig", self.kubeconfig] + parts
+        return subprocess.run(
+            "%s --kubeconfig %s %s"
+            % (self.kubectl_exec, self.kubeconfig, command),
+            shell=True, check=True
         )
-        if print_out:
-            print(out.decode())
-        return out
 
-    def kubectl_apply(self, yaml_file, print_out=True):
-        return self.kubectl("apply -f %s" % yaml_file, print_out=print_out)
+    def kubectl_apply(self, yaml_file):
+        return self.kubectl("apply -f %s" % yaml_file)
 
     def untaint_master(self):
         self.kubectl("taint nodes --all node-role.kubernetes.io/master-")
