@@ -230,7 +230,7 @@ class RookCluster():
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'csi/rbd/storageclass.yaml'))
 
-        print("Wait for OSD prepare to complete")
+        print("Wait for OSD prepare to complete (this may take a while...)")
         pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
 
         common.wait_for_result(
