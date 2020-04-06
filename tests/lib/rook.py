@@ -163,6 +163,7 @@ class RookCluster():
     def __init__(self, kubernetes):
         self.kubernetes = kubernetes
         self.toolbox_pod = None
+        self.ceph_dir = None
         print("rook init")
         print(self)
         print(self.kubernetes)
@@ -204,25 +205,30 @@ class RookCluster():
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-    def install_rook(self):
-        # TODO(jhesketh): We may want to provide ways for tests to override
-        #                 these
-        ceph_dir = os.path.join(
+        self.ceph_dir = os.path.join(
             self.builddir,
             'src/github.com/rook/rook/cluster/examples/kubernetes/ceph'
         )
-        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'common.yaml'))
-        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'operator.yaml'))
+
+    def install_rook(self):
+        # TODO(jhesketh): We may want to provide ways for tests to override
+        #                 these
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'common.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'operator.yaml'))
 
         # TODO(jhesketh): Check if sleeping is necessary
         time.sleep(10)
 
-        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'cluster.yaml'))
-        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'cluster.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'toolbox.yaml'))
         time.sleep(3)
 
         self.kubernetes.kubectl_apply(
-            os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
+            os.path.join(self.ceph_dir, 'csi/rbd/storageclass.yaml'))
 
         print("Wait for OSD prepare to complete")
         pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
@@ -233,7 +239,7 @@ class RookCluster():
             attempts=90, interval=10)
 
         self.kubernetes.kubectl_apply(
-            os.path.join(ceph_dir, 'filesystem.yaml'))
+            os.path.join(self.ceph_dir, 'filesystem.yaml'))
 
         print("Wait for 2 mdses to start")
         pattern = re.compile(r'.*rook-ceph-mds-myfs.*Running')
