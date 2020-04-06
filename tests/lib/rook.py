@@ -150,7 +150,7 @@ class BuildRook():
         )
 
         play_source = dict(
-            name="Build rook",
+            name="Upload rook image",
             hosts="all",
             tasks=tasks,
             gather_facts="no",
