@@ -16,7 +16,6 @@
 
 import os
 import time
-import yaml
 
 
 class BuildRook():
@@ -29,7 +28,8 @@ class BuildRook():
                 action=dict(
                     module='get_url',
                     args=dict(
-                        url="https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
+                        url="https://dl.google.com/go/"
+                            "go1.13.9.linux-amd64.tar.gz",
                         dest="%s/go-amd64.tar.gz" % builddir
                     )
                 )
@@ -41,7 +41,9 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd="tar -C {builddir} -xzf {builddir}/go-amd64.tar.gz".format(builddir=builddir)
+                        cmd="tar -C {builddir} -xzf "
+                            "{builddir}/go-amd64.tar.gz".format(
+                                builddir=builddir)
                     )
                 )
             )
@@ -56,7 +58,7 @@ class BuildRook():
                     args=dict(
                         repo="https://github.com/rook/rook.git",
                         dest="%s/src/github.com/rook/rook" % builddir,
-                        #version=...
+                        # version=...
                     )
                 )
             )
@@ -68,7 +70,11 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd="PATH={builddir}/go/bin:$PATH GOPATH={builddir} make --directory='{builddir}/src/github.com/rook/rook' -j BUILD_REGISTRY='rook-build' IMAGES='ceph' build".format(builddir=builddir)
+                        cmd="PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
+                            "make --directory="
+                            "'{builddir}/src/github.com/rook/rook' "
+                            "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
+                            "build".format(builddir=builddir)
                     )
                 )
             )
@@ -80,7 +86,8 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd='docker tag "rook-build/ceph-amd64" rook/ceph:master'
+                        cmd='docker tag "rook-build/ceph-amd64" '
+                            'rook/ceph:master'
                     )
                 )
             )
@@ -93,7 +100,8 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd='docker save rook-build/ceph-amd64 | gzip > %s/rook-ceph.tar.gz' % builddir
+                        cmd='docker save rook-build/ceph-amd64 | '
+                            'gzip > %s/rook-ceph.tar.gz' % builddir
                     )
                 )
             )
@@ -131,7 +139,8 @@ class BuildRook():
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd='docker load --input /root/.images/rook-ceph.tar.gz'
+                        cmd='docker load '
+                            '--input /root/.images/rook-ceph.tar.gz'
                     )
                 )
             )
@@ -191,44 +200,13 @@ class RookCluster():
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-    # def install_rook(self):
-    #     # TODO(jhesketh): We may want to provide ways for tests to override these
-    #     ceph_dir = os.path.join(self.builddir, 'src/github.com/rook/rook/cluster/examples/kubernetes/ceph')
-    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'common.yaml'))
-
-    #     # Modify operator.yaml to use host networking:
-    #     with open(os.path.join(ceph_dir, 'operator.yaml')) as f:
-    #         operator_contents = f.read()
-
-    #     # Replace the target string
-    #     operator_contents = operator_contents.replace('#hostNetwork: true', 'hostNetwork: true')
-
-    #     # Write the file out again
-    #     with open(os.path.join(ceph_dir, 'operator-modified.yaml'), "w") as f:
-    #         f.write(operator_contents)
-
-    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'operator-modified.yaml'))
-
-    #     # TODO(jhesketh): Check if sleeping is necessary
-    #     time.sleep(10)
-
-    #     # Modify cluster.yaml to use host networking:
-    #     with open(os.path.join(ceph_dir, 'cluster.yaml')) as f:
-    #         cluster = yaml.load(f, Loader=yaml.FullLoader)
-
-    #     cluster['spec']['network']['hostNetwork'] = True
-
-    #     with open(os.path.join(ceph_dir, 'cluster-modified.yaml'), "w") as f:
-    #         yaml.dump(cluster, f)
-
-    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'cluster-modified.yaml'))
-    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
-    #     time.sleep(3)
-    #     self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
-
     def install_rook(self):
-        # TODO(jhesketh): We may want to provide ways for tests to override these
-        ceph_dir = os.path.join(self.builddir, 'src/github.com/rook/rook/cluster/examples/kubernetes/ceph')
+        # TODO(jhesketh): We may want to provide ways for tests to override
+        #                 these
+        ceph_dir = os.path.join(
+            self.builddir,
+            'src/github.com/rook/rook/cluster/examples/kubernetes/ceph'
+        )
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'common.yaml'))
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'operator.yaml'))
 
@@ -239,7 +217,8 @@ class RookCluster():
         self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'toolbox.yaml'))
         time.sleep(3)
 
-        self.kubernetes.kubectl_apply(os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(ceph_dir, 'csi/rbd/storageclass.yaml'))
 
         # Wait for OSD prepare to complete
 

@@ -41,7 +41,8 @@ NODE_SIZE = os.getenv('NODE_SIZE', 'm1.medium')
 DISTRO = os.getenv('DISTRO', 'SUSE')
 
 # The type of kubernetes deployment
-KUBERNETES_DEPLOYMENT = os.getenv('KUBERNETES_DEPLOYMENT', 'upstream') # Probably don't need this
+# NOTE(jhesketh): Probably don't need this...
+KUBERNETES_DEPLOYMENT = os.getenv('KUBERNETES_DEPLOYMENT', 'upstream')
 CRICTL_VERSION = os.getenv('CRICTL_VERSION', 'v1.17.0')
 K8S_VERSION = os.getenv('K8S_VERSION', 'v1.17.4')
 

@@ -187,7 +187,8 @@ class SUSE(Distro):
                 action=dict(
                     module='shell',
                     args=dict(
-                        cmd='printf "%s" >> /etc/sysconfig/network/ifcfg-eth0' % config,
+                        cmd='printf "%s" >> /etc/sysconfig/network/ifcfg-eth0'
+                            % config,
                     )
                 )
             )
@@ -289,6 +290,8 @@ class AnsibleRunner(object):
         self.variable_manager = VariableManager(
             loader=self.loader, inventory=self.inventory)
 
+        # self.download_mitogen(working_dir)
+
     def create_inventory(self, nodes, working_dir=None):
         if not working_dir:
             # NOTE(jhesketh): The working dir is never cleaned up. This is
@@ -373,9 +376,16 @@ class AnsibleRunner(object):
 
         return results_callback
 
+    def download_mitogen(self, working_dir):
+        tar_url = "https://networkgenomics.com/try/mitogen-0.2.9.tar.gz"
+        stream = urllib.request.urlopen(tar_url)
+        tar_file = tarfile.open(fileobj=stream, mode="r|gz")
+        tar_file.extractall(path=working_dir)
+
 
 class Node():
-    def __init__(self, libcloud_conn, name, pubkey=None, private_key=None, tags=[]):
+    def __init__(self, libcloud_conn, name, pubkey=None, private_key=None,
+                 tags=[]):
         self.name = name
         self.libcloud_conn = libcloud_conn
         self.libcloud_node = None
@@ -432,10 +442,13 @@ class Node():
         # Wait for volume to be ready before attaching
         self.wait_until_volume_state(volume.uuid)
 
-        self.libcloud_conn.attach_volume(self.libcloud_node, volume, device=None)
+        self.libcloud_conn.attach_volume(
+            self.libcloud_node, volume, device=None)
         self.volumes.append(volume)
 
-    def wait_until_volume_state(self, volume_uuid, state=StorageVolumeState.AVAILABLE, timeout=120, interval=3):
+    def wait_until_volume_state(self, volume_uuid,
+                                state=StorageVolumeState.AVAILABLE,
+                                timeout=120, interval=3):
         # `state` can be StorageVolumeState, "any", or None (for not existant)
         # `state` can also be a list of NodeState's, any matching will pass
         for _ in range(int(timeout / interval)):
@@ -458,7 +471,8 @@ class Node():
 
         raise Exception("Timeout waiting for volume to be state `%s`" % state)
 
-    def wait_until_state(self, state=NodeState.RUNNING, timeout=120, interval=3, uuid=None):
+    def wait_until_state(self, state=NodeState.RUNNING, timeout=120,
+                         interval=3, uuid=None):
         # `state` can be NodeState, "any", or None (for not existant)
         # `state` can also be a list of NodeState's, any matching will pass
         if not uuid:
@@ -517,7 +531,8 @@ class Node():
             )
             self._ssh_client.connect(
                 hostname=self._get_ssh_ip,
-                username="opensuse", #FIXME
+                # FIXME(jhesketh): Set username depending on OS
+                username="opensuse",
                 pkey=self.private_key,
                 allow_agent=False,
                 look_for_keys=False,
@@ -527,7 +542,8 @@ class Node():
     def ansible_inventory_vars(self):
         return {
             'ansible_host': self._get_ssh_ip(),
-            'ansible_user': 'opensuse', #FIXME
+            # FIXME(jhesketh): Set username depending on OS
+            'ansible_user': 'opensuse',
             'ansible_ssh_private_key_file': self.private_key,
             'ansible_become': True,
             'ansible_become_method': 'sudo',
@@ -548,7 +564,6 @@ class Hardware():
         self._image_cache = {}
         self._size_cache = {}
         self._ex_network_cache = {}
-
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
@@ -616,6 +631,7 @@ class Hardware():
         return None
 
     def get_ex_network_by_name(self, name=None):
+        # TODO(jhesketh): Create a network instead
         if self._ex_network_cache:
             networks = self._ex_network_cache
         else:
@@ -660,7 +676,8 @@ class Hardware():
             libcloud_conn=self.libcloud_conn,
             name=node_name, pubkey=self.pubkey, private_key=self.private_key,
             tags=tags)
-        # TODO(jhesketh): Create fixed network as part of build and security group
+        # TODO(jhesketh): Create fixed network as part of build and security
+        #                 group
         node.boot(
             size=self.get_size_by_name(config.NODE_SIZE),
             # TODO(jhesketh): FIXME

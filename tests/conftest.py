@@ -15,7 +15,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import pytest
-import time
 
 from tests.lib.hardware import Hardware
 from tests.lib.kubernetes import VanillaKubernetes

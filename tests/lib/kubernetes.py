@@ -23,6 +23,7 @@
 from abc import ABC, abstractmethod
 import os
 import stat
+import subprocess
 import wget
 
 import kubernetes
@@ -55,7 +56,9 @@ class DeploySUSE(Deploy):
         )
 
         grouped_commands = [
-            "wget https://github.com/kubernetes-sigs/cri-tools/releases/download/{CRICTL_VERSION}/crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
+            ("wget https://github.com/kubernetes-sigs/cri-tools/releases/"
+                "download/{CRICTL_VERSION}/"
+                "crictl-{CRICTL_VERSION}-linux-amd64.tar.gz"),
             "tar -C /usr/bin -xf crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
             "chmod +x /usr/bin/crictl",
             "rm crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
@@ -76,7 +79,8 @@ class DeploySUSE(Deploy):
 
         for binary in ['kubeadm', 'kubectl', 'kubelet']:
             grouped_commands = [
-                "curl -LO https://storage.googleapis.com/kubernetes-release/release/{K8S_VERSION}/bin/linux/amd64/{binary}",
+                ("curl -LO https://storage.googleapis.com/kubernetes-release/"
+                    "release/{K8S_VERSION}/bin/linux/amd64/{binary}"),
                 "chmod +x {binary}",
                 "mv {binary} /usr/bin/"
             ]
@@ -101,7 +105,8 @@ class DeploySUSE(Deploy):
         CNI_VERSION = "v0.7.5"
         grouped_commands = [
             "rm -f cni-plugins-amd64-{CNI_VERSION}.tgz*",
-            "wget https://github.com/containernetworking/plugins/releases/download/{CNI_VERSION}/cni-plugins-amd64-{CNI_VERSION}.tgz",
+            ("wget https://github.com/containernetworking/plugins/releases/"
+                "download/{CNI_VERSION}/cni-plugins-amd64-{CNI_VERSION}.tgz"),
             "mkdir -p /opt/cni/bin",
             "tar -C /opt/cni/bin -xf cni-plugins-amd64-{CNI_VERSION}.tgz",
             "rm cni-plugins-amd64-{CNI_VERSION}.tgz"
@@ -158,7 +163,8 @@ class DeploySUSE(Deploy):
             )
         )
 
-        extra_args_file = os.path.join(self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
+        extra_args_file = os.path.join(
+            self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
         tasks.append(
             dict(
                 name="Copy config files",
@@ -196,7 +202,9 @@ class DeploySUSE(Deploy):
                 )
             )
         )
-        kubeadm_init_file = os.path.join(self.basedir, 'assets/kubeadm-init-config.yaml.j2')
+
+        kubeadm_init_file = os.path.join(
+            self.basedir, 'assets/kubeadm-init-config.yaml.j2')
         tasks.append(
             dict(
                 name="Copy kubeadm-init-config.yaml",
@@ -209,7 +217,9 @@ class DeploySUSE(Deploy):
                 )
             )
         )
-        cluster_psp_file = os.path.join(self.basedir, 'assets/cluster-psp.yaml')
+
+        cluster_psp_file = os.path.join(
+            self.basedir, 'assets/cluster-psp.yaml')
         tasks.append(
             dict(
                 name="Copy cluster-psp.yaml",
@@ -223,16 +233,22 @@ class DeploySUSE(Deploy):
             )
         )
 
-        # init config file has extra API server args to enable psp access control
-        init_command = "kubeadm init --config=/root/.setup-kube/kubeadm-init-config.yaml"
+        # init config file has extra API server args to enable psp access
+        # control
+        init_command = (
+            "kubeadm init "
+            "--config=/root/.setup-kube/kubeadm-init-config.yaml"
+        )
         tasks.append(
             dict(
                 name="Run 'kubeadm init'",
                 action=dict(
                     module='shell',
                     args=dict(
-                        # for idempotency, do not run init if docker is already running kube resources
-                        cmd="if ! docker ps -a | grep -q kube; then {init_command} ; fi".format(init_command=init_command)
+                        # for idempotency, do not run init if docker is already
+                        # running kube resources
+                        cmd=("if ! docker ps -a | grep -q kube; "
+                             "then %s ; fi" % init_command)
                     )
                 )
             )
@@ -278,8 +294,8 @@ class DeploySUSE(Deploy):
                 action=dict(
                     module='shell',
                     args=dict(
-                        # for idempotency, do not run init if docker is already running kube resources
-                        cmd="kubectl apply -f /root/.setup-kube/cluster-psp.yaml"
+                        cmd=("kubectl apply "
+                             "-f /root/.setup-kube/cluster-psp.yaml")
                     )
                 )
             )
@@ -291,8 +307,9 @@ class DeploySUSE(Deploy):
         #         action=dict(
         #             module='shell',
         #             args=dict(
-        #                 # for idempotency, do not run init if docker is already running kube resources
-        #                 cmd="kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
+        #                 cmd=("kubectl apply -f "
+        #                      "https://docs.projectcalico.org/"
+        #                      "manifests/calico.yaml")
         #             )
         #         )
         #     )
@@ -304,8 +321,9 @@ class DeploySUSE(Deploy):
         #         action=dict(
         #             module='shell',
         #             args=dict(
-        #                 # for idempotency, do not run init if docker is already running kube resources
-        #                 cmd="kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+        #                 cmd=("kubectl apply -f "
+        #                      "https://raw.githubusercontent.com/coreos/"
+        #                      "flannel/master/Documentation/kube-flannel.yml")
         #             )
         #         )
         #     )
@@ -317,8 +335,8 @@ class DeploySUSE(Deploy):
                 action=dict(
                     module='shell',
                     args=dict(
-                        # for idempotency, do not run init if docker is already running kube resources
-                        cmd="kubeadm token create --print-join-command | grep 'kubeadm join'"
+                        cmd=("kubeadm token create --print-join-command "
+                             "| grep 'kubeadm join'")
                     )
                 )
             )
@@ -344,8 +362,10 @@ class DeploySUSE(Deploy):
                 action=dict(
                     module='shell',
                     args=dict(
-                        # for idempotency, do not run init if docker is already running kube resources
-                        cmd="if ! docker ps -a | grep -q kube; then {join_command} ; fi".format(join_command=join_command)
+                        # for idempotency, do not run join if docker is already
+                        # running kube resources
+                        cmd=("if ! docker ps -a | grep -q kube; "
+                             "then %s ; fi" % join_command)
                     )
                 )
             )
@@ -427,7 +447,8 @@ class VanillaKubernetes():
             raise Exception("One or more hosts failed")
 
         # TODO(jhesketh): Figure out a better way to get ansible output/results
-        join_command = r2.host_ok[list(r2.host_ok.keys())[0]][-1]._result['stdout']
+        join_command = \
+            r2.host_ok[list(r2.host_ok.keys())[0]][-1]._result['stdout']
 
         r3 = self.hardware.execute_ansible_play(
             d.join_workers_to_master(join_command))
@@ -451,8 +472,16 @@ class VanillaKubernetes():
 
     def setup_flannel(self):
         for node in self.hardware.nodes.values():
-            self.kubectl("annotate node %s flannel.alpha.coreos.com/public-ip-overwrite=%s --overwrite" % (node.name.replace("_", "-"), node._get_ssh_ip()))
-        self.kubectl_apply("https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml")
+            self.kubectl(
+                "annotate node %s "
+                "flannel.alpha.coreos.com/public-ip-overwrite=%s "
+                "--overwrite" % (
+                    node.name.replace("_", "-"), node._get_ssh_ip()
+                )
+            )
+        self.kubectl_apply(
+            "https://raw.githubusercontent.com/coreos/flannel/master/"
+            "Documentation/kube-flannel.yml")
 
     def configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)
@@ -470,19 +499,24 @@ class VanillaKubernetes():
         # TODO(jhesketh): Allow setting version
         self.kubectl_exec = os.path.join(self.hardware.working_dir, 'kubectl')
         wget.download(
-            "https://storage.googleapis.com/kubernetes-release/release/v1.17.3/bin/linux/amd64/kubectl",
+            "https://storage.googleapis.com/kubernetes-release/release/v1.17.3"
+            "/bin/linux/amd64/kubectl",
             self.kubectl_exec
         )
         st = os.stat(self.kubectl_exec)
         os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)
 
-    def kubectl(self, command):
+    def kubectl(self, command, print_out=True):
         # Execute kubectl command
-        return os.system(
-            " ".join([self.kubectl_exec, "--kubeconfig", self.kubeconfig, command]))
+        out = subprocess.check_output(
+            [self.kubectl_exec, "--kubeconfig", self.kubeconfig, command]
+        )
+        if print_out:
+            print(out.decode())
+        return out
 
-    def kubectl_apply(self, yaml_file):
-        return self.kubectl("apply -f %s" % yaml_file)
+    def kubectl_apply(self, yaml_file, print_out=True):
+        return self.kubectl("apply -f %s" % yaml_file, print_out=print_out)
 
     def untaint_master(self):
         self.kubectl("taint nodes --all node-role.kubernetes.io/master-")
