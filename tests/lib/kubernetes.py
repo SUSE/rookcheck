@@ -524,6 +524,28 @@ class VanillaKubernetes():
     def untaint_master(self):
         self.kubectl("taint nodes --all node-role.kubernetes.io/master-")
 
+    def execute_in_pod(self, command, pod, namespace="rook-ceph"):
+        return self.kubectl(
+            '--namespace %s exec -t "%s" -- bash -c "$(cat <<\'EOF\'\n'
+            '%s'
+            '\nEOF\n)"'
+            % (namespace, pod, command)
+        )
+
+    def get_pod_by_app_label(self, label, namespace="rook-ceph"):
+        return self.kubectl(
+            '--namespace %s get pod -l app="%s"'
+            ' --output custom-columns=name:metadata.name --no-headers'
+            % (namespace, label)
+        ).stdout.strip()
+
+    def execute_in_pod_by_label(self, command, label, namespace="rook-ceph"):
+        # Note(jhesketh): The pod isn't cached, so if running multiple commands
+        #                 in the one pod consider calling the following
+        #                 manually
+        pod = self.get_pod_by_app_label(label, namespace)
+        return self.execute_in_pod(command, pod, namespace)
+
     def __enter__(self):
         return self
 
