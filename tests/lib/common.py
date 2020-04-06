@@ -29,6 +29,12 @@ def regex_matcher(regex_pattern):
     return compare
 
 
+def regex_count_matcher(regex_pattern, matches):
+    def compare(testee):
+        return len(regex_pattern.findall(testee)) == matches
+    return compare
+
+
 def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
                     interval=5):
     """Runs `func` with `args` until `matcher(out)` returns true or timesout
