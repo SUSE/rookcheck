@@ -259,12 +259,7 @@ class RookCluster():
 
     def execute_in_ceph_toolbox(self, command):
         if not self.toolbox_pod:
-            self.toolbox_pod = self.kubernetes.kubectl(
-                "--namespace rook-ceph get pods --selector app=rook-ceph-tools"
-                " --output custom-columns=name:metadata.name --no-headers"
-            ).stdout.strip()
+            self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
+                "rook-ceph-tools")
 
-        return self.kubernetes.kubectl(
-            '--namespace rook-ceph exec "%s" -- bash -c "%s"'
-            % (self.toolbox_pod, command)
-        )
+        return self.kubernetes.execute_in_pod(command, self.toolbox_pod)
