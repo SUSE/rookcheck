@@ -13,3 +13,35 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+import time
+
+
+def simple_matcher(result):
+    def compare(testee):
+        return testee == result
+    return compare
+
+
+def regex_matcher(regex_pattern):
+    def compare(testee):
+        return regex_pattern.match(testee)
+    return compare
+
+
+def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
+                    interval=5):
+    """Runs `func` with `args` until `matcher(out)` returns true or timesout
+
+    Returns the matching result, or raises an exception.
+    """
+
+    for i in range(attempts):
+        out = func(*args)
+        if matcher(out):
+            return out
+        time.sleep(interval)
+
+    raise Exception(
+        "Timed out waiting for result %s in %s(%s)" % (matcher, func, args)
+    )
