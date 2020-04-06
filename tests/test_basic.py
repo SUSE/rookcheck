@@ -76,11 +76,6 @@ def test_file_creation(rook_cluster):
 
     assert result.stdout.strip() == "Hello Rook"
 
-    print("*"*120)
-    print(result)
-    print(result.stdout)
-    print("*"*120)
-
     # Uninstall rook-direct-mount
     rook_cluster.kubernetes.kubectl(
         "delete deployment.apps/rook-direct-mount -n rook-ceph")
