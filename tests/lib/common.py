@@ -25,7 +25,7 @@ def simple_matcher(result):
 
 def regex_matcher(regex_pattern):
     def compare(testee):
-        return regex_pattern.match(testee)
+        return len(regex_pattern.findall(testee)) > 0
     return compare
 
 
@@ -35,8 +35,12 @@ def regex_count_matcher(regex_pattern, matches):
     return compare
 
 
+def decode_wrapper(i):
+    return i.stdout
+
+
 def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
-                    interval=5):
+                    interval=5, decode=decode_wrapper):
     """Runs `func` with `args` until `matcher(out)` returns true or timesout
 
     Returns the matching result, or raises an exception.
@@ -44,6 +48,8 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
 
     for i in range(attempts):
         out = func(*args)
+        if decode:
+            out = decode(out)
         if matcher(out):
             return out
         time.sleep(interval)
