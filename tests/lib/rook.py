@@ -256,7 +256,7 @@ class RookCluster():
             self.toolbox_pod = self.kubernetes.kubectl(
                 "--namespace rook-ceph get pods --selector app=rook-ceph-tools"
                 " --output custom-columns=name:metadata.name --no-headers"
-            ).strip()
+            ).stdout.strip()
 
         return self.kubernetes.kubectl(
             '--namespace rook-ceph exec "%s" -- bash -c "%s"'
