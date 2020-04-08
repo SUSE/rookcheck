@@ -16,6 +16,7 @@
 
 import distutils.util
 import os
+import getpass
 
 #############################################################
 # Cluster settings                                          #
@@ -29,7 +30,7 @@ CLOUD_PROVIDER = os.getenv('CLOUD_PROVIDER', 'OPENSTACK')
 
 # Prevent cluster collisions in shared environments with a resource name prefix
 # Can safely be commented-out for local libvirt use
-CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % os.getlogin())
+CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % getpass.getuser())
 
 # The node image by name known to the provider
 NODE_IMAGE = os.getenv('NODE_IMAGE', 'openSUSE-Leap-15.1-OpenStack')
