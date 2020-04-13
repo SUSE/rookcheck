@@ -774,10 +774,6 @@ class Hardware():
         print("destroy nodes")
         print(self)
 
-        # FIXME(jhesketh): Remove timeout. Just here to make sure all the
-        #                  resources are up before attempting to delete.
-        time.sleep(20)
-
         threads = []
         for node in self.nodes.values():
             thread = threading.Thread(target=node.destroy,)
