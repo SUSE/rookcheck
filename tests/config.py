@@ -61,7 +61,8 @@ VERIFY_SSL_CERT = bool(distutils.util.strtobool(
 # The following settings can be sourced from your openrc v3
 # NOTE(jhesketh): libcloud doesn't load clouds.yaml, so env vars must be set
 OS_AUTH_URL = os.getenv('OS_AUTH_URL')
-OS_PROJECT_ID = os.getenv('OS_PROJECT_ID', None)
+# NOTE(jhesketh): OS_PROJECT_ID is not supported
+# OS_PROJECT_ID = os.getenv('OS_PROJECT_ID', None)
 OS_PROJECT_NAME = os.getenv('OS_PROJECT_NAME', 'default')
 OS_USER_DOMAIN_NAME = os.getenv('OS_USER_DOMAIN_NAME', 'default')
 OS_PROJECT_DOMAIN_ID = os.getenv('OS_PROJECT_DOMAIN_ID', 'default')

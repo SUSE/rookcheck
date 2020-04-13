@@ -597,7 +597,7 @@ class Hardware():
                 ex_force_auth_url=config.OS_AUTH_URL,
                 ex_force_auth_version=config.OS_AUTH_VERSION,
                 ex_domain_name=config.OS_USER_DOMAIN_NAME,
-                ex_tenant_name=config.OS_PROJECT_ID or config.OS_PROJECT_NAME,
+                ex_tenant_name=config.OS_PROJECT_NAME,
                 ex_tenant_domain_id=config.OS_PROJECT_DOMAIN_ID,
                 ex_force_service_region=config.OS_REGION_NAME,
                 secure=config.VERIFY_SSL_CERT,
