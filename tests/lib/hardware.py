@@ -50,6 +50,8 @@ from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
 import paramiko.rsakey
+from urllib.parse import urlparse
+
 
 from tests import config
 
@@ -591,10 +593,15 @@ class Hardware():
             #                 For example, the setting of OpenStack networks.
             OpenStackDriver = get_driver(Provider.OPENSTACK)
 
+            # Strip any path from OS_AUTH_URL to be compatable with libcloud's
+            # auth_verion.
+            auth_url_parts = urlparse(config.OS_AUTH_URL)
+            auth_url = \
+                "%s://%s" % (auth_url_parts.scheme, auth_url_parts.netloc)
             connection = OpenStackDriver(
                 config.OS_USERNAME,
                 config.OS_PASSWORD,
-                ex_force_auth_url=config.OS_AUTH_URL,
+                ex_force_auth_url=auth_url,
                 ex_force_auth_version=config.OS_AUTH_VERSION,
                 ex_domain_name=config.OS_USER_DOMAIN_NAME,
                 ex_tenant_name=config.OS_PROJECT_NAME,
