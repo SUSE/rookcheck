@@ -46,6 +46,9 @@ You will need to configure the platform that the tests are ran against::
     vim my.env # Make any changes needed
     source my.env
 
+If you are using OpenStack you can use your openrc for most of the
+configuratoin.
+
 Running tests::
 
     $ tox -e py37
