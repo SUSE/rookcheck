@@ -596,10 +596,10 @@ class Hardware():
                 config.OS_PASSWORD,
                 ex_force_auth_url=config.OS_AUTH_URL,
                 ex_force_auth_version=config.OS_AUTH_VERSION,
-                ex_domain_name=config.OS_USER_DOMAIN,
-                ex_tenant_name=config.OS_PROJECT,
-                ex_tenant_domain_id=config.OS_PROJECT_DOMAIN,
-                ex_force_service_region=config.OS_REGION,
+                ex_domain_name=config.OS_USER_DOMAIN_NAME,
+                ex_tenant_name=config.OS_PROJECT_ID or config.OS_PROJECT_NAME,
+                ex_tenant_domain_id=config.OS_PROJECT_DOMAIN_ID,
+                ex_force_service_region=config.OS_REGION_NAME,
                 secure=config.VERIFY_SSL_CERT,
             )
         else:
@@ -684,7 +684,9 @@ class Hardware():
             image=self.get_image_by_name(
                 "e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
             sshkey_name=self.sshkey_name,
-            external_networks=[self.get_ex_network_by_name(config.OS_NETWORK)],
+            external_networks=[
+                self.get_ex_network_by_name(config.OS_EXTERNAL_NETWORK)
+            ],
         )
         node.create_and_attach_floating_ip()
         # Wait for node to be ready

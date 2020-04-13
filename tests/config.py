@@ -53,15 +53,22 @@ K8S_VERSION = os.getenv('K8S_VERSION', 'v1.17.4')
 ######################
 # OpenStack settings #
 ######################
-OS_USERNAME = os.getenv('OS_USERNAME')
-OS_PASSWORD = os.getenv('OS_PASSWORD')
-OS_AUTH_URL = os.getenv('OS_AUTH_URL')
+# libcloud settings:
 OS_AUTH_VERSION = os.getenv('OS_AUTH_VERSION', '3.x_password')
-OS_USER_DOMAIN = os.getenv('OS_USER_DOMAIN', 'default')
-OS_PROJECT = os.getenv('OS_PROJECT', 'default')
-OS_PROJECT_DOMAIN = os.getenv('OS_PROJECT_DOMAIN', 'default')
-OS_REGION = os.getenv('OS_REGION', None)
-OS_NETWORK = os.getenv('OS_NETWORK', 'user')
-
 VERIFY_SSL_CERT = bool(distutils.util.strtobool(
     os.getenv('VERIFY_SSL_CERT', 'TRUE')))
+
+# The following settings can be sourced from your openrc v3
+# NOTE(jhesketh): libcloud doesn't load clouds.yaml, so env vars must be set
+OS_AUTH_URL = os.getenv('OS_AUTH_URL')
+OS_PROJECT_ID = os.getenv('OS_PROJECT_ID', None)
+OS_PROJECT_NAME = os.getenv('OS_PROJECT_NAME', 'default')
+OS_USER_DOMAIN_NAME = os.getenv('OS_USER_DOMAIN_NAME', 'default')
+OS_PROJECT_DOMAIN_ID = os.getenv('OS_PROJECT_DOMAIN_ID', 'default')
+OS_USERNAME = os.getenv('OS_USERNAME')
+OS_PASSWORD = os.getenv('OS_PASSWORD')
+OS_REGION_NAME = os.getenv('OS_REGION_NAME', None)
+
+# The following needs to be set to a network that has external access and
+# routers in place
+OS_EXTERNAL_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', 'floating')
