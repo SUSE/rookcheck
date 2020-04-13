@@ -272,9 +272,9 @@ class AnsibleRunner(object):
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
-            connection='paramiko_ssh', module_path=[''], forks=10,
+            connection='ssh', module_path=[''], forks=10,
             gather_facts='no', host_key_checking=False,
-            use_persistent_connections=True,
+            ssh_host_key_checking=False, use_persistent_connections=True,
         )
 
         # Takes care of finding and reading yaml, json and ini files
@@ -554,6 +554,8 @@ class Node():
             'ansible_become_method': 'sudo',
             'ansible_become_user': 'root',
             'ansible_host_key_checking': False,
+            'ansible_ssh_host_key_checking': False,
+            'ansible_ssh_common_args': "-o StrictHostKeyChecking=no"
         }
 
 
