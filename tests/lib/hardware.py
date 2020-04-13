@@ -399,7 +399,8 @@ class Node():
 
         self._ssh_client = None
 
-    def boot(self, size, image, sshkey_name=None, external_networks=[]):
+    def boot(self, size, image, sshkey_name=None, external_networks=[],
+             security_groups=[]):
         if self.libcloud_node:
             raise Exception("A node has already been booted")
 
@@ -409,6 +410,8 @@ class Node():
             kwargs['networks'] = external_networks
         if sshkey_name:
             kwargs['ex_keyname'] = sshkey_name
+        if security_groups:
+            kwargs['ex_security_groups'] = security_groups
 
         # Can't use deploy_node because there is no public ip yet
         self.libcloud_node = self.libcloud_conn.create_node(
@@ -575,8 +578,8 @@ class Hardware():
         self.sshkey_name = None
         self.pubkey = None
         self.private_key = None
-        self._ex_os_key = None
-        self.generate_keys()
+        self._ex_os_key = self.generate_keys()
+        self._ex_security_group = self.create_security_group()
 
         self.ansible_runner = None
         self._ansible_runner_nodes = None
@@ -666,8 +669,32 @@ class Hardware():
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
 
-        self._ex_os_key = self.libcloud_conn.import_key_pair_from_string(
+        os_key = self.libcloud_conn.import_key_pair_from_string(
             self.sshkey_name, self.pubkey)
+
+        return os_key
+
+    def create_security_group(self):
+        """
+        Creates a security group used for this set of hardware. For now,
+        all ports are open.
+        """
+        if config.CLOUD_PROVIDER == 'OPENSTACK':
+            security_group = self.libcloud_conn.ex_create_security_group(
+                name=("%s%s_security_group"
+                      % (config.CLUSTER_PREFIX, self.hardware_uuid)),
+                description="Permissive firewall for rookci testing"
+            )
+            for protocol in ["TCP", "UDP"]:
+                self.libcloud_conn.ex_create_security_group_rule(
+                    security_group,
+                    ip_protocol=protocol,
+                    from_port=1,
+                    to_port=65535,
+                )
+        else:
+            raise Exception("Cloud provider not yet supported by smoke_rook")
+        return security_group
 
     def execute_ansible_play(self, play_source):
         if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
@@ -692,8 +719,11 @@ class Hardware():
                 "e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
             sshkey_name=self.sshkey_name,
             external_networks=[
-                self.get_ex_network_by_name(config.OS_EXTERNAL_NETWORK)
+                self.get_ex_network_by_name(config.OS_EXTERNAL_NETWORK),
             ],
+            security_groups=[
+                self._ex_security_group,
+            ]
         )
         node.create_and_attach_floating_ip()
         # Wait for node to be ready
@@ -759,6 +789,7 @@ class Hardware():
         # for thread in threads:
         #     thread.join()
 
+        self.libcloud_conn.ex_delete_security_group(self._ex_security_group)
         self.libcloud_conn.delete_key_pair(self._ex_os_key)
 
     def prepare_nodes(self):
