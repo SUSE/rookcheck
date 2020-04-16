@@ -54,6 +54,13 @@ Running tests::
     $ tox -e py37
 
 
+*********************
+Notes/Common Problems
+*********************
+
+ * smoke_rook will remove and manage known host keys on the test runner, which
+   may include removing legitimate entries.
+
 *********
 Structure
 *********

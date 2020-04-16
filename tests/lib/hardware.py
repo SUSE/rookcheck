@@ -26,6 +26,7 @@
 
 from abc import ABC, abstractmethod
 import os
+import subprocess
 import shutil
 import tarfile
 import tempfile
@@ -790,6 +791,24 @@ class Hardware():
         self.libcloud_conn.ex_delete_security_group(self._ex_security_group)
         self.libcloud_conn.delete_key_pair(self._ex_os_key)
 
+    def remove_host_keys(self):
+        # The mitogen plugin does not correctly ignore host key checking, so we
+        # should remove any host keys for our nodes before starting.
+        # The 'ssh' connection imports ssh-keys for us, so as a first step we
+        # run a standard ssh connection to do the imports. We could import the
+        # sshkeys manually first, but we also want to wait on the connection to
+        # be available (in order to even be able to get them).
+        # Therefore simply remove any entries from your known_hosts. It's also
+        # helpful to do this after a build to clean up anything locally.
+        for node in self.nodes.values():
+            self.remove_ssh_key(node._get_ssh_ip())
+
+    def remove_ssh_key(self, ip):
+        subprocess.run(
+            "ssh-keygen -R %s" % ip,
+            shell=True
+        )
+
     def prepare_nodes(self):
         """
         Install any dependencies, set firewall etc.
@@ -799,6 +818,7 @@ class Hardware():
         else:
             raise Exception("OS yet to be implemented/unsupport.")
 
+        self.remove_host_keys()
         r = self.execute_ansible_play(d.bootstrap_play())
 
         if r.host_failed or r.host_unreachable:
