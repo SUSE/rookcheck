@@ -41,9 +41,10 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
 from ansible.inventory.manager import InventoryManager
 from ansible.playbook.play import Play
-from ansible.executor.task_queue_manager import TaskQueueManager
-from ansible.plugins.callback.default import CallbackModule
 from ansible import context as ansible_context
+import ansible.plugins.loader
+import ansible.executor.task_queue_manager
+from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
 import libcloud.security
 from libcloud.compute.deployment import ScriptDeployment
@@ -66,7 +67,9 @@ class Distro(ABC):
 
 
 class SUSE(Distro):
-    def bootstrap_play(self):
+    def wait_for_connection_play(self):
+        # In order to be able to use mitogen we need to install python on the
+        # nodes
         tasks = []
 
         tasks.append(
@@ -80,6 +83,19 @@ class SUSE(Distro):
                 )
             )
         )
+
+        play_source = dict(
+            name="Wait for nodes",
+            hosts="all",
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
+        )
+
+        return play_source
+
+    def bootstrap_play(self):
+        tasks = []
 
         tasks.append(
             dict(
@@ -231,7 +247,7 @@ class SUSE(Distro):
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="free",
+            strategy="mitogen_free",
         )
         return play_source
 
@@ -275,7 +291,7 @@ class AnsibleRunner(object):
         ansible_context.CLIARGS = ImmutableDict(
             connection='ssh', module_path=[''], forks=10,
             gather_facts='no', host_key_checking=False,
-            ssh_host_key_checking=False, use_persistent_connections=True,
+            verbosity=4
         )
 
         # Takes care of finding and reading yaml, json and ini files
@@ -293,7 +309,17 @@ class AnsibleRunner(object):
         self.variable_manager = VariableManager(
             loader=self.loader, inventory=self.inventory)
 
-        # self.download_mitogen(working_dir)
+        mitogen_plugin = self.download_mitogen(working_dir)
+
+        # Hack around loading strategy modules:
+        ansible.executor.task_queue_manager.strategy_loader = \
+            ansible.plugins.loader.PluginLoader(
+                'StrategyModule',
+                'ansible.plugins.strategy',
+                [mitogen_plugin] + C.DEFAULT_STRATEGY_PLUGIN_PATH,
+                'strategy_plugins',
+                required_base_class='StrategyBase',
+            )
 
     def create_inventory(self, nodes, working_dir=None):
         if not working_dir:
@@ -347,7 +373,7 @@ class AnsibleRunner(object):
         tqm = None
         result = -1
         try:
-            tqm = TaskQueueManager(
+            tqm = ansible.executor.task_queue_manager.TaskQueueManager(
                 inventory=self.inventory,
                 variable_manager=self.variable_manager,
                 loader=self.loader,
@@ -380,10 +406,13 @@ class AnsibleRunner(object):
         return results_callback
 
     def download_mitogen(self, working_dir):
+        print("Downloading and unpacking mitogen")
         tar_url = "https://networkgenomics.com/try/mitogen-0.2.9.tar.gz"
         stream = urllib.request.urlopen(tar_url)
         tar_file = tarfile.open(fileobj=stream, mode="r|gz")
         tar_file.extractall(path=working_dir)
+        return os.path.join(
+            working_dir, 'mitogen-0.2.9/ansible_mitogen/plugins/strategy')
 
 
 class Node():
@@ -556,7 +585,9 @@ class Node():
             'ansible_become_user': 'root',
             'ansible_host_key_checking': False,
             'ansible_ssh_host_key_checking': False,
-            'ansible_ssh_common_args': "-o StrictHostKeyChecking=no"
+            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_python_interpreter': '/usr/bin/python3',
         }
 
 
@@ -819,13 +850,17 @@ class Hardware():
             raise Exception("OS yet to be implemented/unsupport.")
 
         self.remove_host_keys()
-        r = self.execute_ansible_play(d.bootstrap_play())
+        r = self.execute_ansible_play(d.wait_for_connection_play())
 
         if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-        return r
+        r = self.execute_ansible_play(d.bootstrap_play())
+
+        if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
 
     def __enter__(self):
         return self

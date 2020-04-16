@@ -39,6 +39,48 @@ class Deploy(ABC):
 class DeploySUSE(Deploy):
     basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 
+    def copy_needed_files(self):
+        # Temporary workaround for mitogen failing to copy files or templates.
+        tasks = []
+
+        service_file = os.path.join(self.basedir, 'assets/kubelet.service')
+        tasks.append(
+            dict(
+                name="Copy kubelet systemd service",
+                action=dict(
+                    module='copy',
+                    args=dict(
+                        src=service_file,
+                        dest="/usr/lib/systemd/system/"
+                    )
+                )
+            )
+        )
+
+        extra_args_file = os.path.join(
+            self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
+        tasks.append(
+            dict(
+                name="Copy config files",
+                action=dict(
+                    module='template',
+                    args=dict(
+                        src=extra_args_file,
+                        dest="/root/KUBELET_EXTRA_ARGS"
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+            name="Copy needed files",
+            hosts="all",
+            tasks=tasks,
+            gather_facts="no",
+            strategy="free",
+        )
+        return play_source
+
     def install_kubeadm_play(self):
         tasks = []
 
@@ -126,19 +168,6 @@ class DeploySUSE(Deploy):
             )
         )
 
-        service_file = os.path.join(self.basedir, 'assets/kubelet.service')
-        tasks.append(
-            dict(
-                name="Set up kubelet service",
-                action=dict(
-                    module='copy',
-                    args=dict(
-                        src=service_file,
-                        dest="/usr/lib/systemd/system/"
-                    )
-                )
-            )
-        )
         tasks.append(
             dict(
                 name="Enable kubelet service",
@@ -163,41 +192,29 @@ class DeploySUSE(Deploy):
             )
         )
 
-        extra_args_file = os.path.join(
-            self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
-        tasks.append(
-            dict(
-                name="Copy config files",
-                action=dict(
-                    module='template',
-                    args=dict(
-                        src=extra_args_file,
-                        dest="/root/KUBELET_EXTRA_ARGS"
-                    )
-                )
-            )
-        )
-
         play_source = dict(
             name="Install kubeadm",
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="free",
+            strategy="mitogen_free",
         )
         return play_source
 
-    def setup_master_play(self):
+    def copy_needed_files_master(self):
+        # Temporary workaround for mitogen failing to copy files or templates.
         tasks = []
 
+        cluster_psp_file = os.path.join(
+            self.basedir, 'assets/cluster-psp.yaml')
         tasks.append(
             dict(
-                name="Create /root/.setup-kube dir",
+                name="Copy cluster-psp.yaml",
                 action=dict(
-                    module='file',
+                    module='copy',
                     args=dict(
-                        path="/root/.setup-kube",
-                        state="directory"
+                        src=cluster_psp_file,
+                        dest="/root/.setup-kube/"
                     )
                 )
             )
@@ -218,16 +235,28 @@ class DeploySUSE(Deploy):
             )
         )
 
-        cluster_psp_file = os.path.join(
-            self.basedir, 'assets/cluster-psp.yaml')
+        play_source = dict(
+            name="Copy needed files for master",
+            hosts="first_master",
+            tasks=tasks,
+            gather_facts="no",
+            # Only one host, so more helpful to see current step with linear
+            # strategy
+            strategy="linear",
+        )
+        return play_source
+
+    def setup_master_play(self):
+        tasks = []
+
         tasks.append(
             dict(
-                name="Copy cluster-psp.yaml",
+                name="Create /root/.setup-kube dir",
                 action=dict(
-                    module='copy',
+                    module='file',
                     args=dict(
-                        src=cluster_psp_file,
-                        dest="/root/.setup-kube/"
+                        path="/root/.setup-kube",
+                        state="directory"
                     )
                 )
             )
@@ -349,7 +378,7 @@ class DeploySUSE(Deploy):
             gather_facts="no",
             # Only one host, so more helpful to see current step with linear
             # strategy
-            strategy="linear",
+            strategy="mitogen_linear",
         )
         return play_source
 
@@ -376,7 +405,7 @@ class DeploySUSE(Deploy):
             hosts="worker",
             tasks=tasks,
             gather_facts="no",
-            strategy="free",
+            strategy="mitogen_free",
         )
         return play_source
 
@@ -404,7 +433,7 @@ class DeploySUSE(Deploy):
             gather_facts="no",
             # Only one host, so more helpful to see current step with linear
             # strategy
-            strategy="linear",
+            strategy="mitogen_linear",
         )
         return play_source
 
@@ -434,33 +463,46 @@ class VanillaKubernetes():
         else:
             raise Exception("OS yet to be implemented/unsupport.")
 
+        r = self.hardware.execute_ansible_play(d.copy_needed_files())
+
+        if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
         r = self.hardware.execute_ansible_play(d.install_kubeadm_play())
 
         if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-        r2 = self.hardware.execute_ansible_play(d.setup_master_play())
+        r = self.hardware.execute_ansible_play(d.copy_needed_files_master())
 
-        if r2.host_failed or r2.host_unreachable:
+        if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
+
+        r = self.hardware.execute_ansible_play(d.setup_master_play())
+
+        if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
         # TODO(jhesketh): Figure out a better way to get ansible output/results
         join_command = \
-            r2.host_ok[list(r2.host_ok.keys())[0]][-1]._result['stdout']
+            r.host_ok[list(r.host_ok.keys())[0]][-1]._result['stdout']
 
-        r3 = self.hardware.execute_ansible_play(
+        r = self.hardware.execute_ansible_play(
             d.join_workers_to_master(join_command))
 
-        if r3.host_failed or r3.host_unreachable:
+        if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-        r4 = self.hardware.execute_ansible_play(
+        r = self.hardware.execute_ansible_play(
             d.fetch_kubeconfig(self.hardware.working_dir))
 
-        if r4.host_failed or r4.host_unreachable:
+        if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
@@ -515,7 +557,8 @@ class VanillaKubernetes():
         return subprocess.run(
             "%s --kubeconfig %s %s"
             % (self.kubectl_exec, self.kubeconfig, command),
-            shell=True, check=True, text=True, capture_output=True
+            shell=True, check=True, universal_newlines=True,
+            capture_output=True
         )
 
     def kubectl_apply(self, yaml_file):

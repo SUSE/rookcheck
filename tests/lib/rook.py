@@ -154,6 +154,8 @@ class BuildRook():
             hosts="all",
             tasks=tasks,
             gather_facts="no",
+            # Temporary workaround for mitogen failing to copy files or
+            # templates.
             strategy="free",
         )
         return play_source
