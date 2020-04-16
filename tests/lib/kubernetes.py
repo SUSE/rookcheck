@@ -554,12 +554,20 @@ class VanillaKubernetes():
 
     def kubectl(self, command):
         # Execute kubectl command
-        return subprocess.run(
-            "%s --kubeconfig %s %s"
-            % (self.kubectl_exec, self.kubeconfig, command),
-            shell=True, check=True, universal_newlines=True,
-            capture_output=True
-        )
+        try:
+            out = subprocess.run(
+                "%s --kubeconfig %s %s"
+                % (self.kubectl_exec, self.kubeconfig, command),
+                shell=True, check=True, universal_newlines=True,
+                capture_output=True
+            )
+        except subprocess.CalledProcessError:
+            print("Command `%s` failed" % command)
+            print("STDOUT:")
+            print(out.stdout)
+            print("STDERR:")
+            print(out.stderr)
+        return out
 
     def kubectl_apply(self, yaml_file):
         return self.kubectl("apply -f %s" % yaml_file)
