@@ -63,6 +63,24 @@ Running tests::
 
     $ tox -e py37
 
+OpenStack provider specifics
+++++++++++++++++++++++++++++
+
+A OpenStack network needs to be available for usage. The network name needs to
+be exported as::
+
+  export OS_NETWORK=my-test-net
+
+If the network is not available, one can be created via::
+
+  _OS_SUBNET=`echo $OS_NETWORK|sed -e 's/-net/-subnet/'`
+  _OS_ROUTER=`echo $OS_NETWORK|sed -e 's/-net/-router/'`
+  openstack network create ${OS_NETWORK}
+  openstack subnet create --network ${OS_NETWORK} --subnet-range 192.168.100.0/24 ${_OS_SUBNET}
+  openstack router create ${_OS_ROUTER}
+  openstack router set --external-gateway floating ${_OS_ROUTER}
+
+where `floating` is the name of the external network.
 
 *********************
 Notes/Common Problems
