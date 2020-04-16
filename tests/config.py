@@ -71,6 +71,5 @@ OS_USERNAME = os.getenv('OS_USERNAME')
 OS_PASSWORD = os.getenv('OS_PASSWORD')
 OS_REGION_NAME = os.getenv('OS_REGION_NAME', None)
 
-# The following needs to be set to a network that has external access and
-# routers in place
-OS_EXTERNAL_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', 'floating')
+# If multiple possible networks exist, you need to specify which one to use:
+OS_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', None)

@@ -429,15 +429,15 @@ class Node():
 
         self._ssh_client = None
 
-    def boot(self, size, image, sshkey_name=None, external_networks=[],
+    def boot(self, size, image, sshkey_name=None, additional_networks=[],
              security_groups=[]):
         if self.libcloud_node:
             raise Exception("A node has already been booted")
 
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
         kwargs = {}
-        if external_networks:
-            kwargs['networks'] = external_networks
+        if additional_networks:
+            kwargs['networks'] = additional_networks
         if sshkey_name:
             kwargs['ex_keyname'] = sshkey_name
         if security_groups:
@@ -746,15 +746,18 @@ class Hardware():
             tags=tags)
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
+        additional_networks = []
+        if config.OS_NETWORK:
+            additional_networks.append(
+                self.get_ex_network_by_name(config.OS_NETWORK)
+            )
         node.boot(
             size=self.get_size_by_name(config.NODE_SIZE),
             # TODO(jhesketh): FIXME
             image=self.get_image_by_name(
                 "e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
             sshkey_name=self.sshkey_name,
-            external_networks=[
-                self.get_ex_network_by_name(config.OS_EXTERNAL_NETWORK),
-            ],
+            additional_networks=additional_networks,
             security_groups=[
                 self._ex_security_group,
             ]
