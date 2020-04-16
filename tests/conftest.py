@@ -15,6 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import pytest
+import threading
 
 from tests.lib.hardware import Hardware
 from tests.lib.kubernetes import VanillaKubernetes
@@ -62,13 +63,17 @@ def rook_cluster():
     kubernetes = VanillaKubernetes(hardware)
     rook_cluster = RookCluster(kubernetes)
 
+    print("Starting rook build in a thread")
+    build_thread = threading.Thread(target=rook_cluster.build_rook)
+    build_thread.start()
+
     # build rook thread
     hardware.boot_nodes()
     hardware.prepare_nodes()
     kubernetes.install_kubernetes()
 
-    # rook build thread join
-    rook_cluster.build_rook()
+    print("Re-joining rook build thread")
+    build_thread.join()
     # NOTE(jhesketh): The upload is very slow.. may want to consider how to do
     #                 this in a thread too but is more complex with ansible.
     rook_cluster.upload_rook_image()
