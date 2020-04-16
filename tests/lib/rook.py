@@ -16,109 +16,14 @@
 
 import os
 import re
+import subprocess
 import time
+import wget
 
 from tests.lib import common
 
 
-class BuildRook():
-    def build_play(self, builddir):
-        tasks = []
-
-        tasks.append(
-            dict(
-                name="Download go",
-                action=dict(
-                    module='get_url',
-                    args=dict(
-                        url="https://dl.google.com/go/"
-                            "go1.13.9.linux-amd64.tar.gz",
-                        dest="%s/go-amd64.tar.gz" % builddir
-                    )
-                )
-            )
-        )
-        tasks.append(
-            dict(
-                name="Unpack go",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="tar -C {builddir} -xzf "
-                            "{builddir}/go-amd64.tar.gz".format(
-                                builddir=builddir)
-                    )
-                )
-            )
-        )
-
-        # TODO(jhesketh): Allow setting rook version
-        tasks.append(
-            dict(
-                name="Checkout rook",
-                action=dict(
-                    module='git',
-                    args=dict(
-                        repo="https://github.com/rook/rook.git",
-                        dest="%s/src/github.com/rook/rook" % builddir,
-                        # version=...
-                    )
-                )
-            )
-        )
-
-        tasks.append(
-            dict(
-                name="Make rook",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
-                            "make --directory="
-                            "'{builddir}/src/github.com/rook/rook' "
-                            "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
-                            "build".format(builddir=builddir)
-                    )
-                )
-            )
-        )
-
-        tasks.append(
-            dict(
-                name="Tag image",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd='docker tag "rook-build/ceph-amd64" '
-                            'rook/ceph:master'
-                    )
-                )
-            )
-        )
-
-        # TODO(jhesketh): build arch may differ
-        tasks.append(
-            dict(
-                name="Save image tar",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd='docker save rook-build/ceph-amd64 | '
-                            'gzip > %s/rook-ceph.tar.gz' % builddir
-                    )
-                )
-            )
-        )
-
-        play_source = dict(
-            name="Build rook",
-            hosts="localhost",
-            tasks=tasks,
-            gather_facts="no",
-            # strategy="free",
-        )
-        return play_source
-
+class UploadRook():
     def upload_image_play(self, buildpath):
         tasks = []
 
@@ -166,6 +71,11 @@ class RookCluster():
         self.kubernetes = kubernetes
         self.toolbox_pod = None
         self.ceph_dir = None
+        self._rook_built = False
+        self.builddir = os.path.join(
+            self.kubernetes.hardware.working_dir, 'rook_build')
+        os.mkdir(self.builddir)
+
         print("rook init")
         print(self)
         print(self.kubernetes)
@@ -188,31 +98,83 @@ class RookCluster():
         self.destroy()
 
     def build_rook(self):
-        self.builddir = os.path.join(
-            self.kubernetes.hardware.working_dir, 'rook_build')
-        os.mkdir(self.builddir)
+        def _execute(command):
+            try:
+                out = subprocess.run(
+                    command,
+                    shell=True, check=True, universal_newlines=True,
+                    capture_output=True
+                )
+            except subprocess.CalledProcessError as e:
+                print("Command `%s` failed" % command)
+                print("STDOUT:")
+                print(e.stdout)
+                print("STDERR:")
+                print(e.stderr)
+                raise
+            return out
 
-        d = BuildRook()
-        r = self.kubernetes.hardware.execute_ansible_play(
-            d.build_play(self.builddir))
+        print("[build_rook] Download go")
+        wget.download(
+            "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
+            os.path.join(self.builddir, 'go-amd64.tar.gz')
+        )
 
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
+        print("[build_rook] Unpack go")
+        _execute(
+            "tar -C %s -xzf %s"
+            % (self.builddir, os.path.join(self.builddir, 'go-amd64.tar.gz'))
+        )
 
-        r2 = self.kubernetes.hardware.execute_ansible_play(
-            d.upload_image_play(self.builddir))
+        # TODO(jhesketh): Allow setting rook version
+        print("[build_rook] Checkout rook")
+        _execute(
+            "mkdir -p %s"
+            % os.path.join(self.builddir, 'src/github.com/rook/rook')
+        )
+        _execute(
+            "git clone https://github.com/rook/rook.git %s"
+            % os.path.join(self.builddir, 'src/github.com/rook/rook')
+        )
 
-        if r2.host_failed or r2.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
+        print("[build_rook] Make rook")
+        _execute(
+            "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
+            "make --directory='{builddir}/src/github.com/rook/rook' "
+            "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
+            "build".format(builddir=self.builddir)
+        )
+
+        print("[build_rook] Tag image")
+        _execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
+
+        print("[build_rook] Save image tar")
+        # TODO(jhesketh): build arch may differ
+        _execute(
+            "docker save rook-build/ceph-amd64 | gzip > %s"
+            % os.path.join(self.builddir, 'rook-ceph.tar.gz')
+        )
 
         self.ceph_dir = os.path.join(
             self.builddir,
             'src/github.com/rook/rook/cluster/examples/kubernetes/ceph'
         )
 
+        self._rook_built = True
+
+    def upload_rook_image(self):
+        d = UploadRook()
+
+        r = self.kubernetes.hardware.execute_ansible_play(
+            d.upload_image_play(self.builddir))
+
+        if r.host_failed or r.host_unreachable:
+            # TODO(jhesketh): Provide some more useful feedback and/or checking
+            raise Exception("One or more hosts failed")
+
     def install_rook(self):
+        if not self._rook_built:
+            raise Exception("Rook must be built before being installed")
         # TODO(jhesketh): We may want to provide ways for tests to override
         #                 these
         self.kubernetes.kubectl_apply(

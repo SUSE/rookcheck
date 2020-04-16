@@ -45,9 +45,37 @@ def kubernetes(hardware):
 
 
 @pytest.fixture(scope="module")
-def rook_cluster(kubernetes):
+def linear_rook_cluster(kubernetes):
     # (See above re implementation options)
+    # This method shows how fixture inheritance can be used to manage the
+    # infrastructure. It also builds things in order, the below rook_cluster
+    # fixture is preferred as it will build rook locally in a thread while
+    # waiting on the infrastructure
     with RookCluster(kubernetes) as rook_cluster:
         rook_cluster.build_rook()
         rook_cluster.install_rook()
         yield rook_cluster
+
+@pytest.fixture(scope="module")
+def rook_cluster():
+    hardware = Hardware()
+    kubernetes = VanillaKubernetes(hardware)
+    rook_cluster = RookCluster(kubernetes)
+
+    # build rook thread
+    hardware.boot_nodes()
+    hardware.prepare_nodes()
+    kubernetes.install_kubernetes()
+
+    # rook build thread join
+    rook_cluster.build_rook()
+    # NOTE(jhesketh): The upload is very slow.. may want to consider how to do
+    #                 this in a thread too but is more complex with ansible.
+    rook_cluster.upload_rook_image()
+    rook_cluster.install_rook()
+
+    yield rook_cluster
+
+    rook_cluster.destroy()
+    kubernetes.destroy()
+    hardware.destroy()
