@@ -46,8 +46,18 @@ You will need to configure the platform that the tests are ran against::
     vim my.env # Make any changes needed
     source my.env
 
-If you are using OpenStack you can use your openrc for most of the
-configuratoin.
+When using the `OPENSTACK` provider and a OpenStack rc config file (eg. openrc.sh),
+some mappings are needed to set the correct config values for smoke_rook::
+
+  source openrc.sh
+  export OS_USER_DOMAIN=$OS_USER_DOMAIN_NAME
+  export OS_PROJECT=$OS_PROJECT_NAME
+  export OS_REGION=$OS_REGION_NAME
+
+Also the `OS_AUTH_URL` should not contain any version (or the full path,
+see apache-libcloud docs)::
+
+  export OS_AUTH_URL=`echo $OS_AUTH_URL|sed -e 's/\/v3.*//'`
 
 Running tests::
 
