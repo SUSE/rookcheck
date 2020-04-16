@@ -561,12 +561,13 @@ class VanillaKubernetes():
                 shell=True, check=True, universal_newlines=True,
                 capture_output=True
             )
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
             print("Command `%s` failed" % command)
             print("STDOUT:")
-            print(out.stdout)
+            print(e.stdout)
             print("STDERR:")
-            print(out.stderr)
+            print(e.stderr)
+            raise
         return out
 
     def kubectl_apply(self, yaml_file):
