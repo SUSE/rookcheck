@@ -72,4 +72,4 @@ OS_PASSWORD = os.getenv('OS_PASSWORD')
 OS_REGION_NAME = os.getenv('OS_REGION_NAME', None)
 
 # If multiple possible networks exist, you need to specify which one to use:
-OS_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', None)
+OS_INTERNAL_NETWORK = os.getenv('OS_INTERNAL_NETWORK', None)

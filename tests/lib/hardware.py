@@ -747,9 +747,9 @@ class Hardware():
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
         additional_networks = []
-        if config.OS_NETWORK:
+        if config.OS_INTERNAL_NETWORK:
             additional_networks.append(
-                self.get_ex_network_by_name(config.OS_NETWORK)
+                self.get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
             )
         node.boot(
             size=self.get_size_by_name(config.NODE_SIZE),
