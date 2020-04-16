@@ -52,10 +52,12 @@ def test_file_creation(rook_cluster):
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=0 -n rook-ceph")
 
-    time.sleep(3)
+    time.sleep(5)
 
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=1 -n rook-ceph")
+
+    time.sleep(5)
 
     # Mount myfs again and output the contents
     result = rook_cluster.kubernetes.execute_in_pod_by_label("""
