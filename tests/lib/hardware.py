@@ -647,7 +647,8 @@ class Hardware():
                 secure=config.VERIFY_SSL_CERT,
             )
         else:
-            raise Exception("Cloud provider not yet supported by smoke_rook")
+            raise Exception("Cloud provider '{}' not yet supported by "
+                            "smoke_rook".format(config.CLOUD_PROVIDER))
         return connection
 
     def deployment_steps(self):
