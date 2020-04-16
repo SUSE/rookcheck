@@ -457,7 +457,8 @@ class Node():
 
     def create_and_attach_floating_ip(self):
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
-        floating_ip = self.libcloud_conn.ex_create_floating_ip('floating')
+        floating_ip = self.libcloud_conn.ex_create_floating_ip(
+            config.OS_EXTERNAL_NETWORK)
 
         print("Created floating IP: ")
         print(floating_ip)

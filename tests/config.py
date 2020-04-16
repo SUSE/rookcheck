@@ -73,3 +73,6 @@ OS_REGION_NAME = os.getenv('OS_REGION_NAME', None)
 
 # If multiple possible networks exist, you need to specify which one to use:
 OS_INTERNAL_NETWORK = os.getenv('OS_INTERNAL_NETWORK', None)
+
+# The external network that smoke-rook can create floating ip's on
+OS_EXTERNAL_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', 'floating')
