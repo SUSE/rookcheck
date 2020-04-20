@@ -136,6 +136,11 @@ class RookCluster():
             "git clone https://github.com/rook/rook.git %s"
             % os.path.join(self.builddir, 'src/github.com/rook/rook')
         )
+        # TODO(jhesketh): Allow testing various versions of rook
+        _execute(
+            "pushd %s && git checkout v1.3.1 && popd"
+            % os.path.join(self.builddir, 'src/github.com/rook/rook')
+        )
 
         print("[build_rook] Make rook")
         _execute(
