@@ -59,28 +59,24 @@ def linear_rook_cluster(kubernetes):
 
 @pytest.fixture(scope="module")
 def rook_cluster():
-    hardware = Hardware()
-    kubernetes = VanillaKubernetes(hardware)
-    rook_cluster = RookCluster(kubernetes)
+    with Hardware() as hardware:
+        with VanillaKubernetes(hardware) as kubernetes:
+            with RookCluster(kubernetes) as rook_cluster:
+                print("Starting rook build in a thread")
+                build_thread = threading.Thread(target=rook_cluster.build_rook)
+                build_thread.start()
 
-    print("Starting rook build in a thread")
-    build_thread = threading.Thread(target=rook_cluster.build_rook)
-    build_thread.start()
+                # build rook thread
+                hardware.boot_nodes()
+                hardware.prepare_nodes()
+                kubernetes.install_kubernetes()
 
-    # build rook thread
-    hardware.boot_nodes()
-    hardware.prepare_nodes()
-    kubernetes.install_kubernetes()
+                print("Re-joining rook build thread")
+                build_thread.join()
+                # NOTE(jhesketh): The upload is very slow.. may want to
+                #                 consider how to do this in a thread too but
+                #                 is more complex with ansible.
+                rook_cluster.upload_rook_image()
+                rook_cluster.install_rook()
 
-    print("Re-joining rook build thread")
-    build_thread.join()
-    # NOTE(jhesketh): The upload is very slow.. may want to consider how to do
-    #                 this in a thread too but is more complex with ansible.
-    rook_cluster.upload_rook_image()
-    rook_cluster.install_rook()
-
-    yield rook_cluster
-
-    rook_cluster.destroy()
-    kubernetes.destroy()
-    hardware.destroy()
+                yield rook_cluster
