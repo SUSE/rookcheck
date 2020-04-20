@@ -205,6 +205,19 @@ class DeploySUSE(Deploy):
         # Temporary workaround for mitogen failing to copy files or templates.
         tasks = []
 
+        tasks.append(
+            dict(
+                name="Create /root/.setup-kube dir",
+                action=dict(
+                    module='file',
+                    args=dict(
+                        path="/root/.setup-kube",
+                        state="directory"
+                    )
+                )
+            )
+        )
+
         cluster_psp_file = os.path.join(
             self.basedir, 'assets/cluster-psp.yaml')
         tasks.append(
@@ -248,19 +261,6 @@ class DeploySUSE(Deploy):
 
     def setup_master_play(self):
         tasks = []
-
-        tasks.append(
-            dict(
-                name="Create /root/.setup-kube dir",
-                action=dict(
-                    module='file',
-                    args=dict(
-                        path="/root/.setup-kube",
-                        state="directory"
-                    )
-                )
-            )
-        )
 
         # init config file has extra API server args to enable psp access
         # control
