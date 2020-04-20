@@ -156,7 +156,7 @@ class RookCluster():
         print("[build_rook] Save image tar")
         # TODO(jhesketh): build arch may differ
         _execute(
-            "docker save rook-build/ceph-amd64 | gzip > %s"
+            "docker save rook/ceph:master | gzip > %s"
             % os.path.join(self.builddir, 'rook-ceph.tar.gz')
         )
 
