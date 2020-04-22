@@ -194,7 +194,8 @@ class RookCluster():
             os.path.join(self.ceph_dir, 'cluster.yaml'))
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'toolbox.yaml'))
-        time.sleep(3)
+
+        time.sleep(10)
 
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'csi/rbd/storageclass.yaml'))

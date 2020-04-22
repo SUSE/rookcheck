@@ -57,6 +57,7 @@ def linear_rook_cluster(kubernetes):
         rook_cluster.install_rook()
         yield rook_cluster
 
+
 @pytest.fixture(scope="module")
 def rook_cluster():
     with Hardware() as hardware:

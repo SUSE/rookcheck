@@ -481,7 +481,6 @@ class VanillaKubernetes():
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
 
-
         r = self.hardware.execute_ansible_play(d.setup_master_play())
 
         if r.host_failed or r.host_unreachable:
