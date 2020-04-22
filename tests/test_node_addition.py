@@ -23,4 +23,3 @@ def test_debug_scope_order(rook_cluster):
 
     with os.fdopen(os.dup(2), "r") as stdin:
         return stdin.readline()
-
