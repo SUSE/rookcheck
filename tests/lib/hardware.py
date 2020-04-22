@@ -567,8 +567,7 @@ class Node():
             )
             self._ssh_client.connect(
                 hostname=self._get_ssh_ip,
-                # FIXME(jhesketh): Set username depending on OS
-                username="opensuse",
+                username=config.NODE_IMAGE_USER,
                 pkey=self.private_key,
                 allow_agent=False,
                 look_for_keys=False,
@@ -576,20 +575,23 @@ class Node():
         return self._ssh_client.exec_command(command)
 
     def ansible_inventory_vars(self):
-        return {
+        vars = {
             'ansible_host': self._get_ssh_ip(),
             # FIXME(jhesketh): Set username depending on OS
-            'ansible_user': 'opensuse',
+            'ansible_user': config.NODE_IMAGE_USER,
             'ansible_ssh_private_key_file': self.private_key,
-            'ansible_become': True,
-            'ansible_become_method': 'sudo',
-            'ansible_become_user': 'root',
             'ansible_host_key_checking': False,
             'ansible_ssh_host_key_checking': False,
             'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
             'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
             'ansible_python_interpreter': '/usr/bin/python3',
+            'ansible_become': False,
         }
+        if config.NODE_IMAGE_USER != "root":
+            vars['ansible_become'] = True
+            vars['ansible_become_method'] = 'sudo'
+            vars['ansible_become_user'] = 'root'
+        return vars
 
 
 class Hardware():
@@ -656,11 +658,11 @@ class Hardware():
         """ The base deployment steps to perform on each node """
         yield ScriptDeployment('echo "hi" && touch ~/i_was_here')
 
-    def get_image_by_name(self, name):
-        if name in self._image_cache:
-            return self._image_cache[name]
-        self._image_cache[name] = self.libcloud_conn.get_image(name)
-        return self._image_cache[name]
+    def get_image_by_id(self, id):
+        if id in self._image_cache:
+            return self._image_cache[id]
+        self._image_cache[id] = self.libcloud_conn.get_image(id)
+        return self._image_cache[id]
 
     def get_size_by_name(self, name=None):
         if self._size_cache:
@@ -755,9 +757,7 @@ class Hardware():
             )
         node.boot(
             size=self.get_size_by_name(config.NODE_SIZE),
-            # TODO(jhesketh): FIXME
-            image=self.get_image_by_name(
-                "e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
+            image=self.get_image_by_id(config.NODE_IMAGE_ID),
             sshkey_name=self.sshkey_name,
             additional_networks=additional_networks,
             security_groups=[

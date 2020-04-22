@@ -32,8 +32,14 @@ CLOUD_PROVIDER = os.getenv('CLOUD_PROVIDER', 'OPENSTACK')
 # Can safely be commented-out for local libvirt use
 CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % getpass.getuser())
 
-# The node image by name known to the provider
-NODE_IMAGE = os.getenv('NODE_IMAGE', 'openSUSE-Leap-15.1-OpenStack')
+# The node image by iID known to the provider
+# NOTE(jhesketh): The libcloud OpenStack driver only supports finding images by
+#                 ID
+NODE_IMAGE_ID = os.getenv('NODE_IMAGE_ID',
+                          'e9de104d-f03a-4d9f-8681-e5dd4e9cede7')
+
+# The user to SSH into (must be root or sudoer)
+NODE_IMAGE_USER = os.getenv('NODE_IMAGE_USER', 'opensuse')
 
 # The node size or flavour name as known by the provider
 NODE_SIZE = os.getenv('NODE_SIZE', 'm1.medium')
