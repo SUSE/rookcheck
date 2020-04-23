@@ -703,7 +703,7 @@ class Hardware(HardwareBase):
     def _get_image_by_id(self, id):
         if id in self._image_cache:
             return self._image_cache[id]
-        self._image_cache[id] = self.libcloud_conn.get_image(id)
+        self._image_cache[id] = self.conn.get_image(id)
         return self._image_cache[id]
 
     def _get_size_by_name(self, name=None):
