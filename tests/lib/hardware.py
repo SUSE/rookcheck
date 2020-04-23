@@ -47,7 +47,6 @@ import ansible.executor.task_queue_manager
 from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
 import libcloud.security
-from libcloud.compute.deployment import ScriptDeployment
 from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
@@ -592,14 +591,17 @@ class Node():
         }
 
 
-class Hardware():
+class HardwareBase(ABC):
+    """
+    Base Hardware class
+    """
     def __init__(self):
         # Boot nodes
         print("boot nodes")
         print(self)
         self.nodes = {}
         self.hardware_uuid = str(uuid.uuid4())[:8]
-        self.libcloud_conn = self.get_driver_connection()
+        self.conn = self.get_connection()
 
         self._image_cache = {}
         self._size_cache = {}
@@ -613,84 +615,11 @@ class Hardware():
         self.sshkey_name = None
         self.pubkey = None
         self.private_key = None
-        self._ex_os_key = self.generate_keys()
-        self._ex_security_group = self.create_security_group()
 
         self.ansible_runner = None
         self._ansible_runner_nodes = None
 
-        print(self.pubkey)
-        print(self.private_key)
-
-    def get_driver_connection(self):
-        """ Get a libcloud connection object for the configured driver """
-        connection = None
-        if config.CLOUD_PROVIDER == 'OPENSTACK':
-            # TODO(jhesketh): Provide a sensible way to allow configuration
-            #                 of extended options on a per-provider level.
-            #                 For example, the setting of OpenStack networks.
-            OpenStackDriver = get_driver(Provider.OPENSTACK)
-
-            # Strip any path from OS_AUTH_URL to be compatable with libcloud's
-            # auth_verion.
-            auth_url_parts = urlparse(config.OS_AUTH_URL)
-            auth_url = \
-                "%s://%s" % (auth_url_parts.scheme, auth_url_parts.netloc)
-            connection = OpenStackDriver(
-                config.OS_USERNAME,
-                config.OS_PASSWORD,
-                ex_force_auth_url=auth_url,
-                ex_force_auth_version=config.OS_AUTH_VERSION,
-                ex_domain_name=config.OS_USER_DOMAIN_NAME,
-                ex_tenant_name=config.OS_PROJECT_NAME,
-                ex_tenant_domain_id=config.OS_PROJECT_DOMAIN_ID,
-                ex_force_service_region=config.OS_REGION_NAME,
-                secure=config.VERIFY_SSL_CERT,
-            )
-        else:
-            raise Exception("Cloud provider '{}' not yet supported by "
-                            "smoke_rook".format(config.CLOUD_PROVIDER))
-        return connection
-
-    def deployment_steps(self):
-        """ The base deployment steps to perform on each node """
-        yield ScriptDeployment('echo "hi" && touch ~/i_was_here')
-
-    def get_image_by_name(self, name):
-        if name in self._image_cache:
-            return self._image_cache[name]
-        self._image_cache[name] = self.libcloud_conn.get_image(name)
-        return self._image_cache[name]
-
-    def get_size_by_name(self, name=None):
-        if self._size_cache:
-            sizes = self._size_cache
-        else:
-            sizes = self.libcloud_conn.list_sizes()
-            self._size_cache = sizes
-
-        if name:
-            for node_size in sizes:
-                if node_size.name == name:
-                    return node_size
-
-        return None
-
-    def get_ex_network_by_name(self, name=None):
-        # TODO(jhesketh): Create a network instead
-        if self._ex_network_cache:
-            networks = self._ex_network_cache
-        else:
-            networks = self.libcloud_conn.ex_list_networks()
-            self._ex_network_cache = networks
-
-        if name:
-            for network in networks:
-                if network.name == name:
-                    return network
-
-        return None
-
+    @abstractmethod
     def generate_keys(self):
         """
         Generatees a public and private key
@@ -705,32 +634,17 @@ class Hardware():
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
 
-        os_key = self.libcloud_conn.import_key_pair_from_string(
-            self.sshkey_name, self.pubkey)
+    @abstractmethod
+    def get_connection(self):
+        pass
 
-        return os_key
+    @abstractmethod
+    def boot_nodes(self, masters=1, workers=2, offset=0):
+        pass
 
-    def create_security_group(self):
-        """
-        Creates a security group used for this set of hardware. For now,
-        all ports are open.
-        """
-        if config.CLOUD_PROVIDER == 'OPENSTACK':
-            security_group = self.libcloud_conn.ex_create_security_group(
-                name=("%s%s_security_group"
-                      % (config.CLUSTER_PREFIX, self.hardware_uuid)),
-                description="Permissive firewall for rookci testing"
-            )
-            for protocol in ["TCP", "UDP"]:
-                self.libcloud_conn.ex_create_security_group_rule(
-                    security_group,
-                    ip_protocol=protocol,
-                    from_port=1,
-                    to_port=65535,
-                )
-        else:
-            raise Exception("Cloud provider not yet supported by smoke_rook")
-        return security_group
+    @abstractmethod
+    def prepare_nodes(self):
+        pass
 
     def execute_ansible_play(self, play_source):
         if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
@@ -741,9 +655,109 @@ class Hardware():
 
         return self.ansible_runner.run_play(play_source)
 
-    def create_node(self, node_name, tags=[]):
+
+class Hardware(HardwareBase):
+    def __init__(self):
+        super().__init__()
+        self._ex_os_key = self.generate_keys()
+        self._ex_security_group = self._create_security_group()
+
+        print(self.pubkey)
+        print(self.private_key)
+
+    def generate_keys(self):
+        super().generate_keys()
+        os_key = self.conn.import_key_pair_from_string(
+            self.sshkey_name, self.pubkey)
+
+        return os_key
+
+    def get_connection(self):
+        """ Get a libcloud connection object for the configured driver """
+        connection = None
+        # TODO(jhesketh): Provide a sensible way to allow configuration
+        #                 of extended options on a per-provider level.
+        #                 For example, the setting of OpenStack networks.
+        OpenStackDriver = get_driver(Provider.OPENSTACK)
+
+        # Strip any path from OS_AUTH_URL to be compatable with libcloud's
+        # auth_verion.
+        auth_url_parts = urlparse(config.OS_AUTH_URL)
+        auth_url = \
+            "%s://%s" % (auth_url_parts.scheme, auth_url_parts.netloc)
+        connection = OpenStackDriver(
+            config.OS_USERNAME,
+            config.OS_PASSWORD,
+            ex_force_auth_url=auth_url,
+            ex_force_auth_version=config.OS_AUTH_VERSION,
+            ex_domain_name=config.OS_USER_DOMAIN_NAME,
+            ex_tenant_name=config.OS_PROJECT_NAME,
+            ex_tenant_domain_id=config.OS_PROJECT_DOMAIN_ID,
+            ex_force_service_region=config.OS_REGION_NAME,
+            secure=config.VERIFY_SSL_CERT,
+        )
+        return connection
+
+    def _get_image_by_name(self, name):
+        if name in self._image_cache:
+            return self._image_cache[name]
+        self._image_cache[name] = self.conn.get_image(name)
+        return self._image_cache[name]
+
+    def _get_size_by_name(self, name=None):
+        if self._size_cache:
+            sizes = self._size_cache
+        else:
+            sizes = self.conn.list_sizes()
+            self._size_cache = sizes
+
+        if name:
+            for node_size in sizes:
+                if node_size.name == name:
+                    return node_size
+
+        return None
+
+    def _get_ex_network_by_name(self, name=None):
+        # TODO(jhesketh): Create a network instead
+        if self._ex_network_cache:
+            networks = self._ex_network_cache
+        else:
+            networks = self.conn.ex_list_networks()
+            self._ex_network_cache = networks
+
+        if name:
+            for network in networks:
+                if network.name == name:
+                    return network
+
+        return None
+
+    def _create_security_group(self):
+        """
+        Creates a security group used for this set of hardware. For now,
+        all ports are open.
+        """
+        if config.CLOUD_PROVIDER == 'OPENSTACK':
+            security_group = self.conn.ex_create_security_group(
+                name=("%s%s_security_group"
+                      % (config.CLUSTER_PREFIX, self.hardware_uuid)),
+                description="Permissive firewall for rookci testing"
+            )
+            for protocol in ["TCP", "UDP"]:
+                self.conn.ex_create_security_group_rule(
+                    security_group,
+                    ip_protocol=protocol,
+                    from_port=1,
+                    to_port=65535,
+                )
+        else:
+            raise Exception("Cloud provider not yet supported by smoke_rook")
+        return security_group
+
+    def _create_node(self, node_name, tags=[]):
         node = Node(
-            libcloud_conn=self.libcloud_conn,
+            libcloud_conn=self.conn,
             name=node_name, pubkey=self.pubkey, private_key=self.private_key,
             tags=tags)
         # TODO(jhesketh): Create fixed network as part of build and security
@@ -751,12 +765,12 @@ class Hardware():
         additional_networks = []
         if config.OS_INTERNAL_NETWORK:
             additional_networks.append(
-                self.get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
+                self._get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
             )
         node.boot(
-            size=self.get_size_by_name(config.NODE_SIZE),
+            size=self._get_size_by_name(config.NODE_SIZE),
             # TODO(jhesketh): FIXME
-            image=self.get_image_by_name(
+            image=self._get_image_by_name(
                 "e9de104d-f03a-4d9f-8681-e5dd4e9cede7"),
             sshkey_name=self.sshkey_name,
             additional_networks=additional_networks,
@@ -777,8 +791,8 @@ class Hardware():
         Start them at a number offset
         """
         # Warm the caches
-        self.get_ex_network_by_name()
-        self.get_size_by_name()
+        self._get_ex_network_by_name()
+        self._get_size_by_name()
         if masters:
             self._boot_nodes(['master', 'first_master'], 1, offset=offset,
                              suffix='master_')
@@ -793,7 +807,7 @@ class Hardware():
             node_name = "%s%s_%s%d" % (
                 config.CLUSTER_PREFIX, self.hardware_uuid, suffix, i+offset)
             thread = threading.Thread(
-                target=self.create_node, args=(node_name, tags))
+                target=self._create_node, args=(node_name, tags))
             threads.append(thread)
             thread.start()
 
@@ -824,8 +838,8 @@ class Hardware():
         # for thread in threads:
         #     thread.join()
 
-        self.libcloud_conn.ex_delete_security_group(self._ex_security_group)
-        self.libcloud_conn.delete_key_pair(self._ex_os_key)
+        self.conn.ex_delete_security_group(self._ex_security_group)
+        self.conn.delete_key_pair(self._ex_os_key)
 
     def remove_host_keys(self):
         # The mitogen plugin does not correctly ignore host key checking, so we
