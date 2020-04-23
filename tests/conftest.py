@@ -17,9 +17,16 @@
 import pytest
 import threading
 
-from tests.lib.hardware import Hardware
+from tests import config
 from tests.lib.kubernetes import VanillaKubernetes
 from tests.lib.rook import RookCluster
+
+
+if config.CLOUD_PROVIDER == 'OPENSTACK':
+    from tests.lib.hardware import Hardware as Hardware
+else:
+    raise Exception("Cloud provider '{}' not yet supported by "
+                    "smoke_rook".format(config.CLOUD_PROVIDER))
 
 
 @pytest.fixture(scope="module")
