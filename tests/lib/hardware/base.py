@@ -47,9 +47,6 @@ class HardwareBase(ABC):
         self.hardware_uuid = str(uuid.uuid4())[:8]
         self.conn = self.get_connection()
 
-        self._image_cache = {}
-        self._size_cache = {}
-
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
         self.working_dir = tempfile.mkdtemp(
