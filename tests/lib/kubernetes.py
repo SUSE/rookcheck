@@ -458,7 +458,7 @@ class VanillaKubernetes():
         pass
 
     def install_kubernetes(self):
-        if config.DISTRO == 'SUSE':
+        if config.DISTRO == 'openSUSE_k8s':
             d = DeploySUSE()
         else:
             raise Exception("OS yet to be implemented/unsupport.")

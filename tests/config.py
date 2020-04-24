@@ -45,7 +45,8 @@ NODE_IMAGE_USER = os.getenv('NODE_IMAGE_USER', 'opensuse')
 NODE_SIZE = os.getenv('NODE_SIZE', 'm1.medium')
 
 # The distro used on the underlying nodes
-DISTRO = os.getenv('DISTRO', 'SUSE')
+# Available options: openSUSE_k8s, SLES_CaaSP
+DISTRO = os.getenv('DISTRO', 'openSUSE_k8s')
 
 # The type of kubernetes deployment
 # NOTE(jhesketh): Probably don't need this...
