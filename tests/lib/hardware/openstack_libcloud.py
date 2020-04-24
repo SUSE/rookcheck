@@ -231,6 +231,9 @@ class Hardware(HardwareBase):
         self._ex_security_group = self._create_security_group()
         self._ex_network_cache = {}
 
+        self._image_cache = {}
+        self._size_cache = {}
+
         print(self.pubkey)
         print(self.private_key)
 
