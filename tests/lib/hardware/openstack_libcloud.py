@@ -39,8 +39,8 @@ from tests import config
 
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
-if config.DISTRO == 'SUSE':
-    from tests.lib.distro.suse import SUSE as Distro
+if config.DISTRO == 'openSUSE_k8s':
+    from tests.lib.distro.opensuse import openSUSE_k8s as Distro
 else:
     raise Exception('Unknown distro {}'.format(config.DISTRO))
 
