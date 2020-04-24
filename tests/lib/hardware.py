@@ -607,7 +607,6 @@ class HardwareBase(ABC):
 
         self._image_cache = {}
         self._size_cache = {}
-        self._ex_network_cache = {}
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
@@ -663,6 +662,7 @@ class Hardware(HardwareBase):
         super().__init__()
         self._ex_os_key = self.generate_keys()
         self._ex_security_group = self._create_security_group()
+        self._ex_network_cache = {}
 
         print(self.pubkey)
         print(self.private_key)
@@ -703,7 +703,7 @@ class Hardware(HardwareBase):
     def _get_image_by_id(self, id):
         if id in self._image_cache:
             return self._image_cache[id]
-        self._image_cache[id] = self.libcloud_conn.get_image(id)
+        self._image_cache[id] = self.conn.get_image(id)
         return self._image_cache[id]
 
     def _get_size_by_name(self, name=None):
