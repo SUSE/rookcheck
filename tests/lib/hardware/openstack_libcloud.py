@@ -34,7 +34,7 @@ from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
 from urllib.parse import urlparse
 
-from tests.lib.hardware.base import HardwareBase
+from tests.lib.hardware.base import HardwareBase, NodeBase
 from tests import config
 
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
@@ -45,12 +45,13 @@ else:
     raise Exception('Unknown distro {}'.format(config.DISTRO))
 
 
-class Node():
-    def __init__(self, libcloud_conn, name, pubkey=None, private_key=None,
+class Node(NodeBase):
+    def __init__(self, conn, name, pubkey=None, private_key=None,
                  tags=[]):
-        self.name = name
-        self.libcloud_conn = libcloud_conn
+        super().__init__(name)
+        self.conn = conn
         self.libcloud_node = None
+
         self.floating_ips = []
         self.volumes = []
         self.tags = tags
@@ -74,7 +75,7 @@ class Node():
             kwargs['ex_security_groups'] = security_groups
 
         # Can't use deploy_node because there is no public ip yet
-        self.libcloud_node = self.libcloud_conn.create_node(
+        self.libcloud_node = self.conn.create_node(
             name=self.name,
             size=size,
             image=image,
@@ -87,7 +88,7 @@ class Node():
 
     def create_and_attach_floating_ip(self):
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
-        floating_ip = self.libcloud_conn.ex_create_floating_ip(
+        floating_ip = self.conn.ex_create_floating_ip(
             config.OS_EXTERNAL_NETWORK)
 
         print("Created floating IP: ")
@@ -96,19 +97,19 @@ class Node():
 
         # Wait until the node is running before assigning IP
         self.wait_until_state()
-        self.libcloud_conn.ex_attach_floating_ip_to_node(
+        self.conn.ex_attach_floating_ip_to_node(
             self.libcloud_node, floating_ip)
 
     def create_and_attach_volume(self, size=10):
         vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
-        volume = self.libcloud_conn.create_volume(size=size, name=vol_name)
+        volume = self.conn.create_volume(size=size, name=vol_name)
         print("Created volume: ")
         print(volume)
 
         # Wait for volume to be ready before attaching
         self.wait_until_volume_state(volume.uuid)
 
-        self.libcloud_conn.attach_volume(
+        self.conn.attach_volume(
             self.libcloud_node, volume, device=None)
         self.volumes.append(volume)
 
@@ -118,7 +119,7 @@ class Node():
         # `state` can be StorageVolumeState, "any", or None (for not existant)
         # `state` can also be a list of NodeState's, any matching will pass
         for _ in range(int(timeout / interval)):
-            volumes = self.libcloud_conn.list_volumes()
+            volumes = self.conn.list_volumes()
             for volume in volumes:
                 if volume.uuid == volume_uuid:
                     if state == "any":
@@ -144,7 +145,7 @@ class Node():
         if not uuid:
             uuid = self.libcloud_node.uuid
         for _ in range(int(timeout / interval)):
-            nodes = self.libcloud_conn.list_nodes()
+            nodes = self.conn.list_nodes()
             for node in nodes:
                 if node.uuid == uuid:
                     if state == "any":
@@ -176,7 +177,7 @@ class Node():
         for volume in self.volumes:
             volume.destroy()
 
-    def _get_ssh_ip(self):
+    def get_ssh_ip(self):
         """
         Figure out which IP to use to SSH over
         """
@@ -196,7 +197,7 @@ class Node():
                 AutoAddPolicy()
             )
             self._ssh_client.connect(
-                hostname=self._get_ssh_ip,
+                hostname=self.get_ssh_ip,
                 username=config.NODE_IMAGE_USER,
                 pkey=self.private_key,
                 allow_agent=False,
@@ -206,7 +207,7 @@ class Node():
 
     def ansible_inventory_vars(self):
         vars = {
-            'ansible_host': self._get_ssh_ip(),
+            'ansible_host': self.get_ssh_ip(),
             # FIXME(jhesketh): Set username depending on OS
             'ansible_user': config.NODE_IMAGE_USER,
             'ansible_ssh_private_key_file': self.private_key,
@@ -329,7 +330,7 @@ class Hardware(HardwareBase):
 
     def _create_node(self, node_name, tags=[]):
         node = Node(
-            libcloud_conn=self.conn,
+            conn=self.conn,
             name=node_name, pubkey=self.pubkey, private_key=self.private_key,
             tags=tags)
         # TODO(jhesketh): Create fixed network as part of build and security
@@ -421,7 +422,7 @@ class Hardware(HardwareBase):
         # Therefore simply remove any entries from your known_hosts. It's also
         # helpful to do this after a build to clean up anything locally.
         for node in self.nodes.values():
-            self.remove_ssh_key(node._get_ssh_ip())
+            self.remove_ssh_key(node.get_ssh_ip())
 
     def remove_ssh_key(self, ip):
         subprocess.run(
