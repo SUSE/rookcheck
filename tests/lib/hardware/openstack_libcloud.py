@@ -205,25 +205,6 @@ class Node(NodeBase):
             )
         return self._ssh_client.exec_command(command)
 
-    def ansible_inventory_vars(self):
-        vars = {
-            'ansible_host': self.get_ssh_ip(),
-            # FIXME(jhesketh): Set username depending on OS
-            'ansible_user': config.NODE_IMAGE_USER,
-            'ansible_ssh_private_key_file': self.private_key,
-            'ansible_host_key_checking': False,
-            'ansible_ssh_host_key_checking': False,
-            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
-            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
-            'ansible_python_interpreter': '/usr/bin/python3',
-            'ansible_become': False,
-        }
-        if config.NODE_IMAGE_USER != "root":
-            vars['ansible_become'] = True
-            vars['ansible_become_method'] = 'sudo'
-            vars['ansible_become_user'] = 'root'
-        return vars
-
 
 class Hardware(HardwareBase):
     def __init__(self):
