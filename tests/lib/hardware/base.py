@@ -27,6 +27,7 @@
 from abc import ABC, abstractmethod
 import os
 import tempfile
+from typing import Dict, Any
 import uuid
 
 import paramiko.rsakey
@@ -79,7 +80,7 @@ class HardwareBase(ABC):
         pass
 
     @abstractmethod
-    def boot_nodes(self, masters=1, workers=2, offset=0):
+    def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
         pass
 
     @abstractmethod
@@ -100,17 +101,18 @@ class NodeBase(ABC):
     """
     Base class for nodes
     """
-    def __init__(self, name):
+    def __init__(self, name: str, private_key: str):
         self.name = name
+        self.private_key = private_key
 
     @abstractmethod
-    def get_ssh_ip(self):
+    def get_ssh_ip(self) -> str:
         """
         Get the IP address that can be used to ssh into the node
         """
         pass
 
-    def ansible_inventory_vars(self):
+    def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
             'ansible_host': self.get_ssh_ip(),
             # FIXME(jhesketh): Set username depending on OS

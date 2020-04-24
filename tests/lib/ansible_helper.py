@@ -28,6 +28,7 @@ import os
 import shutil
 import tarfile
 import tempfile
+from typing import Dict
 import urllib.request
 import yaml
 
@@ -41,6 +42,8 @@ import ansible.plugins.loader
 import ansible.executor.task_queue_manager
 from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
+
+from tests.lib.hardware.base import NodeBase
 
 
 class ResultCallback(CallbackModule):
@@ -76,7 +79,7 @@ class ResultCallback(CallbackModule):
 
 
 class AnsibleRunner(object):
-    def __init__(self, nodes, working_dir=None):
+    def __init__(self, nodes: Dict[str, NodeBase], working_dir=None):
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(

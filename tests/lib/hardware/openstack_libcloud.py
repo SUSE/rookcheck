@@ -48,7 +48,7 @@ else:
 class Node(NodeBase):
     def __init__(self, conn, name, pubkey=None, private_key=None,
                  tags=[]):
-        super().__init__(name)
+        super().__init__(name, private_key)
         self.conn = conn
         self.libcloud_node = None
 
@@ -56,7 +56,6 @@ class Node(NodeBase):
         self.volumes = []
         self.tags = tags
         self.pubkey = pubkey
-        self.private_key = private_key
 
         self._ssh_client = None
 
