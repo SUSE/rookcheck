@@ -24,23 +24,17 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
-from abc import ABC, abstractmethod
-import os
 import subprocess
-import tempfile
 import threading
 import time
-import uuid
 
 import libcloud.security
 from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
-import paramiko.rsakey
 from urllib.parse import urlparse
 
-from tests.lib.ansible_helper import AnsibleRunner
-
+from tests.lib.hardware.base import HardwareBase
 from tests import config
 
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
@@ -228,70 +222,6 @@ class Node():
             vars['ansible_become_method'] = 'sudo'
             vars['ansible_become_user'] = 'root'
         return vars
-
-
-class HardwareBase(ABC):
-    """
-    Base Hardware class
-    """
-    def __init__(self):
-        # Boot nodes
-        print("boot nodes")
-        print(self)
-        self.nodes = {}
-        self.hardware_uuid = str(uuid.uuid4())[:8]
-        self.conn = self.get_connection()
-
-        self._image_cache = {}
-        self._size_cache = {}
-
-        # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
-        # deliberate to keep the private key if it is needed for debugging.
-        self.working_dir = tempfile.mkdtemp(
-            prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
-
-        self.sshkey_name = None
-        self.pubkey = None
-        self.private_key = None
-
-        self.ansible_runner = None
-        self._ansible_runner_nodes = None
-
-    @abstractmethod
-    def generate_keys(self):
-        """
-        Generatees a public and private key
-        """
-        key = paramiko.rsakey.RSAKey.generate(2048)
-        self.private_key = os.path.join(self.working_dir, 'private.key')
-        with open(self.private_key, 'w') as key_file:
-            key.write_private_key(key_file)
-        os.chmod(self.private_key, 0o400)
-
-        self.sshkey_name = \
-            "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
-        self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
-
-    @abstractmethod
-    def get_connection(self):
-        pass
-
-    @abstractmethod
-    def boot_nodes(self, masters=1, workers=2, offset=0):
-        pass
-
-    @abstractmethod
-    def prepare_nodes(self):
-        pass
-
-    def execute_ansible_play(self, play_source):
-        if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
-            # Create a new AnsibleRunner if the nodes dict has changed (to
-            # generate a new inventory).
-            self.ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
-            self._ansible_runner_nodes = self.nodes.copy()
-
-        return self.ansible_runner.run_play(play_source)
 
 
 class Hardware(HardwareBase):

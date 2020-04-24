@@ -23,7 +23,7 @@ from tests.lib.rook import RookCluster
 
 
 if config.CLOUD_PROVIDER == 'OPENSTACK':
-    from tests.lib.hardware import Hardware as Hardware
+    from tests.lib.hardware.openstack_libcloud import Hardware as Hardware
 else:
     raise Exception("Cloud provider '{}' not yet supported by "
                     "smoke_rook".format(config.CLOUD_PROVIDER))
