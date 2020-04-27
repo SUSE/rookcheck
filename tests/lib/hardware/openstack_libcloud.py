@@ -42,6 +42,8 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 if config.DISTRO == 'openSUSE_k8s':
     from tests.lib.distro.opensuse import openSUSE_k8s as Distro
+elif: config.DISTRO == 'SLES_CaaSP':
+    from tests.lib.distro.sles import SLES_CaaSP as Distro
 else:
     raise Exception('Unknown distro {}'.format(config.DISTRO))
 
