@@ -36,36 +36,35 @@ class SLES_CaaSP(base.Distro):
         # need to register the node against SCC or add the repos assuming we
         # have access to IBS.
 
-        # "caasp_devel": 
+        # "caasp_devel":
         #         "http://download.suse.de/ibs/Devel:/CaaSP:/4.0/SLE_15_SP1/",
-        # "suse_ca": 
+        # "suse_ca":
         #         "http://download.suse.de/ibs/SUSE:/CA/SLE_15_SP1/",
-        # "sle_server_pool": 
+        # "sle_server_pool":
         #         "http://download.suse.de/ibs/SUSE/Products/SLE-Product-SLES/"
         #         "15-SP1/x86_64/product/",
-        # "basesystem_pool": 
+        # "basesystem_pool":
         #         "http://download.suse.de/ibs/SUSE/Products/"
         #         "SLE-Module-Basesystem/15-SP1/x86_64/product/",
-        # "containers_pool": 
+        # "containers_pool":
         #         "http://download.suse.de/ibs/SUSE/Products/"
         #         "SLE-Module-Containers/15-SP1/x86_64/product/",
-        # "serverapps_pool": 
+        # "serverapps_pool":
         #         "http://download.suse.de/ibs/SUSE/Products/"
         #         "SLE-Module-Server-Applications/15-SP1/x86_64/product/",
-        # "sle_server_updates": 
+        # "sle_server_updates":
         #         "http://download.suse.de/ibs/SUSE/Updates/"
         #         "SLE-Product-SLES/15-SP1/x86_64/update/",
-        # "basesystem_updates": 
+        # "basesystem_updates":
         #         "http://download.suse.de/ibs/SUSE/Updates/"
         #         "SLE-Module-Basesystem/15-SP1/x86_64/update/",
-        # "containers_updates": 
+        # "containers_updates":
         #         "http://download.suse.de/ibs/SUSE/Updates/"
         #         "SLE-Module-Containers/15-SP1/x86_64/update/",
-        # "serverapps_updates": 
+        # "serverapps_updates":
         #         "http://download.suse.de/ibs/SUSE/Updates/"
         #         "SLE-Module-Server-Applications/15-SP1/x86_64/update/"
 
-        
         play_source = dict(
             name="Prepare nodes",
             hosts="all",
