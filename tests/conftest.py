@@ -17,7 +17,7 @@ import pytest
 import threading
 
 from tests import config
-from tests.lib.kubernetes import VanillaKubernetes
+from tests.lib.kubernetes.vanilla import Vanilla as Kubernetes
 from tests.lib.rook import RookCluster
 
 
@@ -49,7 +49,7 @@ def kubernetes(hardware):
     # If we implement multiple Kubernetes distributions (eg upstream vs skuba
     # etc), we should do them from an ABC so to ensure the interfaces are
     # correct.
-    with VanillaKubernetes(hardware) as kubernetes:
+    with Kubernetes(hardware) as kubernetes:
         kubernetes.install_kubernetes()
         yield kubernetes
 
@@ -70,7 +70,7 @@ def linear_rook_cluster(kubernetes):
 @pytest.fixture(scope="module")
 def rook_cluster():
     with Hardware() as hardware:
-        with VanillaKubernetes(hardware) as kubernetes:
+        with Kubernetes(hardware) as kubernetes:
             with RookCluster(kubernetes) as rook_cluster:
                 logger.info("Starting rook build in a thread")
                 build_thread = threading.Thread(target=rook_cluster.build_rook)
