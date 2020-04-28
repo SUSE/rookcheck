@@ -46,8 +46,35 @@ class Vanilla(KubernetesBase):
     def install_kubernetes(self):
         super().install_kubernetes()
         self._download_kubectl()
+
+        import time
+        logger.info("******************** SLEEP DEBUG")
+        time.sleep(60)
+        logger.info("******************** Get nodes")
+        self.kubectl("get nodes")
+        self.kubectl("get all --all-namespaces")
+
+        #self._setup_flannel()
+
+
+        self.kubectl_apply(
+            "https://raw.githubusercontent.com/coreos/flannel/master/"
+            "Documentation/kube-flannel.yml")
+
+
+        logger.info("******************** SLEEP DEBUG")
+        time.sleep(60)
+        logger.info("******************** Get nodes")
+        self.kubectl("get nodes")
+        self.kubectl("get all --all-namespaces")
+        
         self.untaint_master()
-        self._setup_flannel()
+        logger.info("******************** SLEEP DEBUG")
+        time.sleep(60)
+        logger.info("******************** Get nodes")
+        self.kubectl("get nodes")
+        self.kubectl("get all --all-namespaces")
+        
 
     def _setup_flannel(self):
         for node in self.hardware.nodes.values():
