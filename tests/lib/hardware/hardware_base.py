@@ -56,7 +56,7 @@ class HardwareBase(ABC):
         self.pubkey = None
         self.private_key = None
 
-        self.ansible_runner = None
+        self._ansible_runner = None
         self._ansible_runner_nodes = None
 
     @abstractmethod
@@ -87,10 +87,11 @@ class HardwareBase(ABC):
         pass
 
     def execute_ansible_play(self, play_source):
-        if not self.ansible_runner or self._ansible_runner_nodes != self.nodes:
+        if not self._ansible_runner or \
+           self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self.ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
+            self._ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
             self._ansible_runner_nodes = self.nodes.copy()
 
-        return self.ansible_runner.run_play(play_source)
+        return self._ansible_runner.run_play(play_source)
