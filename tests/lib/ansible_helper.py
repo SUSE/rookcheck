@@ -22,6 +22,7 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+import logging
 import os
 import shutil
 import tarfile
@@ -42,6 +43,9 @@ from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
 
 from tests.lib.hardware.node_base import NodeBase
+
+
+logger = logging.getLogger(__name__)
 
 
 class ResultCallback(CallbackModule):
@@ -198,7 +202,7 @@ class AnsibleRunner(object):
         return results_callback
 
     def download_mitogen(self, working_dir):
-        print("Downloading and unpacking mitogen")
+        logger.info("Downloading and unpacking mitogen")
         tar_url = "https://networkgenomics.com/try/mitogen-0.2.9.tar.gz"
         stream = urllib.request.urlopen(tar_url)
         tar_file = tarfile.open(fileobj=stream, mode="r|gz")

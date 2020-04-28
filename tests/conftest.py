@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import pytest
 import threading
 
@@ -25,6 +26,9 @@ if config.CLOUD_PROVIDER == 'OPENSTACK':
 else:
     raise Exception("Cloud provider '{}' not yet supported by "
                     "smoke_rook".format(config.CLOUD_PROVIDER))
+
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
@@ -68,7 +72,7 @@ def rook_cluster():
     with Hardware() as hardware:
         with VanillaKubernetes(hardware) as kubernetes:
             with RookCluster(kubernetes) as rook_cluster:
-                print("Starting rook build in a thread")
+                logger.info("Starting rook build in a thread")
                 build_thread = threading.Thread(target=rook_cluster.build_rook)
                 build_thread.start()
 
@@ -77,7 +81,7 @@ def rook_cluster():
                 hardware.prepare_nodes()
                 kubernetes.install_kubernetes()
 
-                print("Re-joining rook build thread")
+                logger.info("Re-joining rook build thread")
                 build_thread.join()
                 # NOTE(jhesketh): The upload is very slow.. may want to
                 #                 consider how to do this in a thread too but

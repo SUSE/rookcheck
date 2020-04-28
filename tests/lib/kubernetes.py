@@ -19,6 +19,7 @@
 # would require SLE and can raise an exception if that isn't provided.
 
 from abc import ABC, abstractmethod
+import logging
 import os
 import stat
 import subprocess
@@ -26,6 +27,9 @@ import wget
 
 import kubernetes
 from tests import config
+
+
+logger = logging.getLogger(__name__)
 
 
 class Deploy(ABC):
@@ -441,13 +445,10 @@ class VanillaKubernetes():
         self.hardware = hardware
         self.kubeconfig = None
         self.v1 = None
-        print("kube init")
-        print(self)
-        print(self.hardware)
+        logger.info(f"kube init on hardware {self.hardware}")
 
     def destroy(self, skip=True):
-        print("kube destroy")
-        print(self)
+        logger.info(f"kube destroy on hardware {self.hardware}")
         if skip:
             # We can skip in most cases since the nodes themselves will be
             # destroyed instead.
@@ -559,11 +560,9 @@ class VanillaKubernetes():
                 capture_output=True
             )
         except subprocess.CalledProcessError as e:
-            print("Command `%s` failed" % command)
-            print("STDOUT:")
-            print(e.stdout)
-            print("STDERR:")
-            print(e.stderr)
+            logger.exception(f"Command `{command}` failed")
+            logger.error(f"STDOUT: {e.stdout}")
+            logger.error(f"STDERR: {e.stderr}")
             raise
         return out
 
