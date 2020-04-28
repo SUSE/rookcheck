@@ -521,7 +521,7 @@ class VanillaKubernetes():
                 "annotate node %s "
                 "flannel.alpha.coreos.com/public-ip-overwrite=%s "
                 "--overwrite" % (
-                    node.name.replace("_", "-"), node._get_ssh_ip()
+                    node.name.replace("_", "-"), node.get_ssh_ip()
                 )
             )
         self.kubectl_apply(
