@@ -22,6 +22,7 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+import logging
 import subprocess
 import threading
 import time
@@ -36,6 +37,7 @@ from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase
 from tests import config
 
+logger = logging.getLogger(__name__)
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 if config.DISTRO == 'openSUSE_k8s':
@@ -80,17 +82,14 @@ class Node(NodeBase):
             **kwargs
         )
 
-        print("Created node: ")
-        print(self)
-        print(self.libcloud_node)
+        logger.info(f"Created node: {self.libcloud_node}")
 
     def create_and_attach_floating_ip(self):
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
         floating_ip = self.conn.ex_create_floating_ip(
             config.OS_EXTERNAL_NETWORK)
 
-        print("Created floating IP: ")
-        print(floating_ip)
+        logger.info(f"Created floating IP: {floating_ip}")
         self.floating_ips.append(floating_ip)
 
         # Wait until the node is running before assigning IP
@@ -101,8 +100,7 @@ class Node(NodeBase):
     def create_and_attach_volume(self, size=10):
         vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
         volume = self.conn.create_volume(size=size, name=vol_name)
-        print("Created volume: ")
-        print(volume)
+        logger.info(f"Created volume: {volume}")
 
         # Wait for volume to be ready before attaching
         self.wait_until_volume_state(volume.uuid)
@@ -214,8 +212,8 @@ class Hardware(HardwareBase):
         self._image_cache = {}
         self._size_cache = {}
 
-        print(self.pubkey)
-        print(self.private_key)
+        logger.info(f"public key {self.pubkey}")
+        logger.info(f"private key {self.private_key}")
 
     def generate_keys(self):
         super().generate_keys()
@@ -374,8 +372,7 @@ class Hardware(HardwareBase):
 
     def destroy(self):
         # Remove nodes
-        print("destroy nodes")
-        print(self)
+        logger.info("destroy nodes")
 
         threads = []
         for node in self.nodes.values():

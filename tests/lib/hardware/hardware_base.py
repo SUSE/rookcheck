@@ -23,6 +23,7 @@
 # expected state.
 
 from abc import ABC, abstractmethod
+import logging
 import os
 import tempfile
 from typing import Dict, Optional
@@ -35,14 +36,14 @@ from tests.lib.hardware.node_base import NodeBase
 from tests import config
 
 
+logger = logging.getLogger(__name__)
+
+
 class HardwareBase(ABC):
     """
     Base Hardware class
     """
     def __init__(self):
-        # Boot nodes
-        print("boot nodes")
-        print(self)
         self.nodes: Dict[str, NodeBase] = {}
         self._hardware_uuid: str = str(uuid.uuid4())[:8]
         self.conn = self.get_connection()
@@ -84,11 +85,11 @@ class HardwareBase(ABC):
 
     @abstractmethod
     def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
-        pass
+        logger.info("boot nodes")
 
     @abstractmethod
     def prepare_nodes(self):
-        pass
+        logger.info("prepare nodes")
 
     def execute_ansible_play(self, play_source):
         if not self._ansible_runner or \

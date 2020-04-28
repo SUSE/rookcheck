@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import re
 import subprocess
@@ -19,6 +20,9 @@ import time
 import wget
 
 from tests.lib import common
+
+
+logger = logging.getLogger(__name__)
 
 
 class UploadRook():
@@ -74,14 +78,10 @@ class RookCluster():
             self.kubernetes.hardware.working_dir, 'rook_build')
         os.mkdir(self.builddir)
 
-        print("rook init")
-        print(self)
-        print(self.kubernetes)
-        print(self.kubernetes.hardware)
+        logger.info(f"rook init on {self.kubernetes.hardware}")
 
     def destroy(self, skip=True):
-        print("rook destroy")
-        print(self)
+        logger.info(f"rook destroy on {self.kubernetes.hardware}")
         if skip:
             # We can skip in most cases since the kubernetes cluster, if not
             # the nodes themselves will be destroyed instead.
@@ -104,28 +104,26 @@ class RookCluster():
                     capture_output=True
                 )
             except subprocess.CalledProcessError as e:
-                print("Command `%s` failed" % command)
-                print("STDOUT:")
-                print(e.stdout)
-                print("STDERR:")
-                print(e.stderr)
+                logger.exception(f"Command `{command}` failed")
+                logger.error(f"STDOUT: {e.stdout}")
+                logger.error(f"STDERR: {e.stderr}")
                 raise
             return out
 
-        print("[build_rook] Download go")
+        logger.info("[build_rook] Download go")
         wget.download(
             "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
             os.path.join(self.builddir, 'go-amd64.tar.gz')
         )
 
-        print("[build_rook] Unpack go")
+        logger.info("[build_rook] Unpack go")
         _execute(
             "tar -C %s -xzf %s"
             % (self.builddir, os.path.join(self.builddir, 'go-amd64.tar.gz'))
         )
 
         # TODO(jhesketh): Allow setting rook version
-        print("[build_rook] Checkout rook")
+        logger.info("[build_rook] Checkout rook")
         _execute(
             "mkdir -p %s"
             % os.path.join(self.builddir, 'src/github.com/rook/rook')
@@ -140,7 +138,7 @@ class RookCluster():
             % os.path.join(self.builddir, 'src/github.com/rook/rook')
         )
 
-        print("[build_rook] Make rook")
+        logger.info("[build_rook] Make rook")
         _execute(
             "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
             "make --directory='{builddir}/src/github.com/rook/rook' "
@@ -148,10 +146,10 @@ class RookCluster():
             "build".format(builddir=self.builddir)
         )
 
-        print("[build_rook] Tag image")
+        logger.info("[build_rook] Tag image")
         _execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
 
-        print("[build_rook] Save image tar")
+        logger.info("[build_rook] Save image tar")
         # TODO(jhesketh): build arch may differ
         _execute(
             "docker save rook/ceph:master | gzip > %s"
@@ -198,7 +196,8 @@ class RookCluster():
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'csi/rbd/storageclass.yaml'))
 
-        print("Wait for OSD prepare to complete (this may take a while...)")
+        logger.info("Wait for OSD prepare to complete "
+                    "(this may take a while...)")
         pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
 
         common.wait_for_result(
@@ -209,7 +208,7 @@ class RookCluster():
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'filesystem.yaml'))
 
-        print("Wait for 2 mdses to start")
+        logger.info("Wait for 2 mdses to start")
         pattern = re.compile(r'.*rook-ceph-mds-myfs.*Running')
 
         common.wait_for_result(
@@ -217,7 +216,7 @@ class RookCluster():
             matcher=common.regex_count_matcher(pattern, 2),
             attempts=20, interval=5)
 
-        print("Wait for myfs to be active")
+        logger.info("Wait for myfs to be active")
         pattern = re.compile(r'.*active')
 
         common.wait_for_result(
