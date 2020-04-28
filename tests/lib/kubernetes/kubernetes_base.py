@@ -19,19 +19,18 @@
 # would require SLE and can raise an exception if that isn't provided.
 
 from abc import ABC, abstractmethod
-import logging
 import os
-import stat
 import subprocess
-import wget
-
 import kubernetes
+import logging
+
 from tests import config
 
 
 logger = logging.getLogger(__name__)
 
 
+# TODO(toabctl): Move Deploy and DeploySUSE out of kubernetes_base.py
 class Deploy(ABC):
     @abstractmethod
     def install_kubeadm_play(self):
@@ -39,7 +38,8 @@ class Deploy(ABC):
 
 
 class DeploySUSE(Deploy):
-    basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+    basedir = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                           '../../'))
 
     def copy_needed_files(self):
         # Temporary workaround for mitogen failing to copy files or templates.
@@ -440,118 +440,50 @@ class DeploySUSE(Deploy):
         return play_source
 
 
-class VanillaKubernetes():
+class KubernetesBase(ABC):
     def __init__(self, hardware):
-        self.hardware = hardware
-        self.kubeconfig = None
+        self._hardware = hardware
+        # TODO(toabctl): Make it configurable?
+        self._kubeconfig = os.path.join(self.hardware.working_dir,
+                                        'kubeconfig')
+        self._kubectl_exec = os.path.join(self.hardware.working_dir, 'kubectl')
         self.v1 = None
         logger.info(f"kube init on hardware {self.hardware}")
-
-    def destroy(self, skip=True):
-        logger.info(f"kube destroy on hardware {self.hardware}")
-        if skip:
-            # We can skip in most cases since the nodes themselves will be
-            # destroyed instead.
-            return
-        # TODO(jhesketh): Uninstall kubernetes
-        pass
-
-    def install_kubernetes(self):
         if config.DISTRO == 'openSUSE_k8s':
-            d = DeploySUSE()
+            self.distro = DeploySUSE()
         else:
             raise Exception("OS yet to be implemented/unsupport.")
 
-        r = self.hardware.execute_ansible_play(d.copy_needed_files())
+    @abstractmethod
+    def install_kubernetes(self):
+        pass
 
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
+    @property
+    def hardware(self):
+        return self._hardware
 
-        r = self.hardware.execute_ansible_play(d.install_kubeadm_play())
+    @property
+    def kubeconfig(self):
+        return self._kubeconfig
 
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
+    @property
+    def kubectl_exec(self):
+        return self._kubectl_exec
 
-        r = self.hardware.execute_ansible_play(d.copy_needed_files_master())
+    def __enter__(self):
+        return self
 
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
+    def __exit__(self, type, value, traceback):
+        self.destroy()
 
-        r = self.hardware.execute_ansible_play(d.setup_master_play())
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        # TODO(jhesketh): Figure out a better way to get ansible output/results
-        join_command = \
-            r.host_ok[list(r.host_ok.keys())[0]][-1]._result['stdout']
-
-        r = self.hardware.execute_ansible_play(
-            d.join_workers_to_master(join_command))
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        r = self.hardware.execute_ansible_play(
-            d.fetch_kubeconfig(self.hardware.working_dir))
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        self.kubeconfig = os.path.join(self.hardware.working_dir, 'kubeconfig')
-        self.configure_kubernetes_client()
-        self.download_kubectl()
-        try:
-            self.untaint_master()
-        except subprocess.CalledProcessError:
-            # Untainting returns exit status 1 since not all nodes are tainted.
-            pass
-        self.setup_flannel()
-
-    def setup_flannel(self):
-        for node in self.hardware.nodes.values():
-            self.kubectl(
-                "annotate node %s "
-                "flannel.alpha.coreos.com/public-ip-overwrite=%s "
-                "--overwrite" % (
-                    node.name.replace("_", "-"), node.get_ssh_ip()
-                )
-            )
-        self.kubectl_apply(
-            "https://raw.githubusercontent.com/coreos/flannel/master/"
-            "Documentation/kube-flannel.yml")
-
-    def configure_kubernetes_client(self):
+    def _configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
 
-    def create_from_yaml(self, yaml_file):
-        # NOTE(jhesketh): This works for most things, but expects CRD's to be
-        #                 available via the kubernetes-client python. As such
-        #                 for most manifests it will be easier to use kubectl
-        #                 directly (helper function).
-        kubernetes.utils.create_from_yaml(self.v1.api_client, yaml_file)
-
-    def download_kubectl(self):
-        # Download specific kubectl version
-        # TODO(jhesketh): Allow setting version
-        self.kubectl_exec = os.path.join(self.hardware.working_dir, 'kubectl')
-        wget.download(
-            "https://storage.googleapis.com/kubernetes-release/release/v1.17.3"
-            "/bin/linux/amd64/kubectl",
-            self.kubectl_exec
-        )
-        st = os.stat(self.kubectl_exec)
-        os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)
-
     def kubectl(self, command):
-        # Execute kubectl command
+        """
+        Run a kubectl command
+        """
         try:
             out = subprocess.run(
                 "%s --kubeconfig %s %s"
@@ -594,8 +526,15 @@ class VanillaKubernetes():
         pod = self.get_pod_by_app_label(label, namespace)
         return self.execute_in_pod(command, pod, namespace)
 
-    def __enter__(self):
-        return self
+    def destroy(self, skip=True):
+        logger.info(f"kube destroy on hardware {self.hardware}")
+        if skip:
+            # We can skip in most cases since the nodes themselves will be
+            # destroyed instead.
+            return
+        # TODO(jhesketh): Uninstall kubernetes
+        pass
 
-    def __exit__(self, type, value, traceback):
-        self.destroy()
+    def configure_kubernetes_client(self):
+        kubernetes.config.load_kube_config(self.kubeconfig)
+        self.v1 = kubernetes.client.CoreV1Api()
