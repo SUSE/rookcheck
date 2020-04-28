@@ -27,11 +27,13 @@
 from abc import ABC, abstractmethod
 import os
 import tempfile
+from typing import Dict, Optional
 import uuid
 
 import paramiko.rsakey
 
 from tests.lib.ansible_helper import AnsibleRunner
+from tests.lib.hardware.node_base import NodeBase
 from tests import config
 
 
@@ -43,21 +45,21 @@ class HardwareBase(ABC):
         # Boot nodes
         print("boot nodes")
         print(self)
-        self.nodes = {}
-        self._hardware_uuid = str(uuid.uuid4())[:8]
+        self.nodes: Dict[str, NodeBase] = {}
+        self._hardware_uuid: str = str(uuid.uuid4())[:8]
         self.conn = self.get_connection()
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
-        self.working_dir = tempfile.mkdtemp(
+        self.working_dir: str = tempfile.mkdtemp(
             prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
 
-        self.sshkey_name = None
-        self.pubkey = None
-        self.private_key = None
+        self.sshkey_name: str = None
+        self.pubkey: str = None
+        self.private_key: str = None
 
-        self._ansible_runner = None
-        self._ansible_runner_nodes = None
+        self._ansible_runner: Optional[AnsibleRunner] = None
+        self._ansible_runner_nodes: Dict[str, NodeBase] = None
 
     @property
     def hardware_uuid(self) -> str:
