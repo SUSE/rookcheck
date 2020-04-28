@@ -34,7 +34,8 @@ from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
 from urllib.parse import urlparse
 
-from tests.lib.hardware.base import HardwareBase, NodeBase
+from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.hardware.node_base import NodeBase
 from tests import config
 
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT

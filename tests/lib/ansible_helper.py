@@ -43,7 +43,7 @@ import ansible.executor.task_queue_manager
 from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
 
-from tests.lib.hardware.base import NodeBase
+from tests.lib.hardware.node_base import NodeBase
 
 
 class ResultCallback(CallbackModule):
