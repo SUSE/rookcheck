@@ -44,7 +44,7 @@ class HardwareBase(ABC):
         print("boot nodes")
         print(self)
         self.nodes = {}
-        self.hardware_uuid = str(uuid.uuid4())[:8]
+        self._hardware_uuid = str(uuid.uuid4())[:8]
         self.conn = self.get_connection()
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
@@ -58,6 +58,10 @@ class HardwareBase(ABC):
 
         self._ansible_runner = None
         self._ansible_runner_nodes = None
+
+    @property
+    def hardware_uuid(self) -> str:
+        return self._hardware_uuid
 
     @abstractmethod
     def generate_keys(self):
