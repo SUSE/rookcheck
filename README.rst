@@ -1,4 +1,3 @@
-=========
 rookcheck
 =========
 
@@ -21,174 +20,21 @@ the environment.
 rookcheck requires VM's from `libcloud` to set up and perform the tests
 against.
 
-*****
-Usage
-*****
+Quickstart
+----------
 
-Requiremnets
-++++++++++++
-
-Requirements are tracked with
-`bindep <https://docs.openstack.org/infra/bindep/readme.html>`_ and 
-`pip <https://pip.pypa.io/en/stable/reference/pip_install>`_'s requiements.txt.
-
-First we need python-tox to be able to manage our virtual environments. This is
-best installed from pip, but can be installed from your system packages as
-well.
+Install requirements:
 
 .. code-block:: bash
 
-    # zypper in python-pip
-    # pip install tox
+    sudo zypper in python-pip
+    sudo pip install tox
+    sudo zypper in $(tox -qq -e bindep -- -b)
+    sudo systemctl start docker
+    sudo usermod -aG docker $USER
 
-Next we run bindep from inside a tox environment to get the list of missing
-system packages
-
-.. code-block:: bash
-
-    $ PROFILE=libvirt
-    $ tox -e bindep ${PROFILE}
-
-Then we can take the list and install them.
+Run tests
 
 .. code-block:: bash
 
-    # zypper in <output from bindep command>
-
-One of the system requirements to build rook is docker. Make sure the docker
-daemon is running:
-
-.. code-block:: bash
-
-    # systemctl start docker
-
-You may also need to make sure your user is in the docker group:
-
-.. code-block:: bash
-
-    $ sudo usermod -aG docker $USER
-
-Verify that you can run docker::
-
-    $ docker run hello-world
-
-If that fails then see your systems instructions for setting up docker.
-
-Configuration
-+++++++++++++
-
-You will need to configure the platform that the tests are ran against::
-
-    cp configuration.env my.env
-    vim my.env # Make any changes needed
-    source my.env
-
-If you are using OpenStack you can use your openrc for most of the
-configuration. You may wish to include this in my.env or source your openrc
-separately.
-
-Running tests
-+++++++++++++
-
-Running tests::
-
-    $ tox -e py37
-
-OpenStack provider specifics
-++++++++++++++++++++++++++++
-
-A OpenStack network needs to be available for usage. The network name needs to
-be exported as::
-
-  export OS_INTERNAL_NETWORK=my-test-net
-
-If the network is not available, one can be created via::
-
-  _OS_SUBNET=`echo $OS_INTERNAL_NETWORK|sed -e 's/-net/-subnet/'`
-  _OS_ROUTER=`echo $OS_INTERNAL_NETWORK|sed -e 's/-net/-router/'`
-  openstack network create ${OS_INTERNAL_NETWORK}
-  openstack subnet create --network ${OS_INTERNAL_NETWORK} --subnet-range 192.168.100.0/24 ${_OS_SUBNET}
-  openstack router create ${_OS_ROUTER}
-  openstack router set --external-gateway floating ${_OS_ROUTER}
-
-where `floating` is the name of the external network.
-
-*********************
-Notes/Common Problems
-*********************
-
- * rookcheck will remove and manage known host keys on the test runner, which
-   may include removing legitimate entries.
-
-*********
-Structure
-*********
-
-Currently there are [at least] 4 abstractions that need to be available:
-
-* Hardware (VM's, etc),
-* Operating Systems (packages/configuration etc),
-* Kubernetes (deployment/packages etc),
-* Rook (packaging etc).
-
-To begin with, each of these is being implemented targeting OpenStack,
-openSUSE, Upstream Kubernetes, and Upstream rook.io respectfully. It is
-intended that each of these are easy to swap out for other platforms depending
-on the testing environment. Therefore the code is being written in a
-generic/pluggable way.
-
- * Uses `pytest <https://docs.pytest.org/en/latest/>`_
- * Each aforementioned abstraction is set up as a
-   `pytest fixture <https://docs.pytest.org/en/latest/fixture.html>`_
-
- * `tests/conftest.py` sets up the required fixtures
-
-   * The fixtures are generally scoped to the module
-   * This means a file such as `test/test_my_grouped_tests.py` can do serial
-     tests against the same cluster
-   * When the fixtures are 'exited' they clean up their resources
-
- * Tests are thread-safe at a module level. Each test module will have its own
-   deployment created to perform tests against.
-
-*************
-Writing tests
-*************
-
-TODO some examples
-
-
-*******************
-Theory and rational
-*******************
-
-Use either libcloud or kcli to abstract away the hardware.
-Extend either library for our needs.
- - kcli: Will likely need fixes for how auth against OpenStack works to be
-         compatible with ECP's domain/project_domain.
-         I also ran into a bug testing against libvirt networks that will
-         require more exploration.
- - libcloud: Needs a new release to get
-             https://github.com/apache/libcloud/issues/1365.
-             The libvirt driver needs extending to be able to create and
-             destroy vms, images, volumes, and networks. This is a large amount
-             of work, but can also be pulled from existing projects such as
-             kcli or python-libvirt.
-
-Create a library for deploying kubernetes on provided nodes.
- - This would be an ABC with implementations for Vanilla Kubenetes, CaaSP and
-   so on. The hardest part will be the underlying operating systems a various
-   deployment will support. It may be enough to raise an error if the OS is not
-   compatible.
-
-Create a library for deploying rook.io on said kubernetes cluster.
- - This will likely need some plugability to change things such as container
-   registries.
-
-Each Hardware, Kubenetes, and Rook deployments are py.test fixtures. As we can
-scope those to a module we can write tests that reuse the same deployments
-rather than setting up new nodes for each individual test.
-
-We can also eventually break things out of py.test to allow devs to build and
-debug clusters etc. as well as providing tools for checking any rogue resources
-left behind by tests and so on.
+    tox -e py38
