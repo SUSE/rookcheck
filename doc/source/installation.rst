@@ -5,7 +5,7 @@ Requiremnets
 ------------
 
 Requirements are tracked with
-`bindep <https://docs.openstack.org/infra/bindep/readme.html>`_ and 
+`bindep <https://docs.openstack.org/infra/bindep/readme.html>`_ and
 `pip <https://pip.pypa.io/en/stable/reference/pip_install>`_'s requiements.txt.
 
 First we need python-tox to be able to manage our virtual environments. This is
