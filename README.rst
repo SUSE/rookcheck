@@ -20,6 +20,8 @@ the environment.
 rookcheck requires VM's from `libcloud` to set up and perform the tests
 against.
 
+`Read the full documentation <https://rookcheck.readthedocs.io/>`_.
+
 Quickstart
 ----------
 
@@ -33,8 +35,13 @@ Install requirements:
     sudo systemctl start docker
     sudo usermod -aG docker $USER
 
-Run tests
+Run tests:
 
 .. code-block:: bash
 
     tox -e py38
+
+
+.. image:: https://readthedocs.org/projects/rookcheck/badge/?version=latest
+:target: https://rookcheck.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
