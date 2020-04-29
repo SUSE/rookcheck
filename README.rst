@@ -43,5 +43,5 @@ Run tests:
 
 
 .. image:: https://readthedocs.org/projects/rookcheck/badge/?version=latest
-:target: https://rookcheck.readthedocs.io/en/latest/?badge=latest
-:alt: Documentation Status
+   :target: https://rookcheck.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
