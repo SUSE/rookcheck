@@ -35,7 +35,7 @@ from urllib.parse import urlparse
 
 from tests.lib.distro import get_distro
 from tests.lib.hardware.hardware_base import HardwareBase
-from tests.lib.hardware.node_base import NodeBase
+from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests import config
 
 logger = logging.getLogger(__name__)
@@ -43,9 +43,9 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
 class Node(NodeBase):
-    def __init__(self, conn, name, pubkey=None, private_key=None,
+    def __init__(self, conn, name, private_key, role, pubkey=None,
                  tags=[]):
-        super().__init__(name, private_key)
+        super().__init__(name, private_key, role)
         self.conn = conn
         self.libcloud_node = None
 
@@ -301,11 +301,9 @@ class Hardware(HardwareBase):
             raise Exception("Cloud provider not yet supported by rookcheck")
         return security_group
 
-    def _create_node(self, node_name, tags=[]):
-        node = Node(
-            conn=self.conn,
-            name=node_name, pubkey=self.pubkey, private_key=self.private_key,
-            tags=tags)
+    def _create_node(self, node_name, role, tags=[]):
+        node = Node(self.conn, node_name, self.private_key, role,
+                    pubkey=self.pubkey, tags=tags)
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
         additional_networks = []
@@ -338,14 +336,15 @@ class Hardware(HardwareBase):
         self._get_ex_network_by_name()
         self._get_size_by_name()
         if masters:
-            self._boot_nodes(['master', 'first_master'], 1, offset=offset,
-                             suffix='master_')
+            self._boot_nodes(NodeRole.MASTER, ['master', 'first_master'], 1,
+                             offset=offset, suffix='master_')
             masters -= 1
-            self._boot_nodes(['master'], masters, offset=offset+1,
-                             suffix='master_')
-        self._boot_nodes(['worker'], workers, offset=offset, suffix='worker_')
+            self._boot_nodes(NodeRole.MASTER, ['master'], masters,
+                             offset=offset+1, suffix='master_')
+        self._boot_nodes(NodeRole.WORKER, ['worker'], workers, offset=offset,
+                         suffix='worker_')
 
-    def _boot_nodes(self, tags, n, offset=0, suffix=""):
+    def _boot_nodes(self, role, tags, n, offset=0, suffix=""):
         threads = []
         for i in range(n):
             node_name = "%s%s_%s%d" % (

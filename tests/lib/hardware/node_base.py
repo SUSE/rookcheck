@@ -13,18 +13,25 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Dict, Any
 
 from tests import config
+
+
+class NodeRole(Enum):
+    MASTER = 0
+    WORKER = 1
 
 
 class NodeBase(ABC):
     """
     Base class for nodes
     """
-    def __init__(self, name: str, private_key: str):
+    def __init__(self, name: str, private_key: str, role: NodeRole):
         self._name = name
         self._private_key = private_key
+        self._role = role
 
     @abstractmethod
     def get_ssh_ip(self) -> str:
@@ -40,6 +47,10 @@ class NodeBase(ABC):
     @property
     def private_key(self):
         return self._private_key
+
+    @property
+    def role(self):
+        return self._role
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
