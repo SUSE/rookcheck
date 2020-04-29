@@ -420,9 +420,3 @@ class Hardware(HardwareBase):
         if r.host_failed or r.host_unreachable:
             # TODO(jhesketh): Provide some more useful feedback and/or checking
             raise Exception("One or more hosts failed")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.destroy()
