@@ -56,8 +56,8 @@ class Node(NodeBase):
 
         self._ssh_client = None
 
-    def boot(self, size, image, sshkey_name=None, additional_networks=[],
-             security_groups=[]):
+    def _boot(self, size, image, sshkey_name=None, additional_networks=[],
+              security_groups=[]):
         if self.libcloud_node:
             raise Exception("A node has already been booted")
 
@@ -80,7 +80,7 @@ class Node(NodeBase):
 
         logger.info(f"Created node: {self.libcloud_node}")
 
-    def create_and_attach_floating_ip(self):
+    def _create_and_attach_floating_ip(self):
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
         floating_ip = self.conn.ex_create_floating_ip(
             config.OS_EXTERNAL_NETWORK)
@@ -89,25 +89,25 @@ class Node(NodeBase):
         self.floating_ips.append(floating_ip)
 
         # Wait until the node is running before assigning IP
-        self.wait_until_state()
+        self._wait_until_state()
         self.conn.ex_attach_floating_ip_to_node(
             self.libcloud_node, floating_ip)
 
-    def create_and_attach_volume(self, size=10):
+    def _create_and_attach_volume(self, size=10):
         vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
         volume = self.conn.create_volume(size=size, name=vol_name)
         logger.info(f"Created volume: {volume}")
 
         # Wait for volume to be ready before attaching
-        self.wait_until_volume_state(volume.uuid)
+        self._wait_until_volume_state(volume.uuid)
 
         self.conn.attach_volume(
             self.libcloud_node, volume, device=None)
         self.volumes.append(volume)
 
-    def wait_until_volume_state(self, volume_uuid,
-                                state=StorageVolumeState.AVAILABLE,
-                                timeout=120, interval=3):
+    def _wait_until_volume_state(self, volume_uuid,
+                                 state=StorageVolumeState.AVAILABLE,
+                                 timeout=120, interval=3):
         # `state` can be StorageVolumeState, "any", or None (for not existant)
         # `state` can also be a list of NodeState's, any matching will pass
         for _ in range(int(timeout / interval)):
@@ -130,8 +130,8 @@ class Node(NodeBase):
 
         raise Exception("Timeout waiting for volume to be state `%s`" % state)
 
-    def wait_until_state(self, state=NodeState.RUNNING, timeout=120,
-                         interval=3, uuid=None):
+    def _wait_until_state(self, state=NodeState.RUNNING, timeout=120,
+                          interval=3, uuid=None):
         # `state` can be NodeState, "any", or None (for not existant)
         # `state` can also be a list of NodeState's, any matching will pass
         if not uuid:
@@ -165,7 +165,7 @@ class Node(NodeBase):
             uuid = self.libcloud_node.uuid
             self.libcloud_node.destroy()
             self.libcloud_node = None
-            self.wait_until_state(None, uuid=uuid)
+            self._wait_until_state(None, uuid=uuid)
         for volume in self.volumes:
             volume.destroy()
 
@@ -313,7 +313,7 @@ class Hardware(HardwareBase):
             additional_networks.append(
                 self._get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
             )
-        node.boot(
+        node._boot(
             size=self._get_size_by_name(config.NODE_SIZE),
             image=self._get_image_by_id(config.NODE_IMAGE_ID),
             sshkey_name=self.sshkey_name,
@@ -322,11 +322,11 @@ class Hardware(HardwareBase):
                 self._ex_security_group,
             ]
         )
-        node.create_and_attach_floating_ip()
+        node._create_and_attach_floating_ip()
         # Wait for node to be ready
-        node.wait_until_state(NodeState.RUNNING)
+        node._wait_until_state(NodeState.RUNNING)
         # Attach a 10GB disk
-        node.create_and_attach_volume(10)
+        node._create_and_attach_volume(10)
         self.nodes[node_name] = node
 
     def boot_nodes(self, masters=1, workers=2, offset=0):
