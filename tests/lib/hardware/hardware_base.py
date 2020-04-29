@@ -80,6 +80,10 @@ class HardwareBase(ABC):
         self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
 
     @abstractmethod
+    def destroy(self):
+        pass
+
+    @abstractmethod
     def get_connection(self):
         pass
 
@@ -100,3 +104,9 @@ class HardwareBase(ABC):
             self._ansible_runner_nodes = self.nodes.copy()
 
         return self._ansible_runner.run_play(play_source)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.destroy()
