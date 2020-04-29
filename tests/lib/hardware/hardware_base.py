@@ -26,7 +26,7 @@ from abc import ABC, abstractmethod
 import logging
 import os
 import tempfile
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import uuid
 
 import paramiko.rsakey
@@ -50,34 +50,51 @@ class HardwareBase(ABC):
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
-        self.working_dir: str = tempfile.mkdtemp(
+        self._working_dir: str = tempfile.mkdtemp(
             prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
 
-        self.sshkey_name: str = None
-        self.pubkey: str = None
-        self.private_key: str = None
+        self._sshkey_name: str = None
+        self._public_key: str = None
+        self._private_key: str = None
 
         self._ansible_runner: Optional[AnsibleRunner] = None
         self._ansible_runner_nodes: Dict[str, NodeBase] = None
+
+        self._generate_keys()
+
+    @property
+    def working_dir(self):
+        return self._working_dir
 
     @property
     def hardware_uuid(self) -> str:
         return self._hardware_uuid
 
-    @abstractmethod
-    def generate_keys(self):
+    @property
+    def sshkey_name(self):
+        return self._sshkey_name
+
+    @property
+    def public_key(self):
+        return self._public_key
+
+    @property
+    def private_key(self):
+        return self._private_key
+
+    def _generate_keys(self):
         """
         Generatees a public and private key
         """
         key = paramiko.rsakey.RSAKey.generate(2048)
-        self.private_key = os.path.join(self.working_dir, 'private.key')
-        with open(self.private_key, 'w') as key_file:
+        self._private_key = os.path.join(self.working_dir, 'private.key')
+        with open(self._private_key, 'w') as key_file:
             key.write_private_key(key_file)
-        os.chmod(self.private_key, 0o400)
+        os.chmod(self._private_key, 0o400)
 
-        self.sshkey_name = \
+        self._sshkey_name = \
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
-        self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
+        self._public_key = "%s %s" % (key.get_name(), key.get_base64())
 
     @abstractmethod
     def destroy(self):
@@ -100,10 +117,22 @@ class HardwareBase(ABC):
            self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
+            self._ansible_runner = AnsibleRunner(self)
             self._ansible_runner_nodes = self.nodes.copy()
 
         return self._ansible_runner.run_play(play_source)
+
+    def ansible_inventory_vars(self) -> Dict[str, Any]:
+        vars = {
+            'ansible_ssh_private_key_file': self.private_key,
+            'ansible_host_key_checking': False,
+            'ansible_ssh_host_key_checking': False,
+            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_python_interpreter': '/usr/bin/python3',
+            'ansible_become': False,
+        }
+        return vars
 
     def __enter__(self):
         return self

@@ -13,18 +13,25 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from enum import Enum
+from typing import Dict, Any, List
 
 from tests import config
+
+
+class NodeRole(Enum):
+    MASTER = 0
+    WORKER = 1
 
 
 class NodeBase(ABC):
     """
     Base class for nodes
     """
-    def __init__(self, name: str, private_key: str):
-        self.name = name
-        self.private_key = private_key
+    def __init__(self, name: str, role: NodeRole, tags: List[str] = []):
+        self._name = name
+        self._role = role
+        self.tags = tags
 
     @abstractmethod
     def get_ssh_ip(self) -> str:
@@ -33,21 +40,22 @@ class NodeBase(ABC):
         """
         pass
 
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def role(self):
+        return self._role
+
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
             'ansible_host': self.get_ssh_ip(),
             # FIXME(jhesketh): Set username depending on OS
             'ansible_user': config.NODE_IMAGE_USER,
-            'ansible_ssh_private_key_file': self.private_key,
-            'ansible_host_key_checking': False,
-            'ansible_ssh_host_key_checking': False,
-            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
-            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
-            'ansible_python_interpreter': '/usr/bin/python3',
-            'ansible_become': False,
         }
         if config.NODE_IMAGE_USER != "root":
-            vars['ansible_become'] = True
+            vars['ansible_become'] = 'true'
             vars['ansible_become_method'] = 'sudo'
             vars['ansible_become_user'] = 'root'
         return vars

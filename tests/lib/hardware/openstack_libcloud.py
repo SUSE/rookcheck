@@ -30,12 +30,11 @@ import time
 import libcloud.security
 from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
-from paramiko.client import AutoAddPolicy, SSHClient
 from urllib.parse import urlparse
 
 from tests.lib.distro import get_distro
 from tests.lib.hardware.hardware_base import HardwareBase
-from tests.lib.hardware.node_base import NodeBase
+from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests import config
 
 logger = logging.getLogger(__name__)
@@ -43,16 +42,13 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
 class Node(NodeBase):
-    def __init__(self, conn, name, pubkey=None, private_key=None,
-                 tags=[]):
-        super().__init__(name, private_key)
+    def __init__(self, conn, name, role, tags):
+        super().__init__(name, role, tags)
         self.conn = conn
         self.libcloud_node = None
 
         self.floating_ips = []
         self.volumes = []
-        self.tags = tags
-        self.pubkey = pubkey
 
         self._ssh_client = None
 
@@ -176,47 +172,20 @@ class Node(NodeBase):
         # NOTE(jhesketh): For now, just use the last floating IP
         return self.floating_ips[-1].ip_address
 
-    def execute_command(self, command):
-        """
-        Executes a command over SSH
-        return_value: (stdin, stdout, stderr)
-
-        (Warning, this method is untested)
-        """
-        if not self._ssh_client:
-            self._ssh_client = SSHClient()
-            self._ssh_client.set_missing_host_key_policy(
-                AutoAddPolicy()
-            )
-            self._ssh_client.connect(
-                hostname=self.get_ssh_ip,
-                username=config.NODE_IMAGE_USER,
-                pkey=self.private_key,
-                allow_agent=False,
-                look_for_keys=False,
-            )
-        return self._ssh_client.exec_command(command)
-
 
 class Hardware(HardwareBase):
     def __init__(self):
         super().__init__()
-        self._ex_os_key = self.generate_keys()
+        self._ex_os_key = self.conn.import_key_pair_from_string(
+            self.sshkey_name, self.public_key)
         self._ex_security_group = self._create_security_group()
         self._ex_network_cache = {}
 
         self._image_cache = {}
         self._size_cache = {}
 
-        logger.info(f"public key {self.pubkey}")
+        logger.info(f"public key {self.public_key}")
         logger.info(f"private key {self.private_key}")
-
-    def generate_keys(self):
-        super().generate_keys()
-        os_key = self.conn.import_key_pair_from_string(
-            self.sshkey_name, self.pubkey)
-
-        return os_key
 
     def get_connection(self):
         """ Get a libcloud connection object for the configured driver """
@@ -301,11 +270,8 @@ class Hardware(HardwareBase):
             raise Exception("Cloud provider not yet supported by rookcheck")
         return security_group
 
-    def _create_node(self, node_name, tags=[]):
-        node = Node(
-            conn=self.conn,
-            name=node_name, pubkey=self.pubkey, private_key=self.private_key,
-            tags=tags)
+    def _create_node(self, node_name, role, tags=[]):
+        node = Node(self.conn, node_name, role, tags)
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
         additional_networks = []
@@ -338,20 +304,21 @@ class Hardware(HardwareBase):
         self._get_ex_network_by_name()
         self._get_size_by_name()
         if masters:
-            self._boot_nodes(['master', 'first_master'], 1, offset=offset,
-                             suffix='master_')
+            self._boot_nodes(NodeRole.MASTER, ['master', 'first_master'], 1,
+                             offset=offset, suffix='master_')
             masters -= 1
-            self._boot_nodes(['master'], masters, offset=offset+1,
-                             suffix='master_')
-        self._boot_nodes(['worker'], workers, offset=offset, suffix='worker_')
+            self._boot_nodes(NodeRole.MASTER, ['master'], masters,
+                             offset=offset+1, suffix='master_')
+        self._boot_nodes(NodeRole.WORKER, ['worker'], workers, offset=offset,
+                         suffix='worker_')
 
-    def _boot_nodes(self, tags, n, offset=0, suffix=""):
+    def _boot_nodes(self, role, tags, n, offset=0, suffix=""):
         threads = []
         for i in range(n):
             node_name = "%s%s_%s%d" % (
                 config.CLUSTER_PREFIX, self.hardware_uuid, suffix, i+offset)
             thread = threading.Thread(
-                target=self._create_node, args=(node_name, tags))
+                target=self._create_node, args=(node_name, role, tags))
             threads.append(thread)
             thread.start()
 
