@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'smoke-rook'
+project = 'rookcheck'
 copyright = '2020, SUSE Linux GmbH'
 author = 'Joshua Hesketh'
 

@@ -1,20 +1,16 @@
-==========
-smoke_rook
-==========
+=========
+rookcheck
+=========
 
-> This repository is currently an example of how jobs may be structured. It is
-> not complete and requires a lot more work. However, given the other paths
-> that we have been exploring this is a similar amount of work.
-
-`smoke_rook` is a testing platform for rook.io. The intention is to provide
+`rookcheck` is a testing platform for rook.io. The intention is to provide
 developers with a way to simulate various environments and scenarios that may
 occur within them.
 
-For example, smoke_rook can perform tests such as adding new nodes to your
+For example, rookcheck can perform tests such as adding new nodes to your
 kubernetes cluster and ensuring that they are correctly enrolled and handled by
-rook.io.
+rook.io/ceph.
 
-Additionally smoke_rook can handle disaster testing such as kernel panics,
+Additionally rookcheck can handle disaster testing such as kernel panics,
 physically removed nodes, and so forth.
 
 Because a test may need to interact with the underlying hardware the unit tests
@@ -22,23 +18,64 @@ will set up and configure the nodes, distros, kubernetes, and rook itself.
 These are then exposed to the test writer to interact with further or to verify
 the environment.
 
-smoke_rook requires VM's from `libcloud` to set up and perform the tests
+rookcheck requires VM's from `libcloud` to set up and perform the tests
 against.
 
 *****
 Usage
 *****
 
+Requiremnets
+++++++++++++
 
-Installing requirements::
+Requirements are tracked with
+`bindep <https://docs.openstack.org/infra/bindep/readme.html>`_ and 
+`pip <https://pip.pypa.io/en/stable/reference/pip_install>`_'s requiements.txt.
 
-    # zypper in python-pip docker
-    # systemctl start docker
+First we need python-tox to be able to manage our virtual environments. This is
+best installed from pip, but can be installed from your system packages as
+well.
+
+.. code-block:: bash
+
+    # zypper in python-pip
     # pip install tox
+
+Next we run bindep from inside a tox environment to get the list of missing
+system packages
+
+.. code-block:: bash
+
     $ PROFILE=libvirt
     $ tox -e bindep ${PROFILE}
-    # zypper in <indicated missing package names>
 
+Then we can take the list and install them.
+
+.. code-block:: bash
+
+    # zypper in <output from bindep command>
+
+One of the system requirements to build rook is docker. Make sure the docker
+daemon is running:
+
+.. code-block:: bash
+
+    # systemctl start docker
+
+You may also need to make sure your user is in the docker group:
+
+.. code-block:: bash
+
+    $ sudo usermod -aG docker $USER
+
+Verify that you can run docker::
+
+    $ docker run hello-world
+
+If that fails then see your systems instructions for setting up docker.
+
+Configuration
++++++++++++++
 
 You will need to configure the platform that the tests are ran against::
 
@@ -47,7 +84,11 @@ You will need to configure the platform that the tests are ran against::
     source my.env
 
 If you are using OpenStack you can use your openrc for most of the
-configuratoin.
+configuration. You may wish to include this in my.env or source your openrc
+separately.
+
+Running tests
++++++++++++++
 
 Running tests::
 
@@ -76,7 +117,7 @@ where `floating` is the name of the external network.
 Notes/Common Problems
 *********************
 
- * smoke_rook will remove and manage known host keys on the test runner, which
+ * rookcheck will remove and manage known host keys on the test runner, which
    may include removing legitimate entries.
 
 *********

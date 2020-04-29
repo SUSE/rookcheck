@@ -25,7 +25,7 @@ if config.CLOUD_PROVIDER == 'OPENSTACK':
     from tests.lib.hardware.openstack_libcloud import Hardware as Hardware
 else:
     raise Exception("Cloud provider '{}' not yet supported by "
-                    "smoke_rook".format(config.CLOUD_PROVIDER))
+                    "rookcheck".format(config.CLOUD_PROVIDER))
 
 
 logger = logging.getLogger(__name__)
