@@ -26,8 +26,6 @@ import logging
 import os
 import shutil
 import tarfile
-import tempfile
-from typing import Dict
 import urllib.request
 import yaml
 
@@ -41,8 +39,6 @@ import ansible.plugins.loader
 import ansible.executor.task_queue_manager
 from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
-
-from tests.lib.hardware.node_base import NodeBase
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +77,7 @@ class ResultCallback(CallbackModule):
 
 
 class AnsibleRunner(object):
-    def __init__(self, nodes: Dict[str, NodeBase], working_dir=None):
+    def __init__(self, hardware):
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
@@ -96,16 +92,16 @@ class AnsibleRunner(object):
 
         # create inventory, use path to host config file as source or hosts in
         # a comma separated string
-        self.inventory_file = self.create_inventory(nodes, working_dir)
+        self.inventory_dir = self.create_inventory(hardware)
         self.inventory = InventoryManager(
-            loader=self.loader, sources=self.inventory_file)
+            loader=self.loader, sources=self.inventory_dir)
 
         # variable manager takes care of merging all the different sources to
         # give you a unified view of variables available in each context
         self.variable_manager = VariableManager(
             loader=self.loader, inventory=self.inventory)
 
-        mitogen_plugin = self.download_mitogen(working_dir)
+        mitogen_plugin = self.download_mitogen(hardware.working_dir)
 
         # Hack around loading strategy modules:
         ansible.executor.task_queue_manager.strategy_loader = \
@@ -117,13 +113,19 @@ class AnsibleRunner(object):
                 required_base_class='StrategyBase',
             )
 
-    def create_inventory(self, nodes, working_dir=None):
-        if not working_dir:
-            # NOTE(jhesketh): The working dir is never cleaned up. This is
-            # somewhat deliberate to keep the private key if it is needed for
-            # debugging.
-            working_dir = tempfile.mkdtemp()
+    def create_inventory(self, hardware):
+        # create a inventory & group_vars directory
+        inventory_dir = os.path.join(hardware.working_dir, 'inventory')
+        group_vars_dir = os.path.join(inventory_dir, 'group_vars')
+        if not os.path.exists(group_vars_dir):
+            os.makedirs(group_vars_dir)
 
+        # write hardware groups vars which are useful for *all* nodes
+        group_vars_all = os.path.join(group_vars_dir, 'all.yml')
+        with open(group_vars_all, 'w') as f:
+            yaml.dump(hardware.ansible_inventory_vars(), f)
+
+        # write node specific inventory
         inv = {
             'all': {
                 'hosts': {},
@@ -131,7 +133,7 @@ class AnsibleRunner(object):
             }
         }
 
-        for node in nodes.values():
+        for node in hardware.nodes.values():
             if not node.tags:
                 inv['all']['hosts'][node.name] = node.ansible_inventory_vars()
             else:
@@ -141,11 +143,11 @@ class AnsibleRunner(object):
                     inv['all']['children'][tag]['hosts'][node.name] = \
                         node.ansible_inventory_vars()
 
-        inv_path = os.path.join(working_dir, "inventory")
-        with open(inv_path, 'w') as inv_file:
+        nodes_inv_path = os.path.join(inventory_dir, "nodes.yml")
+        with open(nodes_inv_path, 'w') as inv_file:
             yaml.dump(inv, inv_file)
 
-        return inv_path
+        return inventory_dir
 
     def run_play(self, play_source):
         # Create a new results instance for each run

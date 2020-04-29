@@ -26,7 +26,7 @@ from abc import ABC, abstractmethod
 import logging
 import os
 import tempfile
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import uuid
 
 import paramiko.rsakey
@@ -117,10 +117,22 @@ class HardwareBase(ABC):
            self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
+            self._ansible_runner = AnsibleRunner(self)
             self._ansible_runner_nodes = self.nodes.copy()
 
         return self._ansible_runner.run_play(play_source)
+
+    def ansible_inventory_vars(self) -> Dict[str, Any]:
+        vars = {
+            'ansible_ssh_private_key_file': self.private_key,
+            'ansible_host_key_checking': False,
+            'ansible_ssh_host_key_checking': False,
+            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_python_interpreter': '/usr/bin/python3',
+            'ansible_become': False,
+        }
+        return vars
 
     def __enter__(self):
         return self
