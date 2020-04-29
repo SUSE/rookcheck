@@ -28,10 +28,8 @@ class NodeBase(ABC):
     """
     Base class for nodes
     """
-    def __init__(self, name: str, private_key: str, role: NodeRole,
-                 tags: List[str] = []):
+    def __init__(self, name: str, role: NodeRole, tags: List[str] = []):
         self._name = name
-        self._private_key = private_key
         self._role = role
         self.tags = tags
 
@@ -47,10 +45,6 @@ class NodeBase(ABC):
         return self._name
 
     @property
-    def private_key(self):
-        return self._private_key
-
-    @property
     def role(self):
         return self._role
 
@@ -61,7 +55,7 @@ class NodeBase(ABC):
             'ansible_user': config.NODE_IMAGE_USER,
         }
         if config.NODE_IMAGE_USER != "root":
-            vars['ansible_become'] = True
+            vars['ansible_become'] = 'true'
             vars['ansible_become_method'] = 'sudo'
             vars['ansible_become_user'] = 'root'
         return vars

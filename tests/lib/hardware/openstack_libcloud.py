@@ -30,7 +30,6 @@ import time
 import libcloud.security
 from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
-from paramiko.client import AutoAddPolicy, SSHClient
 from urllib.parse import urlparse
 
 from tests.lib.distro import get_distro
@@ -43,14 +42,13 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
 class Node(NodeBase):
-    def __init__(self, conn, name, private_key, role, tags, public_key=None):
-        super().__init__(name, private_key, role, tags)
+    def __init__(self, conn, name, role, tags):
+        super().__init__(name, role, tags)
         self.conn = conn
         self.libcloud_node = None
 
         self.floating_ips = []
         self.volumes = []
-        self.public_key = public_key
 
         self._ssh_client = None
 
@@ -174,27 +172,6 @@ class Node(NodeBase):
         # NOTE(jhesketh): For now, just use the last floating IP
         return self.floating_ips[-1].ip_address
 
-    def execute_command(self, command):
-        """
-        Executes a command over SSH
-        return_value: (stdin, stdout, stderr)
-
-        (Warning, this method is untested)
-        """
-        if not self._ssh_client:
-            self._ssh_client = SSHClient()
-            self._ssh_client.set_missing_host_key_policy(
-                AutoAddPolicy()
-            )
-            self._ssh_client.connect(
-                hostname=self.get_ssh_ip,
-                username=config.NODE_IMAGE_USER,
-                pkey=self.private_key,
-                allow_agent=False,
-                look_for_keys=False,
-            )
-        return self._ssh_client.exec_command(command)
-
 
 class Hardware(HardwareBase):
     def __init__(self):
@@ -294,8 +271,7 @@ class Hardware(HardwareBase):
         return security_group
 
     def _create_node(self, node_name, role, tags=[]):
-        node = Node(self.conn, node_name, self.private_key, role, tags,
-                    public_key=self.public_key)
+        node = Node(self.conn, node_name, role, tags)
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
         additional_networks = []
