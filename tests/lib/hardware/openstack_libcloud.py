@@ -298,7 +298,7 @@ class Hardware(HardwareBase):
                     to_port=65535,
                 )
         else:
-            raise Exception("Cloud provider not yet supported by smoke_rook")
+            raise Exception("Cloud provider not yet supported by rookcheck")
         return security_group
 
     def _create_node(self, node_name, tags=[]):
