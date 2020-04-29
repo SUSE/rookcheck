@@ -43,15 +43,13 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
 class Node(NodeBase):
-    def __init__(self, conn, name, private_key, role, pubkey=None,
-                 tags=[]):
-        super().__init__(name, private_key, role)
+    def __init__(self, conn, name, private_key, role, tags, pubkey=None):
+        super().__init__(name, private_key, role, tags)
         self.conn = conn
         self.libcloud_node = None
 
         self.floating_ips = []
         self.volumes = []
-        self.tags = tags
         self.pubkey = pubkey
 
         self._ssh_client = None
@@ -302,8 +300,8 @@ class Hardware(HardwareBase):
         return security_group
 
     def _create_node(self, node_name, role, tags=[]):
-        node = Node(self.conn, node_name, self.private_key, role,
-                    pubkey=self.pubkey, tags=tags)
+        node = Node(self.conn, node_name, self.private_key, role, tags,
+                    pubkey=self.pubkey)
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
         additional_networks = []
@@ -350,7 +348,7 @@ class Hardware(HardwareBase):
             node_name = "%s%s_%s%d" % (
                 config.CLUSTER_PREFIX, self.hardware_uuid, suffix, i+offset)
             thread = threading.Thread(
-                target=self._create_node, args=(node_name, tags))
+                target=self._create_node, args=(node_name, role, tags))
             threads.append(thread)
             thread.start()
 

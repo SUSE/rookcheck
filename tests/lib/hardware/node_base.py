@@ -14,7 +14,7 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from tests import config
 
@@ -28,10 +28,12 @@ class NodeBase(ABC):
     """
     Base class for nodes
     """
-    def __init__(self, name: str, private_key: str, role: NodeRole):
+    def __init__(self, name: str, private_key: str, role: NodeRole,
+                 tags: List[str] = []):
         self._name = name
         self._private_key = private_key
         self._role = role
+        self.tags = tags
 
     @abstractmethod
     def get_ssh_ip(self) -> str:
