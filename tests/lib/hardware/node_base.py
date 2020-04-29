@@ -23,8 +23,8 @@ class NodeBase(ABC):
     Base class for nodes
     """
     def __init__(self, name: str, private_key: str):
-        self.name = name
-        self.private_key = private_key
+        self._name = name
+        self._private_key = private_key
 
     @abstractmethod
     def get_ssh_ip(self) -> str:
@@ -32,6 +32,14 @@ class NodeBase(ABC):
         Get the IP address that can be used to ssh into the node
         """
         pass
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def private_key(self):
+        return self._private_key
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
