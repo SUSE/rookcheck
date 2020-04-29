@@ -1,6 +1,19 @@
 Installation
 ============
 
+Quickstart
+----------
+
+Install requirements:
+
+.. code-block:: bash
+
+    sudo zypper in python-pip
+    sudo pip install tox
+    sudo zypper in $(tox -qq -e bindep -- -b)
+    sudo systemctl start docker
+    sudo usermod -aG docker $USER
+
 Requiremnets
 ------------
 
@@ -18,7 +31,7 @@ well.
     sudo pip install tox
 
 Next we run bindep from inside a tox environment to get the list of missing
-system packages
+system packages:
 
 .. code-block:: bash
 
@@ -30,6 +43,12 @@ Then we can take the list and install them.
 .. code-block:: bash
 
     sudo zypper in <output from bindep command>
+
+Or as one command the above can be:
+
+.. code-block:: bash
+
+    sudo zypper in $(tox -qq -e bindep -- -b)
 
 One of the system requirements to build rook is docker. Make sure the docker
 daemon is running:
