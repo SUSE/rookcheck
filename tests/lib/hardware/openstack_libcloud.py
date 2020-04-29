@@ -43,14 +43,14 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
 class Node(NodeBase):
-    def __init__(self, conn, name, private_key, role, tags, pubkey=None):
+    def __init__(self, conn, name, private_key, role, tags, public_key=None):
         super().__init__(name, private_key, role, tags)
         self.conn = conn
         self.libcloud_node = None
 
         self.floating_ips = []
         self.volumes = []
-        self.pubkey = pubkey
+        self.public_key = public_key
 
         self._ssh_client = None
 
@@ -199,22 +199,16 @@ class Node(NodeBase):
 class Hardware(HardwareBase):
     def __init__(self):
         super().__init__()
-        self._ex_os_key = self.generate_keys()
+        self._ex_os_key = self.conn.import_key_pair_from_string(
+            self.sshkey_name, self.public_key)
         self._ex_security_group = self._create_security_group()
         self._ex_network_cache = {}
 
         self._image_cache = {}
         self._size_cache = {}
 
-        logger.info(f"public key {self.pubkey}")
+        logger.info(f"public key {self.public_key}")
         logger.info(f"private key {self.private_key}")
-
-    def generate_keys(self):
-        super().generate_keys()
-        os_key = self.conn.import_key_pair_from_string(
-            self.sshkey_name, self.pubkey)
-
-        return os_key
 
     def get_connection(self):
         """ Get a libcloud connection object for the configured driver """
@@ -301,7 +295,7 @@ class Hardware(HardwareBase):
 
     def _create_node(self, node_name, role, tags=[]):
         node = Node(self.conn, node_name, self.private_key, role, tags,
-                    pubkey=self.pubkey)
+                    public_key=self.public_key)
         # TODO(jhesketh): Create fixed network as part of build and security
         #                 group
         additional_networks = []

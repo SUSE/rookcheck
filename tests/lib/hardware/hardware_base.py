@@ -50,34 +50,51 @@ class HardwareBase(ABC):
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
-        self.working_dir: str = tempfile.mkdtemp(
+        self._working_dir: str = tempfile.mkdtemp(
             prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
 
-        self.sshkey_name: str = None
-        self.pubkey: str = None
-        self.private_key: str = None
+        self._sshkey_name: str = None
+        self._public_key: str = None
+        self._private_key: str = None
 
         self._ansible_runner: Optional[AnsibleRunner] = None
         self._ansible_runner_nodes: Dict[str, NodeBase] = None
+
+        self._generate_keys()
+
+    @property
+    def working_dir(self):
+        return self._working_dir
 
     @property
     def hardware_uuid(self) -> str:
         return self._hardware_uuid
 
-    @abstractmethod
-    def generate_keys(self):
+    @property
+    def sshkey_name(self):
+        return self._sshkey_name
+
+    @property
+    def public_key(self):
+        return self._public_key
+
+    @property
+    def private_key(self):
+        return self._private_key
+
+    def _generate_keys(self):
         """
         Generatees a public and private key
         """
         key = paramiko.rsakey.RSAKey.generate(2048)
-        self.private_key = os.path.join(self.working_dir, 'private.key')
-        with open(self.private_key, 'w') as key_file:
+        self._private_key = os.path.join(self.working_dir, 'private.key')
+        with open(self._private_key, 'w') as key_file:
             key.write_private_key(key_file)
-        os.chmod(self.private_key, 0o400)
+        os.chmod(self._private_key, 0o400)
 
-        self.sshkey_name = \
+        self._sshkey_name = \
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
-        self.pubkey = "%s %s" % (key.get_name(), key.get_base64())
+        self._public_key = "%s %s" % (key.get_name(), key.get_base64())
 
     @abstractmethod
     def destroy(self):
