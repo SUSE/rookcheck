@@ -33,17 +33,13 @@ from libcloud.compute.providers import get_driver
 from paramiko.client import AutoAddPolicy, SSHClient
 from urllib.parse import urlparse
 
+from tests.lib.distro import get_distro
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase
 from tests import config
 
 logger = logging.getLogger(__name__)
 libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
-
-if config.DISTRO == 'openSUSE_k8s':
-    from tests.lib.distro.opensuse import openSUSE_k8s as Distro
-else:
-    raise Exception('Unknown distro {}'.format(config.DISTRO))
 
 
 class Node(NodeBase):
@@ -410,7 +406,7 @@ class Hardware(HardwareBase):
         """
         Install any dependencies, set firewall etc.
         """
-        d = Distro()
+        d = get_distro()()
 
         self.remove_host_keys()
         r = self.execute_ansible_play(d.wait_for_connection_play())
