@@ -34,6 +34,13 @@ class NodeBase(ABC):
         self.tags = tags
 
     @abstractmethod
+    def boot(self):
+        """
+        Boot a node so the node is ready to be used (eg. via get_ssh_ip())
+        """
+        pass
+
+    @abstractmethod
     def get_ssh_ip(self) -> str:
         """
         Get the IP address that can be used to ssh into the node
