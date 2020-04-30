@@ -105,3 +105,9 @@ my.env
 
 # Cache
 .kube/
+
+# Vim files
+*~
+*.swp
+*.retry
+.netrwhist
