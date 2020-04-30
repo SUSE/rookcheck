@@ -59,3 +59,7 @@ class NodeBase(ABC):
             vars['ansible_become_method'] = 'sudo'
             vars['ansible_become_user'] = 'root'
         return vars
+
+    @abstractmethod
+    def destroy(self):
+        pass
