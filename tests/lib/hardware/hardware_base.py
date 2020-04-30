@@ -44,7 +44,7 @@ class HardwareBase(ABC):
     Base Hardware class
     """
     def __init__(self):
-        self.nodes: Dict[str, NodeBase] = {}
+        self._nodes: Dict[str, NodeBase] = {}
         self._hardware_uuid: str = str(uuid.uuid4())[:8]
         self.conn = self.get_connection()
 
@@ -61,6 +61,10 @@ class HardwareBase(ABC):
         self._ansible_runner_nodes: Dict[str, NodeBase] = None
 
         self._generate_keys()
+
+    @property
+    def nodes(self):
+        return self._nodes
 
     @property
     def working_dir(self):
@@ -96,13 +100,24 @@ class HardwareBase(ABC):
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         self._public_key = "%s %s" % (key.get_name(), key.get_base64())
 
-    @abstractmethod
     def destroy(self):
-        pass
+        for n in list(self.nodes):
+            self.node_remove(self.nodes[n])
 
     @abstractmethod
     def get_connection(self):
         pass
+
+    def node_add(self, node: NodeBase):
+        logger.info(f"adding new node {node.name} to hardware "
+                    "{self.hardware_uuid}")
+        self.nodes[node.name] = node
+
+    def node_remove(self, node: NodeBase):
+        logger.info(f"removing node {node.name} from hardware "
+                    "{self.hardware_uuid}")
+        del self.nodes[node.name]
+        node.destroy()
 
     @abstractmethod
     def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
