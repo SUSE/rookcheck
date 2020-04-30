@@ -293,7 +293,7 @@ class Hardware(HardwareBase):
         node._wait_until_state(NodeState.RUNNING)
         # Attach a 10GB disk
         node._create_and_attach_volume(10)
-        self.nodes[node_name] = node
+        self.node_add(node)
 
     def boot_nodes(self, masters=1, workers=2, offset=0):
         """
@@ -334,22 +334,9 @@ class Hardware(HardwareBase):
         #     thread.join()
 
     def destroy(self):
-        # Remove nodes
-        logger.info("destroy nodes")
-
-        threads = []
-        for node in self.nodes.values():
-            thread = threading.Thread(target=node.destroy,)
-            threads.append(thread)
-            thread.start()
-            # FIXME(jhesketh): See above re thread-safety.
-            thread.join()
-
-        # for thread in threads:
-        #     thread.join()
-
         self.conn.ex_delete_security_group(self._ex_security_group)
         self.conn.delete_key_pair(self._ex_os_key)
+        super().destroy()
 
     def remove_host_keys(self):
         # The mitogen plugin does not correctly ignore host key checking, so we
