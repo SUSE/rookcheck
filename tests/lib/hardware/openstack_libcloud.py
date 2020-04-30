@@ -336,9 +336,9 @@ class Hardware(HardwareBase):
         #     thread.join()
 
     def destroy(self):
+        super().destroy()
         self.conn.ex_delete_security_group(self._ex_security_group)
         self.conn.delete_key_pair(self._ex_os_key)
-        super().destroy()
 
     def remove_host_keys(self):
         # The mitogen plugin does not correctly ignore host key checking, so we
