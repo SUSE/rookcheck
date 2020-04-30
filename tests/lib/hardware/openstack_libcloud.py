@@ -53,8 +53,8 @@ class Node(NodeBase):
         self._sshkey_name = sshkey_name
         self._libcloud_node = None
 
-        self.floating_ips = []
-        self.volumes = []
+        self._floating_ips = []
+        self._volumes = []
 
         self._ssh_client = None
 
@@ -90,7 +90,7 @@ class Node(NodeBase):
             config.OS_EXTERNAL_NETWORK)
 
         logger.info(f"Created floating IP: {floating_ip}")
-        self.floating_ips.append(floating_ip)
+        self._floating_ips.append(floating_ip)
 
         # Wait until the node is running before assigning IP
         self._wait_until_state()
@@ -99,7 +99,7 @@ class Node(NodeBase):
         logger.debug(f"node {self.name} floating ip {floating_ip} attached")
 
     def _create_and_attach_volume(self, size=10):
-        vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
+        vol_name = "%s-vol-%d" % (self.name, len(self._volumes))
         volume = self.conn.create_volume(size=size, name=vol_name)
         logger.info(f"Created volume: {volume}")
 
@@ -109,7 +109,7 @@ class Node(NodeBase):
         self.conn.attach_volume(
             self._libcloud_node, volume, device=None)
         logger.debug(f"node {self.name} volume attached")
-        self.volumes.append(volume)
+        self._volumes.append(volume)
 
     def _wait_until_volume_state(self, volume_uuid,
                                  state=StorageVolumeState.AVAILABLE,
@@ -165,14 +165,14 @@ class Node(NodeBase):
     def destroy(self):
         if self._ssh_client:
             self._ssh_client.close()
-        for floating_ip in self.floating_ips:
+        for floating_ip in self._floating_ips:
             floating_ip.delete()
         if self._libcloud_node:
             uuid = self._libcloud_node.uuid
             self._libcloud_node.destroy()
             self._libcloud_node = None
             self._wait_until_state(None, uuid=uuid)
-        for volume in self.volumes:
+        for volume in self._volumes:
             volume.destroy()
 
     def get_ssh_ip(self):
@@ -180,7 +180,7 @@ class Node(NodeBase):
         Figure out which IP to use to SSH over
         """
         # NOTE(jhesketh): For now, just use the last floating IP
-        return self.floating_ips[-1].ip_address
+        return self._floating_ips[-1].ip_address
 
 
 class Hardware(HardwareBase):
