@@ -46,7 +46,7 @@ class HardwareBase(ABC):
     def __init__(self):
         self._nodes: Dict[str, NodeBase] = {}
         self._hardware_uuid: str = str(uuid.uuid4())[:8]
-        self.conn = self.get_connection()
+        self._conn = self.get_connection()
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
@@ -61,6 +61,10 @@ class HardwareBase(ABC):
         self._ansible_runner_nodes: Dict[str, NodeBase] = None
 
         self._generate_keys()
+
+    @property
+    def conn(self):
+        return self._conn
 
     @property
     def nodes(self):
