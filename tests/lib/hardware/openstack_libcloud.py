@@ -42,39 +42,47 @@ libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
 
 
 class Node(NodeBase):
-    def __init__(self, conn, name, role, tags):
+    def __init__(self, name, role, tags, conn, size, image, networks,
+                 security_groups, sshkey_name):
         super().__init__(name, role, tags)
         self.conn = conn
-        self.libcloud_node = None
+        self._size = size
+        self._image = image
+        self._networks = networks
+        self._security_groups = security_groups
+        self._sshkey_name = sshkey_name
+        self._libcloud_node = None
 
-        self.floating_ips = []
-        self.volumes = []
+        self._floating_ips = []
+        self._volumes = []
 
         self._ssh_client = None
 
-    def _boot(self, size, image, sshkey_name=None, additional_networks=[],
-              security_groups=[]):
-        if self.libcloud_node:
-            raise Exception("A node has already been booted")
+    def boot(self):
+        if self._libcloud_node:
+            raise Exception(f"node {self.name} has already been booted")
 
-        # TODO(jhesketh): Move cloud-specific configuration elsewhere
         kwargs = {}
-        if additional_networks:
-            kwargs['networks'] = additional_networks
-        if sshkey_name:
-            kwargs['ex_keyname'] = sshkey_name
-        if security_groups:
-            kwargs['ex_security_groups'] = security_groups
+        if self._networks:
+            kwargs['networks'] = self._networks
+        if self._sshkey_name:
+            kwargs['ex_keyname'] = self._sshkey_name
+        kwargs['ex_security_groups'] = self._security_groups
 
-        # Can't use deploy_node because there is no public ip yet
-        self.libcloud_node = self.conn.create_node(
+        logging.debug(f"node {self.name} booting")
+        self._libcloud_node = self.conn.create_node(
             name=self.name,
-            size=size,
-            image=image,
+            size=self._size,
+            image=self._image,
             **kwargs
         )
+        logging.debug(f"node {self.name} booted")
 
-        logger.info(f"Created node: {self.libcloud_node}")
+        self._create_and_attach_floating_ip()
+        # Wait for node to be ready
+        self._wait_until_state(NodeState.RUNNING)
+        # Attach a 10GB disk
+        self._create_and_attach_volume(10)
 
     def _create_and_attach_floating_ip(self):
         # TODO(jhesketh): Move cloud-specific configuration elsewhere
@@ -82,15 +90,16 @@ class Node(NodeBase):
             config.OS_EXTERNAL_NETWORK)
 
         logger.info(f"Created floating IP: {floating_ip}")
-        self.floating_ips.append(floating_ip)
+        self._floating_ips.append(floating_ip)
 
         # Wait until the node is running before assigning IP
         self._wait_until_state()
         self.conn.ex_attach_floating_ip_to_node(
-            self.libcloud_node, floating_ip)
+            self._libcloud_node, floating_ip)
+        logger.debug(f"node {self.name} floating ip {floating_ip} attached")
 
     def _create_and_attach_volume(self, size=10):
-        vol_name = "%s-vol-%d" % (self.name, len(self.volumes))
+        vol_name = "%s-vol-%d" % (self.name, len(self._volumes))
         volume = self.conn.create_volume(size=size, name=vol_name)
         logger.info(f"Created volume: {volume}")
 
@@ -98,8 +107,9 @@ class Node(NodeBase):
         self._wait_until_volume_state(volume.uuid)
 
         self.conn.attach_volume(
-            self.libcloud_node, volume, device=None)
-        self.volumes.append(volume)
+            self._libcloud_node, volume, device=None)
+        logger.debug(f"node {self.name} volume attached")
+        self._volumes.append(volume)
 
     def _wait_until_volume_state(self, volume_uuid,
                                  state=StorageVolumeState.AVAILABLE,
@@ -131,7 +141,7 @@ class Node(NodeBase):
         # `state` can be NodeState, "any", or None (for not existant)
         # `state` can also be a list of NodeState's, any matching will pass
         if not uuid:
-            uuid = self.libcloud_node.uuid
+            uuid = self._libcloud_node.uuid
         for _ in range(int(timeout / interval)):
             nodes = self.conn.list_nodes()
             for node in nodes:
@@ -155,14 +165,14 @@ class Node(NodeBase):
     def destroy(self):
         if self._ssh_client:
             self._ssh_client.close()
-        for floating_ip in self.floating_ips:
+        for floating_ip in self._floating_ips:
             floating_ip.delete()
-        if self.libcloud_node:
-            uuid = self.libcloud_node.uuid
-            self.libcloud_node.destroy()
-            self.libcloud_node = None
+        if self._libcloud_node:
+            uuid = self._libcloud_node.uuid
+            self._libcloud_node.destroy()
+            self._libcloud_node = None
             self._wait_until_state(None, uuid=uuid)
-        for volume in self.volumes:
+        for volume in self._volumes:
             volume.destroy()
 
     def get_ssh_ip(self):
@@ -170,7 +180,7 @@ class Node(NodeBase):
         Figure out which IP to use to SSH over
         """
         # NOTE(jhesketh): For now, just use the last floating IP
-        return self.floating_ips[-1].ip_address
+        return self._floating_ips[-1].ip_address
 
 
 class Hardware(HardwareBase):
@@ -271,28 +281,20 @@ class Hardware(HardwareBase):
         return security_group
 
     def _create_node(self, node_name, role, tags=[]):
-        node = Node(self.conn, node_name, role, tags)
-        # TODO(jhesketh): Create fixed network as part of build and security
-        #                 group
+        # are there any additional networks for the node wanted?
         additional_networks = []
         if config.OS_INTERNAL_NETWORK:
             additional_networks.append(
                 self._get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
             )
-        node._boot(
-            size=self._get_size_by_name(config.NODE_SIZE),
-            image=self._get_image_by_id(config.NODE_IMAGE_ID),
-            sshkey_name=self.sshkey_name,
-            additional_networks=additional_networks,
-            security_groups=[
-                self._ex_security_group,
-            ]
-        )
-        node._create_and_attach_floating_ip()
-        # Wait for node to be ready
-        node._wait_until_state(NodeState.RUNNING)
-        # Attach a 10GB disk
-        node._create_and_attach_volume(10)
+
+        node = Node(node_name, role, tags, self.conn,
+                    self._get_size_by_name(config.NODE_SIZE),
+                    self._get_image_by_id(config.NODE_IMAGE_ID),
+                    additional_networks, [self._ex_security_group],
+                    self.sshkey_name)
+
+        node.boot()
         self.node_add(node)
 
     def boot_nodes(self, masters=1, workers=2, offset=0):
@@ -334,9 +336,9 @@ class Hardware(HardwareBase):
         #     thread.join()
 
     def destroy(self):
+        super().destroy()
         self.conn.ex_delete_security_group(self._ex_security_group)
         self.conn.delete_key_pair(self._ex_os_key)
-        super().destroy()
 
     def remove_host_keys(self):
         # The mitogen plugin does not correctly ignore host key checking, so we
