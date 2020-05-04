@@ -35,6 +35,14 @@ Install requirements:
     sudo systemctl start docker
     sudo usermod -aG docker $USER
 
+Configure:
+
+.. code-block:: bash
+
+    cp configuration.env my.env
+    vim my.env # Make any changes needed
+    source my.env
+
 Run tests:
 
 .. code-block:: bash
