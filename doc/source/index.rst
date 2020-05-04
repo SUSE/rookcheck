@@ -27,6 +27,7 @@ the environment.
    structure
    writing_tests
    theory
+   development_notes
 
 
 Indices and tables

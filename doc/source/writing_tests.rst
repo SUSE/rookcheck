@@ -1,4 +1,6 @@
+.. _writing_tests:
+
 Writing tests
 =============
 
-TODO some examples
+See :ref:`test_structure` first for a general overview.
