@@ -85,3 +85,11 @@ OS_INTERNAL_NETWORK = os.getenv('OS_INTERNAL_NETWORK', None)
 
 # The external network that smoke-rook can create floating ip's on
 OS_EXTERNAL_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', 'floating')
+
+#############################
+# Debug/performance options #
+#############################
+
+# Whether or not to perform some options as a thread. Turning this off may help
+# with debugging at the cost of performance.
+_USE_THREADS = os.getenv('ROOKCHECK_USE_THREADS', True)

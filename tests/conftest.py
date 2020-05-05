@@ -72,17 +72,23 @@ def rook_cluster():
     with Hardware() as hardware:
         with Kubernetes(hardware) as kubernetes:
             with RookCluster(kubernetes) as rook_cluster:
-                logger.info("Starting rook build in a thread")
-                build_thread = threading.Thread(target=rook_cluster.build_rook)
-                build_thread.start()
+                if config._USE_THREADS:
+                    logger.info("Starting rook build in a thread")
+                    build_thread = threading.Thread(
+                        target=rook_cluster.build_rook)
+                    build_thread.start()
 
                 # build rook thread
                 hardware.boot_nodes()
                 hardware.prepare_nodes()
                 kubernetes.install_kubernetes()
 
-                logger.info("Re-joining rook build thread")
-                build_thread.join()
+                if config._USE_THREADS:
+                    logger.info("Re-joining rook build thread")
+                    build_thread.join()
+                else:
+                    rook_cluster.build_rook()
+
                 # NOTE(jhesketh): The upload is very slow.. may want to
                 #                 consider how to do this in a thread too but
                 #                 is more complex with ansible.
