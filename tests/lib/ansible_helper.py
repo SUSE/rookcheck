@@ -28,6 +28,7 @@ import shutil
 import tarfile
 import urllib.request
 import yaml
+import subprocess
 
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
@@ -147,7 +148,17 @@ class AnsibleRunner(object):
         with open(nodes_inv_path, 'w') as inv_file:
             yaml.dump(inv, inv_file)
 
+        logger.info('Inventory path: {}'.format(inventory_dir))
         return inventory_dir
+
+    def run_play_raw(self, playbook):
+        path = os.path.join('tests/assets/ansible', playbook)
+        logger.info(f'Running playbook {path}')
+        try:
+            subprocess.run(['ansible-playbook', '-i', self.inventory_dir,
+                            path])
+        except subprocess.CalledProcessError:
+            logger.error('An error occured executing Ansible playbook')
 
     def run_play(self, play_source):
         # Create a new results instance for each run
