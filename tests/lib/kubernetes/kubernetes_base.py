@@ -79,7 +79,7 @@ class DeploySUSE(Deploy):
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="free",
+            strategy="free" if config._USE_FREE_STRATEGY else "linear",
         )
         return play_source
 
@@ -199,7 +199,10 @@ class DeploySUSE(Deploy):
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="mitogen_free",
+            strategy=(
+                "mitogen_free"
+                if config._USE_FREE_STRATEGY else "mitogen_linear"
+            ),
         )
         return play_source
 
@@ -407,7 +410,10 @@ class DeploySUSE(Deploy):
             hosts="worker",
             tasks=tasks,
             gather_facts="no",
-            strategy="mitogen_free",
+            strategy=(
+                "mitogen_free"
+                if config._USE_FREE_STRATEGY else "mitogen_linear"
+            ),
         )
         return play_source
 

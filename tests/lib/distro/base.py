@@ -24,6 +24,8 @@
 
 from abc import ABC, abstractmethod
 
+from tests import config
+
 
 class Distro(ABC):
     def wait_for_connection_play(self):
@@ -48,7 +50,7 @@ class Distro(ABC):
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="free",
+            strategy="free" if config._USE_FREE_STRATEGY else "linear",
         )
 
         return play_source
