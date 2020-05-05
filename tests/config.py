@@ -26,6 +26,10 @@ import getpass
 # (https://libcloud.readthedocs.io/en/latest/supported_providers.html)
 CLOUD_PROVIDER = os.getenv('CLOUD_PROVIDER', 'OPENSTACK')
 
+# The location for all of the build assets and state to be stored in. A
+# sub-folder will be created using each CLUSTER_PREFIX
+WORKSPACE_DIR = os.getenv('WORKSPACE_DIR', '/tmp/rookcheck')
+
 # Prevent cluster collisions in shared environments with a resource name prefix
 # Can safely be commented-out for local libvirt use
 CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % getpass.getuser())

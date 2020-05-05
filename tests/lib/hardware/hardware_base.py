@@ -50,8 +50,7 @@ class HardwareBase(ABC):
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
-        self._working_dir: str = tempfile.mkdtemp(
-            prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
+        self._working_dir: str = self._get_working_dir()
 
         self._sshkey_name: str = None
         self._public_key: str = None
@@ -89,6 +88,13 @@ class HardwareBase(ABC):
     @property
     def private_key(self):
         return self._private_key
+
+    def _get_working_dir(self):
+        os.makedirs(config.WORKSPACE_DIR)
+        return tempfile.mkdtemp(
+            prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid),
+            dir=config.WORKSPACE_DIR,
+        )
 
     def _generate_keys(self):
         """
