@@ -480,7 +480,7 @@ class KubernetesBase(ABC):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
 
-    def kubectl(self, command):
+    def kubectl(self, command, surpress_logging=False):
         """
         Run a kubectl command
         """
@@ -492,9 +492,10 @@ class KubernetesBase(ABC):
                 capture_output=True
             )
         except subprocess.CalledProcessError as e:
-            logger.exception(f"Command `{command}` failed")
-            logger.error(f"STDOUT: {e.stdout}")
-            logger.error(f"STDERR: {e.stderr}")
+            if not surpress_logging:
+                logger.exception(f"Command `{command}` failed")
+                logger.error(f"STDOUT: {e.stdout}")
+                logger.error(f"STDERR: {e.stderr}")
             raise
         return out
 
@@ -502,7 +503,10 @@ class KubernetesBase(ABC):
         return self.kubectl("apply -f %s" % yaml_file)
 
     def untaint_master(self):
-        self.kubectl("taint nodes --all node-role.kubernetes.io/master-")
+        self.kubectl(
+            "taint nodes --all node-role.kubernetes.io/master-",
+            surpress_logging=True
+        )
 
     def execute_in_pod(self, command, pod, namespace="rook-ceph"):
         return self.kubectl(
