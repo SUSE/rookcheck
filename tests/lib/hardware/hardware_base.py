@@ -36,6 +36,7 @@ from tests.lib.distro import get_distro
 from tests.lib.ansible_helper import AnsibleRunner
 from tests.lib.hardware.node_base import NodeBase
 from tests import config
+from tests.lib.hardware.node_base import NodeRole
 
 
 logger = logging.getLogger(__name__)
@@ -156,6 +157,16 @@ class HardwareBase(ABC):
         self.execute_ansible_play(d.wait_for_connection_play())
         self.execute_ansible_play(d.bootstrap_play())
 
+    def execute_ansible_play_raw(self, playbook):
+        if not self._ansible_runner or \
+           self._ansible_runner_nodes != self.nodes:
+            # Create a new AnsibleRunner if the nodes dict has changed (to
+            # generate a new inventory).
+            self._ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
+            self._ansible_runner_nodes = self.nodes.copy()
+
+        return self._ansible_runner.run_play_raw(playbook)
+
     def _execute_ansible_play(self, play_source):
         if not self._ansible_runner or \
            self._ansible_runner_nodes != self.nodes:
@@ -194,6 +205,21 @@ class HardwareBase(ABC):
             'ansible_python_interpreter': '/usr/bin/python3',
         }
         return vars
+
+    def get_node_by_role(self, role: NodeRole):
+        items = []
+        for node_name, node_obj in self.nodes.items():
+            if node_obj._role == role:
+                items.append(node_obj)
+        return items
+
+    def get_masters(self):
+        self.masters = self.get_node_by_role(NodeRole.MASTER)
+        return self.masters
+
+    def get_workers(self):
+        self.workers = self.get_node_by_role(NodeRole.WORKER)
+        return self.workers
 
     def __enter__(self):
         return self

@@ -1,0 +1,4 @@
+---
+- hosts: all
+  roles:
+    - { role: caasp,   tags: ['caasp'] }
