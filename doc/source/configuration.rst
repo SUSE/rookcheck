@@ -41,6 +41,22 @@ where `floating` is the name of the external network.
 TODO(jhesketh): Autodoc the config options once configuration is reworked into
 something more useful.
 
+libvirt provider specifics
+--------------------------
+
+For using `libvirt` as a hardware backend, a qcow2 image which includes
+`cloud-init` is needed. Also a libvirt network needs to be available and
+started (eg. via `sudo virsh net-start default`).
+
+Then some environment variables are needed:
+
+.. code-block:: bash
+
+   export CLOUD_PROVIDER='LIBVIRT'
+   export ROOKCHECK_PROVIDER_LIBVIRT_IMAGE="/full-path-to-the-image/openSUSE-Leap-15.1-JeOS.x86_64.qcow2"
+
+The image can be taken from https://software.opensuse.org/distributions/leap#JeOS-ports
+
 .. automodule:: tests.config
    :members:
    :private-members:
