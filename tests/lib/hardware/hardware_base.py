@@ -188,7 +188,6 @@ class HardwareBase(ABC):
             'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
             'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
             'ansible_python_interpreter': '/usr/bin/python3',
-            'ansible_become': False,
         }
         return vars
 
