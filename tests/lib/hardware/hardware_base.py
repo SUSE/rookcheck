@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 import logging
 import os
 from pprint import pformat
+import subprocess
 from typing import Dict, Optional, Any
 import uuid
 
@@ -112,6 +113,17 @@ class HardwareBase(ABC):
             "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         self._public_key = "%s %s" % (key.get_name(), key.get_base64())
 
+    def _node_remove_ssh_key(self, node: NodeBase):
+        # The mitogen plugin does not correctly ignore host key checking, so we
+        # should remove any host keys for our nodes before starting.
+        # The 'ssh' connection imports ssh-keys for us, so as a first step we
+        # run a standard ssh connection to do the imports. We could import the
+        # sshkeys manually first, but we also want to wait on the connection to
+        # be available (in order to even be able to get them).
+        # Therefore simply remove any entries from your known_hosts. It's also
+        # helpful to do this after a build to clean up anything locally.
+        subprocess.run(f"ssh-keygen -R {node.get_ssh_ip()}", shell=True)
+
     def destroy(self):
         for n in list(self.nodes):
             self.node_remove(self.nodes[n])
@@ -123,6 +135,7 @@ class HardwareBase(ABC):
     def node_add(self, node: NodeBase):
         logger.info(f"adding new node {node.name} to hardware "
                     f"{self.hardware_uuid}")
+        self._node_remove_ssh_key(node)
         self.nodes[node.name] = node
 
     def node_remove(self, node: NodeBase):
