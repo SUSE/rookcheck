@@ -68,8 +68,10 @@ class openSUSE_k8s(base.Distro):
                     args=dict(
                         name='kernel-default',
                         state='latest',
+                        force=True,
                         extra_args_precommand='--non-interactive '
-                                              '--gpg-auto-import-keys',
+                                              '--gpg-auto-import-keys ',
+                        extra_args='--force-resolution',
                     )
                 )
             )
