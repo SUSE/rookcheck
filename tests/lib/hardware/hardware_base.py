@@ -53,6 +53,7 @@ class HardwareBase(ABC):
         self._working_dir: str = tempfile.mkdtemp(
             prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
 
+        logger.info(f"hardware {self.hardware_uuid}: Using {self.working_dir}")
         self._sshkey_name: str = None
         self._public_key: str = None
         self._private_key: str = None
@@ -114,7 +115,7 @@ class HardwareBase(ABC):
 
     def node_add(self, node: NodeBase):
         logger.info(f"adding new node {node.name} to hardware "
-                    "{self.hardware_uuid}")
+                    f"{self.hardware_uuid}")
         self.nodes[node.name] = node
 
     def node_remove(self, node: NodeBase):
