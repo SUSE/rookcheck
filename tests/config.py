@@ -109,3 +109,7 @@ PROVIDER_LIBVIRT_NETWORK = os.getenv(
 # the qcow2 image that will be used for libvirt. the image must
 # contain cloud-init!
 PROVIDER_LIBVIRT_IMAGE = os.getenv('ROOKCHECK_PROVIDER_LIBVIRT_IMAGE', None)
+
+# Memory use for libvirt VMs (in GB)
+PROVIDER_LIBVIRT_VM_MEMORY = int(os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_VM_MEMORY', 8))

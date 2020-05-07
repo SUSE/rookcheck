@@ -258,7 +258,8 @@ class Hardware(HardwareBase):
     def _boot_node(self, name: str, role: NodeRole, tags: List[str]):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
-        node = Node(name, role, tags, conn, self._network, 0, 8,
+        node = Node(name, role, tags, conn, self._network, 0,
+                    config.PROVIDER_LIBVIRT_VM_MEMORY,
                     self.public_key, self.private_key)
         node.boot()
         self.node_add(node)
