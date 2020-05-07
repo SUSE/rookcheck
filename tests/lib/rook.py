@@ -19,6 +19,7 @@ import subprocess
 import time
 import wget
 
+from tests import config
 from tests.lib import common
 
 
@@ -63,7 +64,7 @@ class UploadRook():
             gather_facts="no",
             # Temporary workaround for mitogen failing to copy files or
             # templates.
-            strategy="free",
+            strategy="free" if config._USE_FREE_STRATEGY else "linear",
         )
         return play_source
 

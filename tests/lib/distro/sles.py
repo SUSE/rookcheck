@@ -23,6 +23,7 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+from tests import config
 from tests.lib.distro import base
 
 
@@ -69,6 +70,9 @@ class SLES_CaaSP(base.Distro):
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="mitogen_free",
+            strategy=(
+                "mitogen_free"
+                if config._USE_FREE_STRATEGY else "mitogen_linear"
+            ),
         )
         return play_source

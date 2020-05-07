@@ -25,7 +25,6 @@
 from abc import ABC, abstractmethod
 import logging
 import os
-import tempfile
 from typing import Dict, Optional, Any
 import uuid
 
@@ -50,8 +49,7 @@ class HardwareBase(ABC):
 
         # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
         # deliberate to keep the private key if it is needed for debugging.
-        self._working_dir: str = tempfile.mkdtemp(
-            prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid))
+        self._working_dir: str = self._get_working_dir()
 
         logger.info(f"hardware {self.hardware_uuid}: Using {self.working_dir}")
         self._sshkey_name: str = None
@@ -90,6 +88,14 @@ class HardwareBase(ABC):
     @property
     def private_key(self):
         return self._private_key
+
+    def _get_working_dir(self):
+        working_dir_path = os.path.join(
+            config.WORKSPACE_DIR,
+            "%s%s" % (config.CLUSTER_PREFIX, self.hardware_uuid)
+        )
+        os.makedirs(working_dir_path)
+        return working_dir_path
 
     def _generate_keys(self):
         """

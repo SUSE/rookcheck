@@ -22,6 +22,7 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+from tests import config
 from tests.lib.distro import base
 
 
@@ -130,8 +131,8 @@ class openSUSE_k8s(base.Distro):
 
         # TODO(jhesketh): Figure out if this is appropriate for all OpenStack
         #                 clouds.
-        config = "\nIPADDR_0={{ ansible_host }}/32"
-        config += "\nLABEL_0=Floating\n"
+        data = "\nIPADDR_0={{ ansible_host }}/32"
+        data += "\nLABEL_0=Floating\n"
         tasks.append(
             dict(
                 name="Add floating IP to eth0",
@@ -139,7 +140,7 @@ class openSUSE_k8s(base.Distro):
                     module='shell',
                     args=dict(
                         cmd='printf "%s" >> /etc/sysconfig/network/ifcfg-eth0'
-                            % config,
+                            % data,
                     )
                 )
             )
@@ -179,6 +180,9 @@ class openSUSE_k8s(base.Distro):
             hosts="all",
             tasks=tasks,
             gather_facts="no",
-            strategy="mitogen_free",
+            strategy=(
+                "mitogen_free"
+                if config._USE_FREE_STRATEGY else "mitogen_linear"
+            ),
         )
         return play_source
