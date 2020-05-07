@@ -167,12 +167,8 @@ class RookCluster():
     def upload_rook_image(self):
         d = UploadRook()
 
-        r = self.kubernetes.hardware.execute_ansible_play(
+        self.kubernetes.hardware.execute_ansible_play(
             d.upload_image_play(self.builddir))
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
 
     def install_rook(self):
         if not self._rook_built:
