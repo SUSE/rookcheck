@@ -25,7 +25,6 @@
 from abc import ABC, abstractmethod
 import logging
 import os
-import tempfile
 from typing import Dict, Optional, Any
 import uuid
 
@@ -90,11 +89,12 @@ class HardwareBase(ABC):
         return self._private_key
 
     def _get_working_dir(self):
-        os.makedirs(config.WORKSPACE_DIR)
-        return tempfile.mkdtemp(
-            prefix="%s%s_" % (config.CLUSTER_PREFIX, self.hardware_uuid),
-            dir=config.WORKSPACE_DIR,
+        working_dir_path = os.path.join(
+            config.WORKSPACE_DIR,
+            "%s%s" % (config.CLUSTER_PREFIX, self.hardware_uuid)
         )
+        os.makedirs(working_dir_path)
+        return working_dir_path
 
     def _generate_keys(self):
         """
