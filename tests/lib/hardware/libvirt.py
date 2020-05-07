@@ -37,7 +37,6 @@ import socket
 from typing import List
 from xml.dom import minidom
 
-from tests.lib.distro import get_distro
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests import config
@@ -290,9 +289,3 @@ class Hardware(HardwareBase):
         # wait for all threads to finish
         for t in threads:
             t.join()
-
-    def prepare_nodes(self):
-        d = get_distro()()
-
-        self.execute_ansible_play(d.wait_for_connection_play())
-        self.execute_ansible_play(d.bootstrap_play())
