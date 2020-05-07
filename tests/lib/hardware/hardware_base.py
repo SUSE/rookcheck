@@ -25,6 +25,7 @@
 from abc import ABC, abstractmethod
 import logging
 import os
+from pprint import pformat
 from typing import Dict, Optional, Any
 import uuid
 
@@ -138,7 +139,7 @@ class HardwareBase(ABC):
     def prepare_nodes(self):
         logger.info("prepare nodes")
 
-    def execute_ansible_play(self, play_source):
+    def _execute_ansible_play(self, play_source):
         if not self._ansible_runner or \
            self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
@@ -147,6 +148,24 @@ class HardwareBase(ABC):
             self._ansible_runner_nodes = self.nodes.copy()
 
         return self._ansible_runner.run_play(play_source)
+
+    def execute_ansible_play(self, play_source):
+        r = self._execute_ansible_play(play_source)
+        failure = False
+        if r.host_unreachable:
+            logger.error("One or more hosts were unreachable")
+            logger.error(pformat(r.host_unreachable))
+            failure = True
+        if r.host_failed:
+            logger.error("One or more hosts failed")
+            logger.error(pformat(r.host_failed))
+            failure = True
+        if failure:
+            logger.debug("The successful hosts returned:")
+            logger.debug(pformat(r.host_ok))
+            raise Exception(
+                f"Failure running ansible playbook {play_source['name']}")
+        return r
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {

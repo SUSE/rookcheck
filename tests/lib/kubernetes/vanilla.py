@@ -36,49 +36,21 @@ class Vanilla(KubernetesBase):
         super().__init__(hardware)
 
     def install_kubernetes(self):
-        r = self.hardware.execute_ansible_play(self.distro.copy_needed_files())
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        r = self.hardware.execute_ansible_play(
-            self.distro.install_kubeadm_play())
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        r = self.hardware.execute_ansible_play(
+        self.hardware.execute_ansible_play(self.distro.copy_needed_files())
+        self.hardware.execute_ansible_play(self.distro.install_kubeadm_play())
+        self.hardware.execute_ansible_play(
             self.distro.copy_needed_files_master())
 
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
         r = self.hardware.execute_ansible_play(self.distro.setup_master_play())
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
         # TODO(jhesketh): Figure out a better way to get ansible output/results
         join_command = \
             r.host_ok[list(r.host_ok.keys())[0]][-1]._result['stdout']
 
-        r = self.hardware.execute_ansible_play(
+        self.hardware.execute_ansible_play(
             self.distro.join_workers_to_master(join_command))
 
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        r = self.hardware.execute_ansible_play(
+        self.hardware.execute_ansible_play(
             self.distro.fetch_kubeconfig(self.hardware.working_dir))
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
 
         self._configure_kubernetes_client()
         self._download_kubectl()

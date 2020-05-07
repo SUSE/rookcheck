@@ -365,14 +365,5 @@ class Hardware(HardwareBase):
         d = get_distro()()
 
         self.remove_host_keys()
-        r = self.execute_ansible_play(d.wait_for_connection_play())
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
-
-        r = self.execute_ansible_play(d.bootstrap_play())
-
-        if r.host_failed or r.host_unreachable:
-            # TODO(jhesketh): Provide some more useful feedback and/or checking
-            raise Exception("One or more hosts failed")
+        self.execute_ansible_play(d.wait_for_connection_play())
+        self.execute_ansible_play(d.bootstrap_play())
