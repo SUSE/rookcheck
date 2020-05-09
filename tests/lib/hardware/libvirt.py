@@ -78,6 +78,10 @@ class Node(NodeBase):
     def destroy(self):
         self._dom.destroy()
         self._dom.undefine()
+        if os.path.exists(self._cloud_init_seed_path):
+            os.remove(self._cloud_init_seed_path)
+        if os.path.exists(self._snap_img_path):
+            os.remove(self._snap_img_path)
 
     def get_ssh_ip(self):
         return self._ips[0]
