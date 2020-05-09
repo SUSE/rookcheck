@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import time
 import tempfile
+import textwrap
 import threading
 import datetime
 import logging
@@ -135,15 +136,17 @@ class Node(NodeBase):
                     f"{self._snap_img_path}")
 
     def _cloud_init_seed_create(self):
-        user_data = """#cloud-config
-debug: True
-ssh_authorized_keys:
-- {}
-        """
-        meta_data = """---
-instance-id: {}
-local-hostname: {}
-        """
+        user_data = textwrap.dedent("""
+            #cloud-config
+            debug: True
+            ssh_authorized_keys:
+                - {}
+        """)
+        meta_data = textwrap.dedent("""
+            ---
+            instance-id: {}
+            local-hostname: {}
+        """)
 
         iso_cmd = shutil.which('mkisofs')
         if not iso_cmd:
@@ -167,74 +170,76 @@ local-hostname: {}
 
     def _get_domain(self, domain_name, image, cloud_init_seed, network_name,
                     memory):
-        return """
-<domain type='kvm'>
-<name>%(domain_name)s</name>
-<memory unit='KiB'>%(memory)s</memory>
-<currentMemory unit='KiB'>%(memory)s</currentMemory>
-<vcpu placement='static'>2</vcpu>
-<cpu mode='host-passthrough'>
-</cpu>
-<!--<cpu mode='host-model'>
-<feature policy='require' name='vmx'/>
-</cpu>-->
-<os>
-<type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
-<boot dev='hd'/>
-</os>
-<on_poweroff>destroy</on_poweroff>
-<on_reboot>restart</on_reboot>
-<on_crash>restart</on_crash>
-<devices>
-<emulator>/usr/bin/qemu-system-x86_64</emulator>
-<disk type='file' device='disk'>
-<driver name='qemu' type='qcow2' cache='none'/>
-<source file='%(image)s'/>
-<target dev='vda' bus='virtio'/>
-</disk>
-<disk type='file' device='cdrom'>
-<driver name='qemu' type='raw' />
-<source file='%(cloud_init_seed)s'/>
-<target dev='sda' bus='sata'/>
-<readonly/>
-</disk>
-<controller type='virtio-serial' index='0'>
-<address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
-</controller>
-<interface type='network'>
-<source network='%(network_name)s'/>
-<model type='virtio'/>
-<address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
-</interface>
-<serial type='pty'>
-<target port='0'/>
-</serial>
-<console type='pty'>
-<target type='serial' port='0'/>
-</console>
-<channel type='spicevmc'>
-<target type='virtio' name='com.redhat.spice.0'/>
-<address type='virtio-serial' controller='0' bus='0' port='1'/>
-</channel>
-<input type='mouse' bus='ps2'/>
-<input type='keyboard' bus='ps2'/>
-<graphics type='spice' autoport='yes'/>
-<video>
-<model type='vga'/>
-</video>
-<redirdev bus='usb' type='spicevmc'>
-</redirdev>
-<memballoon model='virtio'>
-<address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
-</memballoon>
-</devices>
-</domain>
+        return textwrap.dedent("""
+            <domain type='kvm'>
+                <name>%(domain_name)s</name>
+                <memory unit='KiB'>%(memory)s</memory>
+                <currentMemory unit='KiB'>%(memory)s</currentMemory>
+                <vcpu placement='static'>2</vcpu>
+                <cpu mode='host-passthrough'></cpu>
+                <!--<cpu mode='host-model'>
+                    <feature policy='require' name='vmx'/>
+                </cpu>-->
+                <os>
+                    <type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
+                    <boot dev='hd'/>
+                </os>
+                <on_poweroff>destroy</on_poweroff>
+                <on_reboot>restart</on_reboot>
+                <on_crash>restart</on_crash>
+                <devices>
+                    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+                    <disk type='file' device='disk'>
+                        <driver name='qemu' type='qcow2' cache='none'/>
+                        <source file='%(image)s'/>
+                        <target dev='vda' bus='virtio'/>
+                    </disk>
+                    <disk type='file' device='cdrom'>
+                        <driver name='qemu' type='raw' />
+                        <source file='%(cloud_init_seed)s'/>
+                        <target dev='sda' bus='sata'/>
+                        <readonly/>
+                    </disk>
+                    <controller type='virtio-serial' index='0'>
+                        <address type='pci' domain='0x0000' bus='0x00'
+                                 slot='0x05' function='0x0'/>
+                    </controller>
+                    <interface type='network'>
+                        <source network='%(network_name)s'/>
+                        <model type='virtio'/>
+                        <address type='pci' domain='0x0000' bus='0x00'
+                                 slot='0x03' function='0x0'/>
+                    </interface>
+                    <serial type='pty'>
+                        <target port='0'/>
+                    </serial>
+                    <console type='pty'>
+                        <target type='serial' port='0'/>
+                    </console>
+                    <channel type='spicevmc'>
+                        <target type='virtio' name='com.redhat.spice.0'/>
+                        <address type='virtio-serial' controller='0' bus='0'
+                                 port='1'/>
+                    </channel>
+                    <input type='mouse' bus='ps2'/>
+                    <input type='keyboard' bus='ps2'/>
+                    <graphics type='spice' autoport='yes'/>
+                    <video>
+                        <model type='vga'/>
+                    </video>
+                    <redirdev bus='usb' type='spicevmc'></redirdev>
+                    <memballoon model='virtio'>
+                        <address type='pci' domain='0x0000' bus='0x00'
+                                 slot='0x06' function='0x0'/>
+                    </memballoon>
+                </devices>
+            </domain>
         """ % {
             "domain_name": domain_name, "image": image,
             "cloud_init_seed": cloud_init_seed,
             "network_name": network_name,
             "memory": memory
-        }
+        })
 
 
 class Hardware(HardwareBase):
