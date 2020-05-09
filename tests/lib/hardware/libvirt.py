@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 class Node(NodeBase):
     def __init__(self, name, role, tags, conn, network, disk_number, memory,
-                 ssh_public_key, ssh_private_key):
+                 ssh_public_key, ssh_private_key, working_dir):
         super().__init__(name, role, tags)
         self._conn = conn
         self._network = network
@@ -57,10 +57,9 @@ class Node(NodeBase):
         self._ssh_public_key = ssh_public_key
         self._ssh_private_key = ssh_private_key
         self._snap_img_path = os.path.join(
-            os.path.dirname(config.PROVIDER_LIBVIRT_IMAGE),
-            f"{self.name}-snapshot.qcow2")
-        self._cloud_init_seed_path = os.path.join(os.path.dirname(
-            config.PROVIDER_LIBVIRT_IMAGE), f"{self.name}-cloud-init-seed.img")
+            working_dir, f"{self.name}-snapshot.qcow2")
+        self._cloud_init_seed_path = os.path.join(
+            working_dir, f"{self.name}-cloud-init-seed.img")
 
     def boot(self):
         self._backing_file_create()
@@ -124,7 +123,6 @@ class Node(NodeBase):
         raise Exception(f"node {self.name}: no IP address found")
 
     def _backing_file_create(self):
-        # TODO(toabctl): move the temp image to a different tmp dir
         if os.path.exists(self._snap_img_path):
             logger.info(f"node {self.name}: Delete available backing image "
                         f"{self._snap_img_path}")
@@ -292,7 +290,7 @@ class Hardware(HardwareBase):
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._network, 0,
                     config.PROVIDER_LIBVIRT_VM_MEMORY,
-                    self.public_key, self.private_key)
+                    self.public_key, self.private_key, self.working_dir)
         node.boot()
         self.node_add(node)
 
