@@ -31,7 +31,6 @@ from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from urllib.parse import urlparse
 
-from tests.lib.distro import get_distro
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests import config
@@ -338,12 +337,3 @@ class Hardware(HardwareBase):
         super().destroy()
         self.conn.ex_delete_security_group(self._ex_security_group)
         self.conn.delete_key_pair(self._ex_os_key)
-
-    def prepare_nodes(self):
-        """
-        Install any dependencies, set firewall etc.
-        """
-        d = get_distro()()
-
-        self.execute_ansible_play(d.wait_for_connection_play())
-        self.execute_ansible_play(d.bootstrap_play())

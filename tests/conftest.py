@@ -23,6 +23,8 @@ from tests.lib.rook import RookCluster
 
 if config.CLOUD_PROVIDER == 'OPENSTACK':
     from tests.lib.hardware.openstack_libcloud import Hardware as Hardware
+elif config.CLOUD_PROVIDER == 'LIBVIRT':
+    from tests.lib.hardware.libvirt import Hardware as Hardware  # type: ignore
 else:
     raise Exception("Cloud provider '{}' not yet supported by "
                     "rookcheck".format(config.CLOUD_PROVIDER))

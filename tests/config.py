@@ -97,3 +97,19 @@ _USE_THREADS = os.getenv('ROOKCHECK_USE_THREADS', True)
 # Whether or not to use the ansible "free" strategy. It is generally faster
 # but causes the output to be intertwined and more confusing.
 _USE_FREE_STRATEGY = os.getenv('ROOKCHECK_USE_FREE_STRATEGY', False)
+
+##############################
+# libvirt provider settings
+##############################
+PROVIDER_LIBVIRT_CONNECTION = os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_CONNECTION', "qemu:///system")
+# the libvirt network that will be used
+PROVIDER_LIBVIRT_NETWORK = os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_NETWORK', "default")
+# the qcow2 image that will be used for libvirt. the image must
+# contain cloud-init!
+PROVIDER_LIBVIRT_IMAGE = os.getenv('ROOKCHECK_PROVIDER_LIBVIRT_IMAGE', None)
+
+# Memory use for libvirt VMs (in GB)
+PROVIDER_LIBVIRT_VM_MEMORY = int(os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_VM_MEMORY', 8))

@@ -32,6 +32,7 @@ import uuid
 
 import paramiko.rsakey
 
+from tests.lib.distro import get_distro
 from tests.lib.ansible_helper import AnsibleRunner
 from tests.lib.hardware.node_base import NodeBase
 from tests import config
@@ -148,9 +149,12 @@ class HardwareBase(ABC):
     def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
         logger.info("boot nodes")
 
-    @abstractmethod
     def prepare_nodes(self):
         logger.info("prepare nodes")
+        d = get_distro()()
+
+        self.execute_ansible_play(d.wait_for_connection_play())
+        self.execute_ansible_play(d.bootstrap_play())
 
     def _execute_ansible_play(self, play_source):
         if not self._ansible_runner or \
