@@ -152,7 +152,9 @@ class AnsibleRunner(object):
         return inventory_dir
 
     def run_play_raw(self, playbook):
-        path = os.path.join('tests/assets/ansible', playbook)
+        path = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), 'assets/ansible', playbook
+        ))
         logger.info(f'Running playbook {path}')
         try:
             subprocess.run(['ansible-playbook', '-i', self.inventory_dir,
