@@ -30,6 +30,7 @@ import time
 import tempfile
 import textwrap
 import threading
+import wget
 import datetime
 import logging
 import libvirt
@@ -47,10 +48,12 @@ logger = logging.getLogger(__name__)
 
 
 class Node(NodeBase):
-    def __init__(self, name, role, tags, conn, network, disk_number, memory,
-                 ssh_public_key, ssh_private_key, working_dir):
+    def __init__(self, name, role, tags, conn, image_path,
+                 network, disk_number, memory, ssh_public_key, ssh_private_key,
+                 working_dir):
         super().__init__(name, role, tags)
         self._conn = conn
+        self._image_path = image_path
         self._network = network
         self._disk_number = disk_number,
         self._memory = memory * 1024 * 1024
@@ -132,7 +135,7 @@ class Node(NodeBase):
                         f"{self._snap_img_path}")
             os.remove(self._snap_img_path)
         subprocess.check_call(f"qemu-img create -f qcow2 -F qcow2 -o "
-                              f"backing_file={config.PROVIDER_LIBVIRT_IMAGE} "
+                              f"backing_file={self._image_path} "
                               f"{self._snap_img_path} 10G",
                               shell=True)
         logger.info(f"node {self.name}: created qcow2 backing file under"
@@ -253,6 +256,22 @@ class Hardware(HardwareBase):
             raise Exception(f'Can not get libvirt network '
                             '{config.PROVIDER_LIBVIRT_NETWORK_RANGE}')
         logger.info(f"Got libvirt network {self._network.name()}")
+        self._image_path = self._get_image_path()
+
+    def _get_image_path(self):
+        if (config.PROVIDER_LIBVIRT_IMAGE.startswith("http://") or
+                config.PROVIDER_LIBVIRT_IMAGE.startswith("https://")):
+            logging.debug("Downloading image from URL")
+            download_location = os.path.join(
+                self.working_dir,
+                os.path.basename(config.PROVIDER_LIBVIRT_IMAGE)
+            )
+            wget.download(
+                config.PROVIDER_LIBVIRT_IMAGE,
+                download_location
+            )
+            return download_location
+        return config.PROVIDER_LIBVIRT_IMAGE
 
     def create_network(self):
         network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
@@ -292,7 +311,7 @@ class Hardware(HardwareBase):
     def _boot_node(self, name: str, role: NodeRole, tags: List[str]):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
-        node = Node(name, role, tags, conn, self._network, 0,
+        node = Node(name, role, tags, conn, self._image_path, self._network, 0,
                     config.PROVIDER_LIBVIRT_VM_MEMORY,
                     self.public_key, self.private_key, self.working_dir)
         node.boot()

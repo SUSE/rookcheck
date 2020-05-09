@@ -109,9 +109,14 @@ PROVIDER_LIBVIRT_CONNECTION = os.getenv(
 PROVIDER_LIBVIRT_NETWORK_RANGE = os.getenv(
     'ROOKCHECK_PROVIDER_LIBVIRT_NETWORK_RANGE', "192.168.124.0/24")
 
-# the qcow2 image that will be used for libvirt. the image must
-# contain cloud-init!
-PROVIDER_LIBVIRT_IMAGE = os.getenv('ROOKCHECK_PROVIDER_LIBVIRT_IMAGE', None)
+# The qcow2 image that will be used for libvirt. The image must
+# contain cloud-init. This can be an system path or a URL which rookcheck will
+# download.
+PROVIDER_LIBVIRT_IMAGE = os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_IMAGE',
+    "https://download.opensuse.org/distribution/leap/15.1/jeos/"
+    "openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud.qcow2"
+)
 
 # Memory use for libvirt VMs (in GB)
 PROVIDER_LIBVIRT_VM_MEMORY = int(os.getenv(

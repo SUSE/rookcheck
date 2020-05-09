@@ -52,9 +52,6 @@ Then some environment variables are needed:
 .. code-block:: bash
 
    export CLOUD_PROVIDER='LIBVIRT'
-   export ROOKCHECK_PROVIDER_LIBVIRT_IMAGE="/full-path-to-the-image/openSUSE-Leap-15.1-JeOS.x86_64.qcow2"
-
-The image can be taken from https://software.opensuse.org/distributions/leap#JeOS-ports
 
 .. automodule:: tests.config
    :members:
