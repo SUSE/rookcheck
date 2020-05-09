@@ -3,6 +3,7 @@ apache-libcloud>=2.7.0
 flake8
 kubernetes
 mypy
+netaddr
 paramiko
 pytest
 pyyaml

@@ -22,6 +22,7 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+import netaddr
 import os
 import shutil
 import subprocess
@@ -245,12 +246,38 @@ class Node(NodeBase):
 class Hardware(HardwareBase):
     def __init__(self):
         super().__init__()
-        self._network = self.conn.networkLookupByName(
-            config.PROVIDER_LIBVIRT_NETWORK)
+        self._network = self.create_network()
         if not self._network:
             raise Exception(f'Can not get libvirt network '
-                            '{config.PROVIDER_LIBVIRT_NETWORK}')
+                            '{config.PROVIDER_LIBVIRT_NETWORK_RANGE}')
         logger.info(f"Got libvirt network {self._network.name()}")
+
+    def create_network(self):
+        network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
+        network_name = "%s%s" % (config.CLUSTER_PREFIX, self._hardware_uuid)
+        host_ip = str(netaddr.IPAddress(network.first+1))
+        netmask = str(network.netmask)
+        dhcp_start = str(netaddr.IPAddress(network.first+2))
+        dhcp_end = str(netaddr.IPAddress(network.last-1))
+        xml = textwrap.dedent("""
+            <network>
+            <name>%(network_name)s</name>
+            <forward mode="nat"/>
+            <ip address="%(host_ip)s" netmask="%(netmask)s">
+                <dhcp>
+                    <range start="%(dhcp_start)s" end="%(dhcp_end)s" />
+                </dhcp>
+            </ip>
+            </network>
+        """ % {
+            "network_name": network_name,
+            "bridge_name": "short0",
+            "host_ip": host_ip,
+            "netmask": netmask,
+            "dhcp_start": dhcp_start,
+            "dhcp_end": dhcp_end,
+        })
+        return self._conn.networkCreateXML(xml)
 
     def get_connection(self):
         conn = libvirt.open(config.PROVIDER_LIBVIRT_CONNECTION)
@@ -295,3 +322,7 @@ class Hardware(HardwareBase):
         # wait for all threads to finish
         for t in threads:
             t.join()
+
+    def destroy(self):
+        super().destroy()
+        self._network.destroy()

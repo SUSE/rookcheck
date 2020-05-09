@@ -101,11 +101,14 @@ _USE_FREE_STRATEGY = os.getenv('ROOKCHECK_USE_FREE_STRATEGY', False)
 ##############################
 # libvirt provider settings
 ##############################
+
 PROVIDER_LIBVIRT_CONNECTION = os.getenv(
     'ROOKCHECK_PROVIDER_LIBVIRT_CONNECTION', "qemu:///system")
-# the libvirt network that will be used
-PROVIDER_LIBVIRT_NETWORK = os.getenv(
-    'ROOKCHECK_PROVIDER_LIBVIRT_NETWORK', "default")
+
+# A new bridge network will be created in libvirt with this range.
+PROVIDER_LIBVIRT_NETWORK_RANGE = os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_NETWORK_RANGE', "192.168.124.0/24")
+
 # the qcow2 image that will be used for libvirt. the image must
 # contain cloud-init!
 PROVIDER_LIBVIRT_IMAGE = os.getenv('ROOKCHECK_PROVIDER_LIBVIRT_IMAGE', None)

@@ -45,8 +45,7 @@ libvirt provider specifics
 --------------------------
 
 For using `libvirt` as a hardware backend, a qcow2 image which includes
-`cloud-init` is needed. Also a libvirt network needs to be available and
-started (eg. via `sudo virsh net-start default`).
+`cloud-init` is needed.
 
 Then some environment variables are needed:
 
