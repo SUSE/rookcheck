@@ -52,6 +52,7 @@ class Node(NodeBase):
         self._libcloud_node = None
 
         self._floating_ips = []
+        self._floating_ips_created = []
         self._volumes = []
 
         self._ssh_client = None
@@ -76,19 +77,29 @@ class Node(NodeBase):
         )
         logging.debug(f"node {self.name} booted")
 
-        self._create_and_attach_floating_ip()
+        self._get_floating_ip()
         # Wait for node to be ready
         self._wait_until_state(NodeState.RUNNING)
         # Attach a 10GB disk
         self._create_and_attach_volume(10)
 
-    def _create_and_attach_floating_ip(self):
-        # TODO(jhesketh): Move cloud-specific configuration elsewhere
-        floating_ip = self.conn.ex_create_floating_ip(
-            config.OS_EXTERNAL_NETWORK)
-
-        logger.info(f"Created floating IP: {floating_ip}")
-        self._floating_ips.append(floating_ip)
+    def _get_floating_ip(self):
+        try:
+            floating_ip = self.conn.ex_create_floating_ip(
+                config.OS_EXTERNAL_NETWORK)
+            logger.info(f"Created floating IP: {floating_ip}")
+            self._floating_ips.append(floating_ip)
+            self._floating_ips_created.append(floating_ip)
+        except libcloud.common.exceptions.BaseHTTPError:
+            logger.error("Unable to create floating IP")
+            logger.warning("Falling back to existing IP \
+association if any is free...")
+            for floating_ip in self.libcloud_conn.ex_list_floating_ips():
+                if floating_ip.node_id is None:
+                    self._floating_ips.append(floating_ip)
+                break
+            if floating_ip.node_is is not None:
+                raise Exception("Unable to find an available IP to associate")
 
         # Wait until the node is running before assigning IP
         self._wait_until_state()
@@ -163,7 +174,7 @@ class Node(NodeBase):
     def destroy(self):
         if self._ssh_client:
             self._ssh_client.close()
-        for floating_ip in self._floating_ips:
+        for floating_ip in self._floating_ips_created:
             floating_ip.delete()
         if self._libcloud_node:
             uuid = self._libcloud_node.uuid
