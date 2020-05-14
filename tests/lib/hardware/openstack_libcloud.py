@@ -34,6 +34,7 @@ from urllib.parse import urlparse
 
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
+from tests.lib.workspace import Workspace
 from tests import config
 
 logger = logging.getLogger(__name__)
@@ -194,8 +195,8 @@ association if any is free...")
 
 
 class Hardware(HardwareBase):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, workspace: Workspace):
+        super().__init__(workspace)
         self._ex_os_key = self.conn.import_key_pair_from_string(
             self.sshkey_name, self.public_key)
         self._ex_security_group = self._create_security_group()
@@ -274,8 +275,7 @@ class Hardware(HardwareBase):
         all ports are open.
         """
         security_group = self.conn.ex_create_security_group(
-            name=("%s%s_security_group"
-                  % (config.CLUSTER_PREFIX, self.hardware_uuid)),
+            name=("%s_security_group" % self.workspace.name),
             description="Permissive firewall for rookci testing"
         )
         for protocol in ["TCP", "UDP"]:
@@ -324,8 +324,7 @@ class Hardware(HardwareBase):
     def _boot_nodes(self, role, tags, n, offset=0, suffix=""):
         threads = []
         for i in range(n):
-            node_name = "%s%s_%s%d" % (
-                config.CLUSTER_PREFIX, self.hardware_uuid, suffix, i+offset)
+            node_name = "%s_%s%d" % (self.workspace.name, suffix, i+offset)
             thread = threading.Thread(
                 target=self._create_node, args=(node_name, role, tags))
             threads.append(thread)

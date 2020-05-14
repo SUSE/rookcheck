@@ -23,16 +23,18 @@ import os
 import subprocess
 import contextlib
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
+from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.workspace import Workspace
 
 
 logger = logging.getLogger(__name__)
 
 
 class CaaSP(KubernetesBase):
-    def __init__(self, hardware):
-        super().__init__(hardware)
-        self._clusterpath = os.path.join(hardware.working_dir, 'cluster')
-        self._kubeconfig = os.path.join(self.hardware.working_dir,
+    def __init__(self, workspace: Workspace, hardware: HardwareBase):
+        super().__init__(workspace, hardware)
+        self._clusterpath = os.path.join(self.workspace.working_dir, 'cluster')
+        self._kubeconfig = os.path.join(self.workspace.working_dir,
                                         'admin.conf')
         self._ssh_agent()
 

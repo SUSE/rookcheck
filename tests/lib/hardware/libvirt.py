@@ -42,6 +42,7 @@ from xml.dom import minidom
 
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
+from tests.lib.workspace import Workspace
 from tests import config
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ logger = logging.getLogger(__name__)
 class Node(NodeBase):
     def __init__(self, name, role, tags, conn, image_path,
                  network, disk_number, memory, ssh_public_key, ssh_private_key,
-                 working_dir):
+                 workspace):
         super().__init__(name, role, tags)
         self._conn = conn
         self._image_path = image_path
@@ -60,9 +61,9 @@ class Node(NodeBase):
         self._ssh_public_key = ssh_public_key
         self._ssh_private_key = ssh_private_key
         self._snap_img_path = os.path.join(
-            working_dir, f"{self.name}-snapshot.qcow2")
+            workspace.working_dir, f"{self.name}-snapshot.qcow2")
         self._cloud_init_seed_path = os.path.join(
-            working_dir, f"{self.name}-cloud-init-seed.img")
+            workspace.working_dir, f"{self.name}-cloud-init-seed.img")
 
     def boot(self):
         self._backing_file_create()
@@ -89,7 +90,7 @@ class Node(NodeBase):
     def get_ssh_ip(self):
         return self._ips[0]
 
-    def _wait_for_ssh(self, timeout=60):
+    def _wait_for_ssh(self, timeout=180):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ip = self.get_ssh_ip()
@@ -110,7 +111,7 @@ class Node(NodeBase):
         raise Exception(f"node {self.name}: Timeout while waiting for "
                         f"ssh on {ip}")
 
-    def _get_ips(self, timeout=45):
+    def _get_ips(self, timeout=120):
         """get the ip addresses of the guest domain from the DHCP leases"""
         ips_found = []
         xmldoc = minidom.parseString(self._dom.XMLDesc())
@@ -249,8 +250,8 @@ class Node(NodeBase):
 
 
 class Hardware(HardwareBase):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, workspace: Workspace):
+        super().__init__(workspace)
         self._network = self._create_network()
         if not self._network:
             raise Exception('Can not get libvirt network %s' %
@@ -263,7 +264,7 @@ class Hardware(HardwareBase):
                 config.PROVIDER_LIBVIRT_IMAGE.startswith("https://")):
             logging.debug("Downloading image from URL")
             download_location = os.path.join(
-                self.working_dir,
+                self.workspace.working_dir,
                 os.path.basename(config.PROVIDER_LIBVIRT_IMAGE)
             )
             wget.download(
@@ -275,7 +276,7 @@ class Hardware(HardwareBase):
 
     def _create_network(self):
         network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
-        network_name = "%s%s" % (config.CLUSTER_PREFIX, self._hardware_uuid)
+        network_name = "%s_net" % self.workspace.name
         host_ip = str(netaddr.IPAddress(network.first+1))
         netmask = str(network.netmask)
         dhcp_start = str(netaddr.IPAddress(network.first+2))
@@ -312,7 +313,7 @@ class Hardware(HardwareBase):
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._image_path, self._network, 0,
                     config.PROVIDER_LIBVIRT_VM_MEMORY,
-                    self.public_key, self.private_key, self.working_dir)
+                    self.public_key, self.private_key, self.workspace)
         node.boot()
         self.node_add(node)
 
@@ -326,7 +327,7 @@ class Hardware(HardwareBase):
                 tags = ['master']
             t = threading.Thread(
                 target=self._boot_node, args=(
-                    f"{self.hardware_uuid}-master-{c}",
+                    f"{self.workspace.name}-master-{c}",
                     NodeRole.MASTER, tags))
             threads.append(t)
             t.start()
@@ -334,7 +335,7 @@ class Hardware(HardwareBase):
         for c in range(0, workers):
             t = threading.Thread(
                 target=self._boot_node, args=(
-                    f"{self.hardware_uuid}-worker-{c}",
+                    f"{self.workspace.name}-worker-{c}",
                     NodeRole.WORKER, ['worker']))
             threads.append(t)
             t.start()

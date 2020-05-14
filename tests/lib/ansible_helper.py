@@ -12,16 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The Hardware module should take care of the operating system abstraction
-# through images.
-# libcloud will provide a common set of cloud-agnostic objects such as Node[s]
-# We might extend the Node object to have an easy way to run arbitrary commands
-# on the node such as Node.execute().
-# There will be a challenge where those arbitrary commands differ between OS's;
-# this is an abstraction that is not yet well figured out, but will likely
-# take the form of cloud-init or similar bringing the target node to an
-# expected state.
-
 import logging
 import os
 import shutil
@@ -78,7 +68,7 @@ class ResultCallback(CallbackModule):
 
 
 class AnsibleRunner(object):
-    def __init__(self, hardware):
+    def __init__(self, workspace, hardware):
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
@@ -93,7 +83,7 @@ class AnsibleRunner(object):
 
         # create inventory, use path to host config file as source or hosts in
         # a comma separated string
-        self.inventory_dir = self.create_inventory(hardware)
+        self.inventory_dir = self.create_inventory(workspace, hardware)
         self.inventory = InventoryManager(
             loader=self.loader, sources=self.inventory_dir)
 
@@ -102,7 +92,7 @@ class AnsibleRunner(object):
         self.variable_manager = VariableManager(
             loader=self.loader, inventory=self.inventory)
 
-        mitogen_plugin = self.download_mitogen(hardware.working_dir)
+        mitogen_plugin = self.download_mitogen(workspace.working_dir)
 
         # Hack around loading strategy modules:
         ansible.executor.task_queue_manager.strategy_loader = \
@@ -114,9 +104,9 @@ class AnsibleRunner(object):
                 required_base_class='StrategyBase',
             )
 
-    def create_inventory(self, hardware):
+    def create_inventory(self, workspace, hardware):
         # create a inventory & group_vars directory
-        inventory_dir = os.path.join(hardware.working_dir, 'inventory')
+        inventory_dir = os.path.join(workspace.working_dir, 'inventory')
         group_vars_dir = os.path.join(inventory_dir, 'group_vars')
         if not os.path.exists(group_vars_dir):
             os.makedirs(group_vars_dir)

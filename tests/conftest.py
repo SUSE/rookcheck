@@ -18,6 +18,7 @@ import threading
 
 from tests import config
 from tests.lib.rook import RookCluster
+from tests.lib.workspace import Workspace
 
 
 if config.HARDWARE_PROVIDER == 'OPENSTACK':
@@ -37,46 +38,52 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def hardware():
+def workspace():
+    with Workspace() as workspace:
+        yield workspace
+
+
+@pytest.fixture(scope="module")
+def hardware(workspace):
     # NOTE(jhesketh): The Hardware() object is expected to take care of any
     # cloud provider abstraction. It primarily does this via libcloud.
-    with Hardware() as hardware:
+    with Hardware(workspace) as hardware:
         hardware.boot_nodes()
         hardware.prepare_nodes()
         yield hardware
 
 
 @pytest.fixture(scope="module")
-def kubernetes(hardware):
+def kubernetes(workspace, hardware):
     # NOTE(jhesketh): We can either choose which Kubernetes class to use here
     # or we can have a master class that makes the decision based off the
     # config.
     # If we implement multiple Kubernetes distributions (eg upstream vs skuba
     # etc), we should do them from an ABC so to ensure the interfaces are
     # correct.
-    with Kubernetes(hardware) as kubernetes:
+    with Kubernetes(workspace, hardware) as kubernetes:
         kubernetes.install_kubernetes()
         yield kubernetes
 
 
 @pytest.fixture(scope="module")
-def linear_rook_cluster(kubernetes):
+def linear_rook_cluster(workspace, kubernetes):
     # (See above re implementation options)
     # This method shows how fixture inheritance can be used to manage the
     # infrastructure. It also builds things in order, the below rook_cluster
     # fixture is preferred as it will build rook locally in a thread while
     # waiting on the infrastructure
-    with RookCluster(kubernetes) as rook_cluster:
+    with RookCluster(workspace, kubernetes) as rook_cluster:
         rook_cluster.build_rook()
         rook_cluster.install_rook()
         yield rook_cluster
 
 
 @pytest.fixture(scope="module")
-def rook_cluster():
-    with Hardware() as hardware:
-        with Kubernetes(hardware) as kubernetes:
-            with RookCluster(kubernetes) as rook_cluster:
+def rook_cluster(workspace):
+    with Hardware(workspace) as hardware:
+        with Kubernetes(workspace, hardware) as kubernetes:
+            with RookCluster(workspace, kubernetes) as rook_cluster:
                 if config._USE_THREADS:
                     logger.info("Starting rook build in a thread")
                     build_thread = threading.Thread(

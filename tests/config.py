@@ -123,3 +123,8 @@ PROVIDER_LIBVIRT_IMAGE = os.getenv(
 # Memory use for libvirt VMs (in GB)
 PROVIDER_LIBVIRT_VM_MEMORY = int(os.getenv(
     'ROOKCHECK_PROVIDER_LIBVIRT_VM_MEMORY', 8))
+
+# If set to True, the workspacing and all created files from a test will be
+# removed from the disk.
+_REMOVE_WORKSPACE = bool(distutils.util.strtobool(
+    os.getenv('ROOKCHECK_REMOVE_WORKSPACE', 'TRUE')))

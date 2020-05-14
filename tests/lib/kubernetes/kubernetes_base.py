@@ -24,22 +24,32 @@ import subprocess
 import kubernetes
 import logging
 
+from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.workspace import Workspace
+
+
 logger = logging.getLogger(__name__)
 
 
 class KubernetesBase(ABC):
-    def __init__(self, hardware):
+    def __init__(self, workspace: Workspace, hardware: HardwareBase):
+        self._workspace = workspace
         self._hardware = hardware
         # TODO(toabctl): Make it configurable?
-        self._kubeconfig = os.path.join(self.hardware.working_dir,
+        self._kubeconfig = os.path.join(self.workspace.working_dir,
                                         'kubeconfig')
-        self._kubectl_exec = os.path.join(self.hardware.working_dir, 'kubectl')
+        self._kubectl_exec = os.path.join(
+            self.workspace.working_dir, 'kubectl')
         self.v1 = None
         logger.info(f"kube init on hardware {self.hardware}")
 
     @abstractmethod
     def install_kubernetes(self):
         pass
+
+    @property
+    def workspace(self):
+        return self._workspace
 
     @property
     def hardware(self):
