@@ -92,11 +92,13 @@ OS_EXTERNAL_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', 'floating')
 
 # Whether or not to perform some options as a thread. Turning this off may help
 # with debugging at the cost of performance.
-_USE_THREADS = os.getenv('ROOKCHECK_USE_THREADS', True)
+_USE_THREADS = bool(distutils.util.strtobool(
+    os.getenv('ROOKCHECK_USE_THREADS', 'TRUE')))
 
 # Whether or not to use the ansible "free" strategy. It is generally faster
 # but causes the output to be intertwined and more confusing.
-_USE_FREE_STRATEGY = os.getenv('ROOKCHECK_USE_FREE_STRATEGY', False)
+_USE_FREE_STRATEGY = bool(distutils.util.strtobool(
+    os.getenv('ROOKCHECK_USE_FREE_STRATEGY', 'FALSE')))
 
 ##############################
 # libvirt provider settings
