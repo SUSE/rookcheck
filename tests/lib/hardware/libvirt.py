@@ -253,8 +253,8 @@ class Hardware(HardwareBase):
         super().__init__()
         self._network = self._create_network()
         if not self._network:
-            raise Exception(f'Can not get libvirt network '
-                            '{config.PROVIDER_LIBVIRT_NETWORK_RANGE}')
+            raise Exception('Can not get libvirt network %s' %
+                            config.PROVIDER_LIBVIRT_NETWORK_RANGE)
         logger.info(f"Got libvirt network {self._network.name()}")
         self._image_path = self._get_image_path()
 
@@ -302,8 +302,8 @@ class Hardware(HardwareBase):
     def get_connection(self):
         conn = libvirt.open(config.PROVIDER_LIBVIRT_CONNECTION)
         if not conn:
-            raise Exception(f'Can not open libvirt connection '
-                            '{config.PROVIDER_LIBVIRT_CONNECTION}')
+            raise Exception('Can not open libvirt connection %s' %
+                            config.PROVIDER_LIBVIRT_CONNECTION)
         logger.debug(f"Got connection to libvirt: {conn}")
         return conn
 
