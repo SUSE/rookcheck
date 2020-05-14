@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import time
 
 
+logger = logging.getLogger(__name__)
+
+
 def test_file_creation(rook_cluster):
-    # Create direct-mount deployment
+    logger.debug("Create direct-mount deployment")
     rook_cluster.kubernetes.kubectl_apply(
         os.path.join(rook_cluster.ceph_dir, 'direct-mount.yaml'))
 
     time.sleep(5)
 
-    # Mount myfs in pod and put a test string into a file
+    logger.debug("Mount myfs in pod and put a test string into a file")
     rook_cluster.kubernetes.execute_in_pod_by_label("""
         # Create the directory
         mkdir /tmp/registry
@@ -44,6 +48,8 @@ def test_file_creation(rook_cluster):
         rmdir /tmp/registry
     """, label="rook-direct-mount")
 
+    logger.debug("Recreate the direct-mount container and wait...")
+
     # Scale the direct mount deployment down and back up again to recreate the
     # pod (to ensure that we haven't left anything on the container volume
     # and therefore to be sure we are writing to the cephfs)
@@ -57,7 +63,7 @@ def test_file_creation(rook_cluster):
 
     time.sleep(5)
 
-    # Mount myfs again and output the contents
+    logger.debug("Mount myfs again and output the contents")
     result = rook_cluster.kubernetes.execute_in_pod_by_label("""
         # Create the directory
         mkdir /tmp/registry
@@ -75,6 +81,7 @@ def test_file_creation(rook_cluster):
         rmdir /tmp/registry
     """, label="rook-direct-mount")
 
+    logger.debug("Check result")
     # Assert that the contents is as expected, confirming that writing to the
     # cephfs is working as expected
     assert result.stdout.strip() == "Hello Rook"
@@ -82,3 +89,5 @@ def test_file_creation(rook_cluster):
     # Cleanup: Uninstall rook-direct-mount
     rook_cluster.kubernetes.kubectl(
         "delete deployment.apps/rook-direct-mount -n rook-ceph")
+
+    logger.debug("Test successful/complete!")
