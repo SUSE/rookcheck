@@ -251,7 +251,7 @@ class Node(NodeBase):
 class Hardware(HardwareBase):
     def __init__(self):
         super().__init__()
-        self._network = self.create_network()
+        self._network = self._create_network()
         if not self._network:
             raise Exception(f'Can not get libvirt network '
                             '{config.PROVIDER_LIBVIRT_NETWORK_RANGE}')
@@ -273,7 +273,7 @@ class Hardware(HardwareBase):
             return download_location
         return config.PROVIDER_LIBVIRT_IMAGE
 
-    def create_network(self):
+    def _create_network(self):
         network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
         network_name = "%s%s" % (config.CLUSTER_PREFIX, self._hardware_uuid)
         host_ip = str(netaddr.IPAddress(network.first+1))
@@ -292,7 +292,6 @@ class Hardware(HardwareBase):
             </network>
         """ % {
             "network_name": network_name,
-            "bridge_name": "short0",
             "host_ip": host_ip,
             "netmask": netmask,
             "dhcp_start": dhcp_start,
