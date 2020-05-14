@@ -22,12 +22,15 @@
 # take the form of cloud-init or similar bringing the target node to an
 # expected state.
 
+import netaddr
 import os
 import shutil
 import subprocess
 import time
 import tempfile
+import textwrap
 import threading
+import wget
 import datetime
 import logging
 import libvirt
@@ -45,20 +48,21 @@ logger = logging.getLogger(__name__)
 
 
 class Node(NodeBase):
-    def __init__(self, name, role, tags, conn, network, disk_number, memory,
-                 ssh_public_key, ssh_private_key):
+    def __init__(self, name, role, tags, conn, image_path,
+                 network, disk_number, memory, ssh_public_key, ssh_private_key,
+                 working_dir):
         super().__init__(name, role, tags)
         self._conn = conn
+        self._image_path = image_path
         self._network = network
         self._disk_number = disk_number,
         self._memory = memory * 1024 * 1024
         self._ssh_public_key = ssh_public_key
         self._ssh_private_key = ssh_private_key
         self._snap_img_path = os.path.join(
-            os.path.dirname(config.PROVIDER_LIBVIRT_IMAGE),
-            f"{self.name}-snapshot.qcow2")
-        self._cloud_init_seed_path = os.path.join(os.path.dirname(
-            config.PROVIDER_LIBVIRT_IMAGE), f"{self.name}-cloud-init-seed.img")
+            working_dir, f"{self.name}-snapshot.qcow2")
+        self._cloud_init_seed_path = os.path.join(
+            working_dir, f"{self.name}-cloud-init-seed.img")
 
     def boot(self):
         self._backing_file_create()
@@ -77,6 +81,10 @@ class Node(NodeBase):
     def destroy(self):
         self._dom.destroy()
         self._dom.undefine()
+        if os.path.exists(self._cloud_init_seed_path):
+            os.remove(self._cloud_init_seed_path)
+        if os.path.exists(self._snap_img_path):
+            os.remove(self._snap_img_path)
 
     def get_ssh_ip(self):
         return self._ips[0]
@@ -122,28 +130,29 @@ class Node(NodeBase):
         raise Exception(f"node {self.name}: no IP address found")
 
     def _backing_file_create(self):
-        # TODO(toabctl): move the temp image to a different tmp dir
         if os.path.exists(self._snap_img_path):
             logger.info(f"node {self.name}: Delete available backing image "
                         f"{self._snap_img_path}")
             os.remove(self._snap_img_path)
         subprocess.check_call(f"qemu-img create -f qcow2 -F qcow2 -o "
-                              f"backing_file={config.PROVIDER_LIBVIRT_IMAGE} "
+                              f"backing_file={self._image_path} "
                               f"{self._snap_img_path} 10G",
                               shell=True)
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
     def _cloud_init_seed_create(self):
-        user_data = """#cloud-config
-debug: True
-ssh_authorized_keys:
-- {}
-        """
-        meta_data = """---
-instance-id: {}
-local-hostname: {}
-        """
+        user_data = textwrap.dedent("""
+            #cloud-config
+            debug: True
+            ssh_authorized_keys:
+                - {}
+        """)
+        meta_data = textwrap.dedent("""
+            ---
+            instance-id: {}
+            local-hostname: {}
+        """)
 
         iso_cmd = shutil.which('mkisofs')
         if not iso_cmd:
@@ -167,100 +176,143 @@ local-hostname: {}
 
     def _get_domain(self, domain_name, image, cloud_init_seed, network_name,
                     memory):
-        return """
-<domain type='kvm'>
-<name>%(domain_name)s</name>
-<memory unit='KiB'>%(memory)s</memory>
-<currentMemory unit='KiB'>%(memory)s</currentMemory>
-<vcpu placement='static'>2</vcpu>
-<cpu mode='host-passthrough'>
-</cpu>
-<!--<cpu mode='host-model'>
-<feature policy='require' name='vmx'/>
-</cpu>-->
-<os>
-<type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
-<boot dev='hd'/>
-</os>
-<on_poweroff>destroy</on_poweroff>
-<on_reboot>restart</on_reboot>
-<on_crash>restart</on_crash>
-<devices>
-<emulator>/usr/bin/qemu-system-x86_64</emulator>
-<disk type='file' device='disk'>
-<driver name='qemu' type='qcow2' cache='none'/>
-<source file='%(image)s'/>
-<target dev='vda' bus='virtio'/>
-</disk>
-<disk type='file' device='cdrom'>
-<driver name='qemu' type='raw' />
-<source file='%(cloud_init_seed)s'/>
-<target dev='sda' bus='sata'/>
-<readonly/>
-</disk>
-<controller type='virtio-serial' index='0'>
-<address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
-</controller>
-<interface type='network'>
-<source network='%(network_name)s'/>
-<model type='virtio'/>
-<address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
-</interface>
-<serial type='pty'>
-<target port='0'/>
-</serial>
-<console type='pty'>
-<target type='serial' port='0'/>
-</console>
-<channel type='spicevmc'>
-<target type='virtio' name='com.redhat.spice.0'/>
-<address type='virtio-serial' controller='0' bus='0' port='1'/>
-</channel>
-<input type='mouse' bus='ps2'/>
-<input type='keyboard' bus='ps2'/>
-<graphics type='spice' autoport='yes'/>
-<video>
-<model type='vga'/>
-</video>
-<redirdev bus='usb' type='spicevmc'>
-</redirdev>
-<memballoon model='virtio'>
-<address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
-</memballoon>
-</devices>
-</domain>
+        return textwrap.dedent("""
+            <domain type='kvm'>
+                <name>%(domain_name)s</name>
+                <memory unit='KiB'>%(memory)s</memory>
+                <currentMemory unit='KiB'>%(memory)s</currentMemory>
+                <vcpu placement='static'>2</vcpu>
+                <cpu mode='host-passthrough'></cpu>
+                <!--<cpu mode='host-model'>
+                    <feature policy='require' name='vmx'/>
+                </cpu>-->
+                <os>
+                    <type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
+                    <boot dev='hd'/>
+                </os>
+                <on_poweroff>destroy</on_poweroff>
+                <on_reboot>restart</on_reboot>
+                <on_crash>restart</on_crash>
+                <devices>
+                    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+                    <disk type='file' device='disk'>
+                        <driver name='qemu' type='qcow2' cache='none'/>
+                        <source file='%(image)s'/>
+                        <target dev='vda' bus='virtio'/>
+                    </disk>
+                    <disk type='file' device='cdrom'>
+                        <driver name='qemu' type='raw' />
+                        <source file='%(cloud_init_seed)s'/>
+                        <target dev='sda' bus='sata'/>
+                        <readonly/>
+                    </disk>
+                    <controller type='virtio-serial' index='0'>
+                        <address type='pci' domain='0x0000' bus='0x00'
+                                 slot='0x05' function='0x0'/>
+                    </controller>
+                    <interface type='network'>
+                        <source network='%(network_name)s'/>
+                        <model type='virtio'/>
+                        <address type='pci' domain='0x0000' bus='0x00'
+                                 slot='0x03' function='0x0'/>
+                    </interface>
+                    <serial type='pty'>
+                        <target port='0'/>
+                    </serial>
+                    <console type='pty'>
+                        <target type='serial' port='0'/>
+                    </console>
+                    <channel type='spicevmc'>
+                        <target type='virtio' name='com.redhat.spice.0'/>
+                        <address type='virtio-serial' controller='0' bus='0'
+                                 port='1'/>
+                    </channel>
+                    <input type='mouse' bus='ps2'/>
+                    <input type='keyboard' bus='ps2'/>
+                    <graphics type='spice' autoport='yes'/>
+                    <video>
+                        <model type='vga'/>
+                    </video>
+                    <redirdev bus='usb' type='spicevmc'></redirdev>
+                    <memballoon model='virtio'>
+                        <address type='pci' domain='0x0000' bus='0x00'
+                                 slot='0x06' function='0x0'/>
+                    </memballoon>
+                </devices>
+            </domain>
         """ % {
             "domain_name": domain_name, "image": image,
             "cloud_init_seed": cloud_init_seed,
             "network_name": network_name,
             "memory": memory
-        }
+        })
 
 
 class Hardware(HardwareBase):
     def __init__(self):
         super().__init__()
-        self._network = self.conn.networkLookupByName(
-            config.PROVIDER_LIBVIRT_NETWORK)
+        self._network = self._create_network()
         if not self._network:
-            raise Exception(f'Can not get libvirt network '
-                            '{config.PROVIDER_LIBVIRT_NETWORK}')
+            raise Exception('Can not get libvirt network %s' %
+                            config.PROVIDER_LIBVIRT_NETWORK_RANGE)
         logger.info(f"Got libvirt network {self._network.name()}")
+        self._image_path = self._get_image_path()
+
+    def _get_image_path(self):
+        if (config.PROVIDER_LIBVIRT_IMAGE.startswith("http://") or
+                config.PROVIDER_LIBVIRT_IMAGE.startswith("https://")):
+            logging.debug("Downloading image from URL")
+            download_location = os.path.join(
+                self.working_dir,
+                os.path.basename(config.PROVIDER_LIBVIRT_IMAGE)
+            )
+            wget.download(
+                config.PROVIDER_LIBVIRT_IMAGE,
+                download_location
+            )
+            return download_location
+        return config.PROVIDER_LIBVIRT_IMAGE
+
+    def _create_network(self):
+        network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
+        network_name = "%s%s" % (config.CLUSTER_PREFIX, self._hardware_uuid)
+        host_ip = str(netaddr.IPAddress(network.first+1))
+        netmask = str(network.netmask)
+        dhcp_start = str(netaddr.IPAddress(network.first+2))
+        dhcp_end = str(netaddr.IPAddress(network.last-1))
+        xml = textwrap.dedent("""
+            <network>
+            <name>%(network_name)s</name>
+            <forward mode="nat"/>
+            <ip address="%(host_ip)s" netmask="%(netmask)s">
+                <dhcp>
+                    <range start="%(dhcp_start)s" end="%(dhcp_end)s" />
+                </dhcp>
+            </ip>
+            </network>
+        """ % {
+            "network_name": network_name,
+            "host_ip": host_ip,
+            "netmask": netmask,
+            "dhcp_start": dhcp_start,
+            "dhcp_end": dhcp_end,
+        })
+        return self._conn.networkCreateXML(xml)
 
     def get_connection(self):
         conn = libvirt.open(config.PROVIDER_LIBVIRT_CONNECTION)
         if not conn:
-            raise Exception(f'Can not open libvirt connection '
-                            '{config.PROVIDER_LIBVIRT_CONNECTION}')
+            raise Exception('Can not open libvirt connection %s' %
+                            config.PROVIDER_LIBVIRT_CONNECTION)
         logger.debug(f"Got connection to libvirt: {conn}")
         return conn
 
     def _boot_node(self, name: str, role: NodeRole, tags: List[str]):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
-        node = Node(name, role, tags, conn, self._network, 0,
+        node = Node(name, role, tags, conn, self._image_path, self._network, 0,
                     config.PROVIDER_LIBVIRT_VM_MEMORY,
-                    self.public_key, self.private_key)
+                    self.public_key, self.private_key, self.working_dir)
         node.boot()
         self.node_add(node)
 
@@ -290,3 +342,7 @@ class Hardware(HardwareBase):
         # wait for all threads to finish
         for t in threads:
             t.join()
+
+    def destroy(self):
+        super().destroy()
+        self._network.destroy()

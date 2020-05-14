@@ -101,14 +101,22 @@ _USE_FREE_STRATEGY = os.getenv('ROOKCHECK_USE_FREE_STRATEGY', False)
 ##############################
 # libvirt provider settings
 ##############################
+
 PROVIDER_LIBVIRT_CONNECTION = os.getenv(
     'ROOKCHECK_PROVIDER_LIBVIRT_CONNECTION', "qemu:///system")
-# the libvirt network that will be used
-PROVIDER_LIBVIRT_NETWORK = os.getenv(
-    'ROOKCHECK_PROVIDER_LIBVIRT_NETWORK', "default")
-# the qcow2 image that will be used for libvirt. the image must
-# contain cloud-init!
-PROVIDER_LIBVIRT_IMAGE = os.getenv('ROOKCHECK_PROVIDER_LIBVIRT_IMAGE', None)
+
+# A new bridge network will be created in libvirt with this range.
+PROVIDER_LIBVIRT_NETWORK_RANGE = os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_NETWORK_RANGE', "192.168.124.0/24")
+
+# The qcow2 image that will be used for libvirt. The image must
+# contain cloud-init. This can be an system path or a URL which rookcheck will
+# download.
+PROVIDER_LIBVIRT_IMAGE = os.getenv(
+    'ROOKCHECK_PROVIDER_LIBVIRT_IMAGE',
+    "https://download.opensuse.org/distribution/leap/15.1/jeos/"
+    "openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud.qcow2"
+)
 
 # Memory use for libvirt VMs (in GB)
 PROVIDER_LIBVIRT_VM_MEMORY = int(os.getenv(
