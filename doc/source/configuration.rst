@@ -51,7 +51,7 @@ Then some environment variables are needed:
 
 .. code-block:: bash
 
-   export CLOUD_PROVIDER='LIBVIRT'
+   export HARDWARE_PROVIDER='LIBVIRT'
 
 .. automodule:: tests.config
    :members:

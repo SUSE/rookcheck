@@ -272,7 +272,7 @@ class Hardware(HardwareBase):
         Creates a security group used for this set of hardware. For now,
         all ports are open.
         """
-        if config.CLOUD_PROVIDER == 'OPENSTACK':
+        if config.HARDWARE_PROVIDER == 'OPENSTACK':
             security_group = self.conn.ex_create_security_group(
                 name=("%s%s_security_group"
                       % (config.CLUSTER_PREFIX, self.hardware_uuid)),

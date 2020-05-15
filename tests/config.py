@@ -24,7 +24,7 @@ import getpass
 
 # The cloud provider from libcloud
 # (https://libcloud.readthedocs.io/en/latest/supported_providers.html)
-CLOUD_PROVIDER = os.getenv('CLOUD_PROVIDER', 'OPENSTACK')
+HARDWARE_PROVIDER = os.getenv('HARDWARE_PROVIDER', 'OPENSTACK')
 
 # The location for all of the build assets and state to be stored in. A
 # sub-folder will be created using each CLUSTER_PREFIX
