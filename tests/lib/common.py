@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import time
+
+
+logger = logging.getLogger(__name__)
 
 
 def simple_matcher(result):
@@ -52,6 +56,10 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
             return out
         time.sleep(interval)
 
-    raise Exception(
-        "Timed out waiting for result %s in %s(%s)" % (matcher, func, args)
-    )
+    logger.error("Timed out waiting for result %s in %s(%s)" %
+                 (matcher, func, args))
+
+    logger.error("The last output of the function:")
+    logger.error(out)
+
+    raise Exception("Timed out waiting for result")
