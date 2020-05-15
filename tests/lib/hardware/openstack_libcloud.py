@@ -272,21 +272,18 @@ class Hardware(HardwareBase):
         Creates a security group used for this set of hardware. For now,
         all ports are open.
         """
-        if config.HARDWARE_PROVIDER == 'OPENSTACK':
-            security_group = self.conn.ex_create_security_group(
-                name=("%s%s_security_group"
-                      % (config.CLUSTER_PREFIX, self.hardware_uuid)),
-                description="Permissive firewall for rookci testing"
+        security_group = self.conn.ex_create_security_group(
+            name=("%s%s_security_group"
+                  % (config.CLUSTER_PREFIX, self.hardware_uuid)),
+            description="Permissive firewall for rookci testing"
+        )
+        for protocol in ["TCP", "UDP"]:
+            self.conn.ex_create_security_group_rule(
+                security_group,
+                ip_protocol=protocol,
+                from_port=1,
+                to_port=65535,
             )
-            for protocol in ["TCP", "UDP"]:
-                self.conn.ex_create_security_group_rule(
-                    security_group,
-                    ip_protocol=protocol,
-                    from_port=1,
-                    to_port=65535,
-                )
-        else:
-            raise Exception("Cloud provider not yet supported by rookcheck")
         return security_group
 
     def _create_node(self, node_name, role, tags=[]):
