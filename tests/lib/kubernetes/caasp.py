@@ -41,8 +41,7 @@ class CaaSP(KubernetesBase):
             res = subprocess.run(['ssh-agent'], check=True,
                                  capture_output=True)
         except subprocess.CalledProcessError:
-            msg = 'Failed to start ssh agent'
-            logger.exception(msg)
+            logger.exception('Failed to start ssh agent')
             raise
 
         self._ssh_agent_auth_sock = res.stdout.decode(
@@ -55,8 +54,7 @@ class CaaSP(KubernetesBase):
             res = subprocess.run(['ssh-add', self.hardware._private_key],
                                  check=True)
         except subprocess.CalledProcessError:
-            msg = 'Failed to add keys to agent'
-            logger.exception(msg)
+            logger.exception('Failed to add keys to agent')
             raise
 
     def destroy(self, skip=False):
@@ -93,8 +91,7 @@ class CaaSP(KubernetesBase):
                  self._clusterpath], check=True)
             logger.debug(res.args)
         except subprocess.CalledProcessError:
-            msg = 'Cluster init step failed'
-            logger.exception(msg)
+            logger.exception('Cluster init step failed')
             raise
 
     def _caasp_bootstrap(self):
@@ -105,8 +102,7 @@ class CaaSP(KubernetesBase):
                  self.hardware.masters[0].dnsname], check=True)
             logger.debug(res.args)
         except subprocess.CalledProcessError:
-            msg = 'Cluster bootsrap step failed'
-            logger.exception(msg)
+            logger.exception('Cluster bootsrap step failed')
             raise
 
     def _caasp_join(self):
@@ -118,8 +114,8 @@ class CaaSP(KubernetesBase):
                      worker.get_ssh_ip(), worker.dnsname], check=True)
                 logger.debug(res.args)
             except subprocess.CalledProcessError:
-                msg = f'Node {worker.dnsname} failed to join cluster'
-                logger.exception(msg)
+                logger.exception(
+                    f'Node {worker.dnsname} failed to join cluster')
                 raise
 
     @contextlib.contextmanager
