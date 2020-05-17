@@ -34,18 +34,20 @@ class CaaSP(KubernetesBase):
         self._clusterpath = os.path.join(hardware.working_dir, 'cluster')
         self._kubeconfig = os.path.join(self.hardware.working_dir,
                                         'admin.conf')
+        self._ssh_agent_auth_sock = os.path.join(hardware.working_dir,
+                                                 'ssh-agent.sock')
         self._ssh_agent()
 
     def _ssh_agent(self):
         try:
-            res = subprocess.run(['ssh-agent'], check=True,
-                                 capture_output=True)
+            res = subprocess.run(
+                ['ssh-agent', '-a', self._ssh_agent_auth_sock],
+                check=True, capture_output=True)
         except subprocess.CalledProcessError:
             logger.exception('Failed to start ssh agent')
             raise
 
-        self._ssh_agent_auth_sock = res.stdout.decode(
-            'utf-8').split(';')[0].split('=')[1]
+        logger.info(f"ssh-agent started: {res.stdout.decode('utf-8')}")
         self._ssh_agent_pid = res.stdout.decode(
             'utf-8').split(';')[2].split('=')[1]
         os.environ['SSH_AUTH_SOCK'] = self._ssh_agent_auth_sock
