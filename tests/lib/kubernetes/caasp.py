@@ -45,12 +45,12 @@ class CaaSP(KubernetesBase):
             logger.exception(msg)
             raise
 
-        self.SSH_AUTH_SOCK = res.stdout.decode(
+        self._ssh_agent_auth_sock = res.stdout.decode(
             'utf-8').split(';')[0].split('=')[1]
-        self.SSH_AGENT_PID = res.stdout.decode(
+        self._ssh_agent_pid = res.stdout.decode(
             'utf-8').split(';')[2].split('=')[1]
-        os.environ['SSH_AUTH_SOCK'] = self.SSH_AUTH_SOCK
-        os.environ['SSH_AGENT_PID'] = self.SSH_AGENT_PID
+        os.environ['SSH_AUTH_SOCK'] = self._ssh_agent_auth_sock
+        os.environ['SSH_AGENT_PID'] = self._ssh_agent_pid
         try:
             res = subprocess.run(['ssh-add', self.hardware._private_key],
                                  check=True)
@@ -70,7 +70,7 @@ class CaaSP(KubernetesBase):
             subprocess.run(['ssh-agent', '-k'], check=True)
         except subprocess.CalledProcessError:
             logger.exception(f'Killing ssh-agent with PID \
-{self.SSH_AGENT_PID} failed')
+{self._ssh_agent_pid} failed')
 
         # TODO(jhesketh): Uninstall kubernetes
 
