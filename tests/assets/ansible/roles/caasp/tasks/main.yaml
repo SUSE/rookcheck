@@ -1,0 +1,8 @@
+---
+- name: Add repos
+  include_tasks: '{{ item }}'
+  vars:
+    params:
+      files:
+        - "{{ ansible_os_family }}.yaml"
+  loop: "{{ query('first_found', params, errors='ignore') }}"

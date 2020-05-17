@@ -153,14 +153,15 @@ class AnsibleRunner(object):
 
     def run_play_raw(self, playbook):
         path = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), 'assets/ansible', playbook
+            os.path.dirname(__file__), '../assets/ansible', playbook
         ))
         logger.info(f'Running playbook {path}')
         try:
             subprocess.run(['ansible-playbook', '-i', self.inventory_dir,
-                            path])
+                            path], check=True)
         except subprocess.CalledProcessError:
-            logger.error('An error occured executing Ansible playbook')
+            logger.exception('An error occured executing Ansible playbook')
+            Exception("An error occurred running playbook")
 
     def run_play(self, play_source):
         # Create a new results instance for each run

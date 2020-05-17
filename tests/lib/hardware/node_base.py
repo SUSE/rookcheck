@@ -30,6 +30,7 @@ class NodeBase(ABC):
     """
     def __init__(self, name: str, role: NodeRole, tags: List[str] = []):
         self._name = name
+        self.dnsname = self.name.replace('_', '-')
         self._role = role
         self.tags = tags
 

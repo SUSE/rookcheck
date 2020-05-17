@@ -1,0 +1,32 @@
+---
+- name: add repositories
+  vars:
+    repositories:
+      basesystem_pool: http://download.suse.de/ibs/SUSE/Products/SLE-Module-Basesystem/15-SP1/x86_64/product/
+      basesystem_updates: http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Basesystem/15-SP1/x86_64/update/
+      caasp_devel: http://download.suse.de/ibs/Devel:/CaaSP:/4.0/SLE_15_SP1/
+      containers_pool: http://download.suse.de/ibs/SUSE/Products/SLE-Module-Containers/15-SP1/x86_64/product/
+      containers_updates: http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Containers/15-SP1/x86_64/update/
+      serverapps_pool: http://download.suse.de/ibs/SUSE/Products/SLE-Module-Server-Applications/15-SP1/x86_64/product/
+      serverapps_updates: http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Server-Applications/15-SP1/x86_64/update/
+      sle_server_pool: http://download.suse.de/ibs/SUSE/Products/SLE-Product-SLES/15-SP1/x86_64/product/
+      sle_server_updates: http://download.suse.de/ibs/SUSE/Updates/SLE-Product-SLES/15-SP1/x86_64/update/
+      suse_ca: http://download.suse.de/ibs/SUSE:/CA/SLE_15_SP1/
+      storage: http://download.suse.de/ibs/SUSE:/SLE-15-SP2:/Update:/Products:/SES7/standard
+  zypper_repository:
+    name: '{{ repo.key }}'
+    repo: '{{ repo.value }}'
+    state: present
+    auto_import_keys: yes
+  loop: "{{ lookup('dict', repositories) }}"
+  loop_control:
+    loop_var: repo
+
+- name: add packages
+  vars:
+    pkg:
+      - ca-certificates-suse
+  zypper:
+      name: '{{ pkg }}'
+      state: present
+      update_cache: yes

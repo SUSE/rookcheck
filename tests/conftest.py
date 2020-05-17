@@ -17,7 +17,6 @@ import pytest
 import threading
 
 from tests import config
-from tests.lib.kubernetes.vanilla import Vanilla as Kubernetes
 from tests.lib.rook import RookCluster
 
 
@@ -29,6 +28,10 @@ else:
     raise Exception("Hardware provider '{}' not yet supported by "
                     "rookcheck".format(config.HARDWARE_PROVIDER))
 
+if config.DISTRO == 'SLES_CaaSP':
+    from tests.lib.kubernetes.caasp import CaaSP as Kubernetes
+else:
+    from tests.lib.kubernetes.vanilla import Vanilla as Kubernetes  # type: ignore  # noqa: E501
 
 logger = logging.getLogger(__name__)
 
