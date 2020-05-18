@@ -50,12 +50,12 @@ class HardwareBase(ABC):
         self._conn = self.get_connection()
 
         logger.info(f"hardware {self}: Using {self.workspace.name}")
-        self._sshkey_name: str = None
-        self._public_key: str = None
-        self._private_key: str = None
+        self._sshkey_name: Optional[str] = None
+        self._public_key: Optional[str] = None
+        self._private_key: Optional[str] = None
 
         self._ansible_runner: Optional[AnsibleRunner] = None
-        self._ansible_runner_nodes: Dict[str, NodeBase] = None
+        self._ansible_runner_nodes: Dict[str, NodeBase] = {}
 
         self._generate_keys()
 

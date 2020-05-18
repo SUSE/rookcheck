@@ -25,9 +25,14 @@
 import logging
 import threading
 import time
+from typing import Dict, List
 import subprocess
 
 import libcloud.security
+from libcloud.compute.base import NodeImage
+from libcloud.compute.drivers.openstack import (
+    OpenStackNetwork, OpenStackNodeSize, OpenStackSecurityGroup
+)
 from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from urllib.parse import urlparse
@@ -199,11 +204,12 @@ class Hardware(HardwareBase):
         super().__init__(workspace)
         self._ex_os_key = self.conn.import_key_pair_from_string(
             self.sshkey_name, self.public_key)
-        self._ex_security_group = self._create_security_group()
-        self._ex_network_cache = {}
+        self._ex_security_group: OpenStackSecurityGroup = \
+            self._create_security_group()
+        self._ex_network_cache: List[OpenStackNetwork] = []
 
-        self._image_cache = {}
-        self._size_cache = {}
+        self._image_cache: Dict[str, NodeImage] = {}
+        self._size_cache: List[OpenStackNodeSize] = []
 
         logger.info(f"public key {self.public_key}")
         logger.info(f"private key {self.private_key}")
