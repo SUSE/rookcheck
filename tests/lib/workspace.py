@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import os
 import shutil
 import uuid
@@ -35,6 +36,21 @@ class Workspace():
     @property
     def working_dir(self) -> str:
         return self._working_dir
+
+    @contextlib.contextmanager
+    def chdir(self, path=None):
+        """A context manager which changes the working directory to the given
+        path, and then changes it back to its previous value on exit.
+
+        """
+        if not path:
+            path = self.working_dir
+        prev_cwd = os.getcwd()
+        os.chdir(path)
+        try:
+            yield
+        finally:
+            os.chdir(prev_cwd)
 
     def _get_working_dir(self):
         working_dir_path = os.path.join(
