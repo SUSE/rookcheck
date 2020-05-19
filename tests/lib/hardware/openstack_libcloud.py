@@ -233,6 +233,20 @@ class Hardware(HardwareBase):
         )
         return connection
 
+    def _get_image(self, identifier=None):
+        try:
+            return self._get_image_by_id(identifier)
+        except libcloud.common.exceptions.BaseHTTPError:
+            logger.debug('No image found by id. '
+                         'Falling back to search by name')
+            return self._get_image_by_name(identifier)
+
+    def _get_image_by_name(self, name):
+        for image in self.conn.list_images():
+            if name == image.name:
+                return image
+        raise Exception(f'No image found matching NAME {name}')
+
     def _get_image_by_id(self, id):
         if id in self._image_cache:
             return self._image_cache[id]
@@ -297,7 +311,7 @@ class Hardware(HardwareBase):
 
         node = Node(node_name, role, tags, self.conn,
                     self._get_size_by_name(config.NODE_SIZE),
-                    self._get_image_by_id(config.NODE_IMAGE_ID),
+                    self._get_image(config.NODE_IMAGE),
                     additional_networks, [self._ex_security_group],
                     self.sshkey_name)
 

@@ -34,11 +34,8 @@ WORKSPACE_DIR = os.getenv('WORKSPACE_DIR', '/tmp/rookcheck')
 # Can safely be commented-out for local libvirt use
 CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % getpass.getuser())
 
-# The node image by iID known to the provider
-# NOTE(jhesketh): The libcloud OpenStack driver only supports finding images by
-#                 ID
-NODE_IMAGE_ID = os.getenv('NODE_IMAGE_ID',
-                          'e9de104d-f03a-4d9f-8681-e5dd4e9cede7')
+# The node image by either ID or NAME
+NODE_IMAGE = os.getenv('NODE_IMAGE', None)
 
 # The user to SSH into (must be root or sudoer)
 NODE_IMAGE_USER = os.getenv('NODE_IMAGE_USER', 'opensuse')
