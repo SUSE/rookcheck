@@ -100,7 +100,7 @@ class Node(NodeBase):
             try:
                 ssh.connect(ip, username=config.NODE_IMAGE_USER,
                             key_filename=self._ssh_private_key)
-                logger.info(f"node {self.name}: ssh ready for user"
+                logger.info(f"node {self.name}: ssh ready for user "
                             f"{config.NODE_IMAGE_USER}")
                 return
             except (paramiko.BadHostKeyException,
@@ -298,7 +298,9 @@ class Hardware(HardwareBase):
             "dhcp_start": dhcp_start,
             "dhcp_end": dhcp_end,
         })
-        return self._conn.networkCreateXML(xml)
+        net = self._conn.networkCreateXML(xml)
+        logger.info(f"created network {net.name()}")
+        return net
 
     def get_connection(self):
         conn = libvirt.open(config.PROVIDER_LIBVIRT_CONNECTION)
@@ -346,3 +348,4 @@ class Hardware(HardwareBase):
     def destroy(self):
         super().destroy()
         self._network.destroy()
+        logger.info(f"network {self._network.name()} destroyed")
