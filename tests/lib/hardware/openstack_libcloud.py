@@ -209,6 +209,7 @@ class Hardware(HardwareBase):
         self._ex_network_cache: List[OpenStackNetwork] = []
 
         self._image_cache: Dict[str, NodeImage] = {}
+        self._full_image_cache: List[NodeImage] = []
         self._size_cache: List[OpenStackNodeSize] = []
 
     def get_connection(self):
@@ -246,7 +247,12 @@ class Hardware(HardwareBase):
             return self._get_image_by_name(identifier)
 
     def _get_image_by_name(self, name):
-        for image in self.conn.list_images():
+        # NOTE(jhesketh): In general we wouldn't expect the provider list of
+        #                 images to change mid-test. Thus caching this once
+        #                 should be sufficient.
+        if not self._full_image_cache:
+            self._full_image_cache = self.conn.list_images()
+        for image in self._full_image_cache:
             if name == image.name:
                 return image
         raise Exception(f'No image found matching NAME {name}')
