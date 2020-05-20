@@ -34,29 +34,29 @@ class CaaSP(KubernetesBase):
         self._clusterpath = os.path.join(hardware.working_dir, 'cluster')
         self._kubeconfig = os.path.join(self.hardware.working_dir,
                                         'admin.conf')
+        self._ssh_agent_auth_sock = os.path.join(hardware.working_dir,
+                                                 'ssh-agent.sock')
         self._ssh_agent()
 
     def _ssh_agent(self):
         try:
-            res = subprocess.run(['ssh-agent'], check=True,
-                                 capture_output=True)
+            res = subprocess.run(
+                ['ssh-agent', '-a', self._ssh_agent_auth_sock],
+                check=True, capture_output=True)
         except subprocess.CalledProcessError:
-            msg = 'Failed to start ssh agent'
-            logger.exception(msg)
+            logger.exception('Failed to start ssh agent')
             raise
 
-        self.SSH_AUTH_SOCK = res.stdout.decode(
-            'utf-8').split(';')[0].split('=')[1]
-        self.SSH_AGENT_PID = res.stdout.decode(
+        logger.info(f"ssh-agent started: {res.stdout.decode('utf-8')}")
+        self._ssh_agent_pid = res.stdout.decode(
             'utf-8').split(';')[2].split('=')[1]
-        os.environ['SSH_AUTH_SOCK'] = self.SSH_AUTH_SOCK
-        os.environ['SSH_AGENT_PID'] = self.SSH_AGENT_PID
+        os.environ['SSH_AUTH_SOCK'] = self._ssh_agent_auth_sock
+        os.environ['SSH_AGENT_PID'] = self._ssh_agent_pid
         try:
             res = subprocess.run(['ssh-add', self.hardware._private_key],
                                  check=True)
         except subprocess.CalledProcessError:
-            msg = 'Failed to add keys to agent'
-            logger.exception(msg)
+            logger.exception('Failed to add keys to agent')
             raise
 
     def destroy(self, skip=False):
@@ -70,7 +70,7 @@ class CaaSP(KubernetesBase):
             subprocess.run(['ssh-agent', '-k'], check=True)
         except subprocess.CalledProcessError:
             logger.exception(f'Killing ssh-agent with PID \
-{self.SSH_AGENT_PID} failed')
+{self._ssh_agent_pid} failed')
 
         # TODO(jhesketh): Uninstall kubernetes
 
@@ -93,8 +93,7 @@ class CaaSP(KubernetesBase):
                  self._clusterpath], check=True)
             logger.debug(res.args)
         except subprocess.CalledProcessError:
-            msg = 'Cluster init step failed'
-            logger.exception(msg)
+            logger.exception('Cluster init step failed')
             raise
 
     def _caasp_bootstrap(self):
@@ -105,8 +104,7 @@ class CaaSP(KubernetesBase):
                  self.hardware.masters[0].dnsname], check=True)
             logger.debug(res.args)
         except subprocess.CalledProcessError:
-            msg = 'Cluster bootsrap step failed'
-            logger.exception(msg)
+            logger.exception('Cluster bootsrap step failed')
             raise
 
     def _caasp_join(self):
@@ -118,8 +116,8 @@ class CaaSP(KubernetesBase):
                      worker.get_ssh_ip(), worker.dnsname], check=True)
                 logger.debug(res.args)
             except subprocess.CalledProcessError:
-                msg = f'Node {worker.dnsname} failed to join cluster'
-                logger.exception(msg)
+                logger.exception(
+                    f'Node {worker.dnsname} failed to join cluster')
                 raise
 
     @contextlib.contextmanager
