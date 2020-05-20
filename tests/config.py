@@ -35,7 +35,7 @@ WORKSPACE_DIR = os.getenv('WORKSPACE_DIR', '/tmp/rookcheck')
 CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', '%s-rookci-' % getpass.getuser())
 
 # The node image by either ID or NAME
-NODE_IMAGE = os.getenv('NODE_IMAGE', None)
+NODE_IMAGE = os.getenv('NODE_IMAGE', "openSUSE-Leap-15.1-OpenStack-201905")
 
 # The user to SSH into (must be root or sudoer)
 NODE_IMAGE_USER = os.getenv('NODE_IMAGE_USER', 'opensuse')

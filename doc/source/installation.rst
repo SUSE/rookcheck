@@ -31,12 +31,15 @@ well.
     sudo pip install tox
 
 Next we run bindep from inside a tox environment to get the list of missing
-system packages:
+system packages. By specifying the HARDWARE_PROVIDER and DISTRO we are going
+to use we can ensure the requirements for our infrastructure are met (see
+:ref:`configuration` for more information):
 
 .. code-block:: bash
 
-    PROFILE=libvirt
-    tox -e bindep ${PROFILE}
+    HARDWARE_PROVIDER=libvirt
+    DISTRO=SLES_CaaSP
+    tox -e bindep ${HARDWARE_PROVIDER} ${DISTRO}
 
 Then we can take the list and install them.
 
@@ -48,7 +51,7 @@ Or as one command the above can be:
 
 .. code-block:: bash
 
-    sudo zypper in $(tox -qq -e bindep -- -b)
+    sudo zypper in $(tox -qq -e bindep -- -b ${HARDWARE_PROVIDER} ${DISTRO})
 
 One of the system requirements to build rook is docker. Make sure the docker
 daemon is running:

@@ -24,15 +24,10 @@
 
 from abc import ABC, abstractmethod
 import logging
-import os
-from pprint import pformat
 import subprocess
-from typing import Dict, Optional, Any
-
-import paramiko.rsakey
+from typing import Dict, Any
 
 from tests.lib.distro import get_distro
-from tests.lib.ansible_helper import AnsibleRunner
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 
 from tests.lib.workspace import Workspace
@@ -50,14 +45,6 @@ class HardwareBase(ABC):
         self._conn = self.get_connection()
 
         logger.info(f"hardware {self}: Using {self.workspace.name}")
-        self._sshkey_name: Optional[str] = None
-        self._public_key: Optional[str] = None
-        self._private_key: Optional[str] = None
-
-        self._ansible_runner: Optional[AnsibleRunner] = None
-        self._ansible_runner_nodes: Dict[str, NodeBase] = {}
-
-        self._generate_keys()
 
     @property
     def workspace(self):
@@ -70,32 +57,6 @@ class HardwareBase(ABC):
     @property
     def nodes(self):
         return self._nodes
-
-    @property
-    def sshkey_name(self):
-        return self._sshkey_name
-
-    @property
-    def public_key(self):
-        return self._public_key
-
-    @property
-    def private_key(self):
-        return self._private_key
-
-    def _generate_keys(self):
-        """
-        Generatees a public and private key
-        """
-        key = paramiko.rsakey.RSAKey.generate(2048)
-        self._private_key = os.path.join(
-            self.workspace.working_dir, 'private.key')
-        with open(self._private_key, 'w') as key_file:
-            key.write_private_key(key_file)
-        os.chmod(self._private_key, 0o400)
-
-        self._sshkey_name = "%s_key" % (self.workspace.name)
-        self._public_key = "%s %s" % (key.get_name(), key.get_base64())
 
     def _node_remove_ssh_key(self, node: NodeBase):
         # The mitogen plugin does not correctly ignore host key checking, so we
@@ -138,46 +99,16 @@ class HardwareBase(ABC):
         self.execute_ansible_play(d.bootstrap_play())
 
     def execute_ansible_play_raw(self, playbook):
-        if not self._ansible_runner or \
-           self._ansible_runner_nodes != self.nodes:
-            # Create a new AnsibleRunner if the nodes dict has changed (to
-            # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self.nodes, self.working_dir)
-            self._ansible_runner_nodes = self.nodes.copy()
+        return self.workspace.execute_ansible_play(
+            playbook, self.nodes, self.ansible_inventory_vars())
 
-        return self._ansible_runner.run_play_raw(playbook)
-
-    def _execute_ansible_play(self, play_source):
-        if not self._ansible_runner or \
-           self._ansible_runner_nodes != self.nodes:
-            # Create a new AnsibleRunner if the nodes dict has changed (to
-            # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self.workspace, self)
-            self._ansible_runner_nodes = self.nodes.copy()
-
-        return self._ansible_runner.run_play(play_source)
-
-    def execute_ansible_play(self, play_source):
-        r = self._execute_ansible_play(play_source)
-        failure = False
-        if r.host_unreachable:
-            logger.error("One or more hosts were unreachable")
-            logger.error(pformat(r.host_unreachable))
-            failure = True
-        if r.host_failed:
-            logger.error("One or more hosts failed")
-            logger.error(pformat(r.host_failed))
-            failure = True
-        if failure:
-            logger.debug("The successful hosts returned:")
-            logger.debug(pformat(r.host_ok))
-            raise Exception(
-                f"Failure running ansible playbook {play_source['name']}")
-        return r
+    def execute_ansible_play(self, playbook):
+        return self.workspace.execute_ansible_play(
+            playbook, self.nodes, self.ansible_inventory_vars())
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
-            'ansible_ssh_private_key_file': self.private_key,
+            'ansible_ssh_private_key_file': self.workspace.private_key,
             'ansible_host_key_checking': False,
             'ansible_ssh_host_key_checking': False,
             'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
