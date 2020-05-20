@@ -33,8 +33,13 @@ class CaaSP(KubernetesBase):
     def __init__(self, workspace: Workspace, hardware: HardwareBase):
         super().__init__(workspace, hardware)
         self._clusterpath = os.path.join(self.workspace.working_dir, 'cluster')
-        self._kubeconfig = os.path.join(self.workspace.working_dir,
+        self._kubeconfig = os.path.join(self.workspace.working_dir, 'cluster',
                                         'admin.conf')
+        # FIXME(toabctl): The CaaSP implementation is not downloading the
+        # 'kubectl' executable so it's not available in the workspace dir.
+        # We currently just assume that on the local machine, 'kubectl'
+        # is available
+        self._kubectl_exec = 'kubectl'
 
     def destroy(self, skip=False):
         logger.info(f"kube destroy on hardware {self.hardware}")
