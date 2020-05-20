@@ -99,12 +99,12 @@ class HardwareBase(ABC):
         self.execute_ansible_play(d.bootstrap_play())
 
     def execute_ansible_play_raw(self, playbook):
-        return self.workspace.execute_ansible_play(
+        return self.workspace.execute_ansible_play_raw(
             playbook, self.nodes, self.ansible_inventory_vars())
 
-    def execute_ansible_play(self, playbook):
+    def execute_ansible_play(self, play_source):
         return self.workspace.execute_ansible_play(
-            playbook, self.nodes, self.ansible_inventory_vars())
+            play_source, self.nodes, self.ansible_inventory_vars())
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
