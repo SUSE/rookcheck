@@ -57,10 +57,14 @@ class CaaSP(KubernetesBase):
 
     def _caasp_init(self):
         try:
+            env = os.environ.copy()
+            env['SSH_AUTH_SOCK'] = self.workspace.ssh_agent_auth_sock
+            env['SSH_AGENT_PID'] = self.workspace.ssh_agent_pid
             res = subprocess.run(
                 ['skuba', 'cluster', 'init', '--control-plane',
                  self.hardware.masters[0].get_ssh_ip(),
-                 self._clusterpath], check=True)
+                 self._clusterpath],
+                env=env, check=True)
             logger.debug(res.args)
         except subprocess.CalledProcessError:
             logger.exception('Cluster init step failed')
@@ -68,10 +72,14 @@ class CaaSP(KubernetesBase):
 
     def _caasp_bootstrap(self):
         try:
+            env = os.environ.copy()
+            env['SSH_AUTH_SOCK'] = self.workspace.ssh_agent_auth_sock
+            env['SSH_AGENT_PID'] = self.workspace.ssh_agent_pid
             res = subprocess.run(
                 ['skuba', 'node', 'bootstrap', '--user', 'sles', '--sudo',
                  '--target', self.hardware.masters[0].get_ssh_ip(),
-                 self.hardware.masters[0].dnsname], check=True)
+                 self.hardware.masters[0].dnsname],
+                env=env, check=True)
             logger.debug(res.args)
         except subprocess.CalledProcessError:
             logger.exception('Cluster bootsrap step failed')
@@ -80,10 +88,14 @@ class CaaSP(KubernetesBase):
     def _caasp_join(self):
         for worker in self.hardware.workers:
             try:
+                env = os.environ.copy()
+                env['SSH_AUTH_SOCK'] = self.workspace.ssh_agent_auth_sock
+                env['SSH_AGENT_PID'] = self.workspace.ssh_agent_pid
                 res = subprocess.run(
                     ['skuba', 'node', 'join', '--role', 'worker',
                      '--user', 'sles', '--sudo', '--target',
-                     worker.get_ssh_ip(), worker.dnsname], check=True)
+                     worker.get_ssh_ip(), worker.dnsname],
+                    env=env, check=True)
                 logger.debug(res.args)
             except subprocess.CalledProcessError:
                 logger.exception(
