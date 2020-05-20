@@ -21,18 +21,19 @@
 import logging
 import os
 import subprocess
-import contextlib
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
+from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.workspace import Workspace
 
 
 logger = logging.getLogger(__name__)
 
 
 class CaaSP(KubernetesBase):
-    def __init__(self, hardware):
-        super().__init__(hardware)
-        self._clusterpath = os.path.join(hardware.working_dir, 'cluster')
-        self._kubeconfig = os.path.join(self.hardware.working_dir,
+    def __init__(self, workspace: Workspace, hardware: HardwareBase):
+        super().__init__(workspace, hardware)
+        self._clusterpath = os.path.join(self.workspace.working_dir, 'cluster')
+        self._kubeconfig = os.path.join(self.workspace.working_dir,
                                         'admin.conf')
         self._ssh_agent_auth_sock = os.path.join(hardware.working_dir,
                                                  'ssh-agent.sock')
@@ -80,9 +81,9 @@ class CaaSP(KubernetesBase):
         self.hardware.get_masters()
         self.hardware.get_workers()
         self._caasp_init()
-        with self._working_directory(self._clusterpath):
+        with self.workspace.chdir(self._clusterpath):
             self._caasp_bootstrap()
-        with self._working_directory(self._clusterpath):
+        with self.workspace.chdir(self._clusterpath):
             self._caasp_join()
 
     def _caasp_init(self):
@@ -119,16 +120,3 @@ class CaaSP(KubernetesBase):
                 logger.exception(
                     f'Node {worker.dnsname} failed to join cluster')
                 raise
-
-    @contextlib.contextmanager
-    def _working_directory(self, path):
-        """A context manager which changes the working directory to the given
-        path, and then changes it back to its previous value on exit.
-
-        """
-        prev_cwd = os.getcwd()
-        os.chdir(path)
-        try:
-            yield
-        finally:
-            os.chdir(prev_cwd)

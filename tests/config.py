@@ -89,11 +89,13 @@ OS_EXTERNAL_NETWORK = os.getenv('OS_EXTERNAL_NETWORK', 'floating')
 
 # Whether or not to perform some options as a thread. Turning this off may help
 # with debugging at the cost of performance.
-_USE_THREADS = os.getenv('ROOKCHECK_USE_THREADS', True)
+_USE_THREADS = bool(distutils.util.strtobool(
+    os.getenv('ROOKCHECK_USE_THREADS', 'TRUE')))
 
 # Whether or not to use the ansible "free" strategy. It is generally faster
 # but causes the output to be intertwined and more confusing.
-_USE_FREE_STRATEGY = os.getenv('ROOKCHECK_USE_FREE_STRATEGY', False)
+_USE_FREE_STRATEGY = bool(distutils.util.strtobool(
+    os.getenv('ROOKCHECK_USE_FREE_STRATEGY', 'FALSE')))
 
 ##############################
 # libvirt provider settings
@@ -118,3 +120,8 @@ PROVIDER_LIBVIRT_IMAGE = os.getenv(
 # Memory use for libvirt VMs (in GB)
 PROVIDER_LIBVIRT_VM_MEMORY = int(os.getenv(
     'ROOKCHECK_PROVIDER_LIBVIRT_VM_MEMORY', 8))
+
+# If set to True, the workspacing and all created files from a test will be
+# removed from the disk.
+_REMOVE_WORKSPACE = bool(distutils.util.strtobool(
+    os.getenv('ROOKCHECK_REMOVE_WORKSPACE', 'TRUE')))

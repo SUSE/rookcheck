@@ -70,16 +70,20 @@ class UploadRook():
 
 
 class RookCluster():
-    def __init__(self, kubernetes):
+    def __init__(self, workspace, kubernetes):
+        self._workspace = workspace
         self.kubernetes = kubernetes
         self.toolbox_pod = None
         self.ceph_dir = None
         self._rook_built = False
-        self.builddir = os.path.join(
-            self.kubernetes.hardware.working_dir, 'rook_build')
+        self.builddir = os.path.join(self.workspace.working_dir, 'rook_build')
         os.mkdir(self.builddir)
 
         logger.info(f"rook init on {self.kubernetes.hardware}")
+
+    @property
+    def workspace(self):
+        return self._workspace
 
     def destroy(self, skip=True):
         logger.info(f"rook destroy on {self.kubernetes.hardware}")
@@ -220,6 +224,8 @@ class RookCluster():
             self.execute_in_ceph_toolbox, "ceph fs status myfs",
             matcher=common.regex_matcher(pattern),
             attempts=20, interval=5)
+
+        logger.info("Rook successfully installed and ready!")
 
     def execute_in_ceph_toolbox(self, command):
         if not self.toolbox_pod:

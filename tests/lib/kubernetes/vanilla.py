@@ -26,16 +26,18 @@ import subprocess
 import wget
 
 from abc import ABC, abstractmethod
-from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests import config
+from tests.lib.kubernetes.kubernetes_base import KubernetesBase
+from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.workspace import Workspace
 
 
 logger = logging.getLogger(__name__)
 
 
 class Vanilla(KubernetesBase):
-    def __init__(self, hardware):
-        super().__init__(hardware)
+    def __init__(self, workspace: Workspace, hardware: HardwareBase):
+        super().__init__(workspace, hardware)
         if config.DISTRO == 'openSUSE_k8s':
             self.distro = DeploySUSE()
         else:
@@ -56,7 +58,7 @@ class Vanilla(KubernetesBase):
             self.distro.join_workers_to_master(join_command))
 
         self.hardware.execute_ansible_play(
-            self.distro.fetch_kubeconfig(self.hardware.working_dir))
+            self.distro.fetch_kubeconfig(self.workspace.working_dir))
 
         self._configure_kubernetes_client()
         self._download_kubectl()

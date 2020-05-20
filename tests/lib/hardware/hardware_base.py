@@ -28,16 +28,14 @@ import os
 from pprint import pformat
 import subprocess
 from typing import Dict, Optional, Any
-import uuid
 
 import paramiko.rsakey
 
 from tests.lib.distro import get_distro
 from tests.lib.ansible_helper import AnsibleRunner
-from tests.lib.hardware.node_base import NodeBase
-from tests import config
-from tests.lib.hardware.node_base import NodeRole
+from tests.lib.hardware.node_base import NodeBase, NodeRole
 
+from tests.lib.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -46,24 +44,24 @@ class HardwareBase(ABC):
     """
     Base Hardware class
     """
-    def __init__(self):
+    def __init__(self, workspace: Workspace):
+        self._workspace = workspace
         self._nodes: Dict[str, NodeBase] = {}
-        self._hardware_uuid: str = str(uuid.uuid4())[:8]
         self._conn = self.get_connection()
 
-        # NOTE(jhesketh): The working_dir is never cleaned up. This is somewhat
-        # deliberate to keep the private key if it is needed for debugging.
-        self._working_dir: str = self._get_working_dir()
-
-        logger.info(f"hardware {self.hardware_uuid}: Using {self.working_dir}")
-        self._sshkey_name: str = None
-        self._public_key: str = None
-        self._private_key: str = None
+        logger.info(f"hardware {self}: Using {self.workspace.name}")
+        self._sshkey_name: Optional[str] = None
+        self._public_key: Optional[str] = None
+        self._private_key: Optional[str] = None
 
         self._ansible_runner: Optional[AnsibleRunner] = None
-        self._ansible_runner_nodes: Dict[str, NodeBase] = None
+        self._ansible_runner_nodes: Dict[str, NodeBase] = {}
 
         self._generate_keys()
+
+    @property
+    def workspace(self):
+        return self._workspace
 
     @property
     def conn(self):
@@ -72,14 +70,6 @@ class HardwareBase(ABC):
     @property
     def nodes(self):
         return self._nodes
-
-    @property
-    def working_dir(self):
-        return self._working_dir
-
-    @property
-    def hardware_uuid(self) -> str:
-        return self._hardware_uuid
 
     @property
     def sshkey_name(self):
@@ -93,26 +83,18 @@ class HardwareBase(ABC):
     def private_key(self):
         return self._private_key
 
-    def _get_working_dir(self):
-        working_dir_path = os.path.join(
-            config.WORKSPACE_DIR,
-            "%s%s" % (config.CLUSTER_PREFIX, self.hardware_uuid)
-        )
-        os.makedirs(working_dir_path)
-        return working_dir_path
-
     def _generate_keys(self):
         """
         Generatees a public and private key
         """
         key = paramiko.rsakey.RSAKey.generate(2048)
-        self._private_key = os.path.join(self.working_dir, 'private.key')
+        self._private_key = os.path.join(
+            self.workspace.working_dir, 'private.key')
         with open(self._private_key, 'w') as key_file:
             key.write_private_key(key_file)
         os.chmod(self._private_key, 0o400)
 
-        self._sshkey_name = \
-            "%s%s_key" % (config.CLUSTER_PREFIX, self.hardware_uuid)
+        self._sshkey_name = "%s_key" % (self.workspace.name)
         self._public_key = "%s %s" % (key.get_name(), key.get_base64())
 
     def _node_remove_ssh_key(self, node: NodeBase):
@@ -135,14 +117,12 @@ class HardwareBase(ABC):
         pass
 
     def node_add(self, node: NodeBase):
-        logger.info(f"adding new node {node.name} to hardware "
-                    f"{self.hardware_uuid}")
+        logger.info(f"adding new node {node.name} to hardware {self}")
         self._node_remove_ssh_key(node)
         self.nodes[node.name] = node
 
     def node_remove(self, node: NodeBase):
-        logger.info(f"removing node {node.name} from hardware "
-                    "{self.hardware_uuid}")
+        logger.info(f"removing node {node.name} from hardware {self}")
         del self.nodes[node.name]
         node.destroy()
 
@@ -172,7 +152,7 @@ class HardwareBase(ABC):
            self._ansible_runner_nodes != self.nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self)
+            self._ansible_runner = AnsibleRunner(self.workspace, self)
             self._ansible_runner_nodes = self.nodes.copy()
 
         return self._ansible_runner.run_play(play_source)
