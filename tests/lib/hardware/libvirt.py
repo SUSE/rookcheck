@@ -94,7 +94,8 @@ class Node(NodeBase):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ip = self.get_ssh_ip()
         stop = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
-        logger.info(f"node {self.name}: waiting for ssh for {timeout} s")
+        logger.info(f"node {self.name}: waiting {timeout} s for ssh to "
+                    f"{config.NODE_IMAGE_USER}@{ip}")
         while datetime.datetime.now() < stop:
             try:
                 ssh.connect(ip, username=config.NODE_IMAGE_USER,
