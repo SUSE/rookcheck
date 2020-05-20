@@ -61,7 +61,10 @@ class Workspace():
 
     def destroy(self):
         if config._REMOVE_WORKSPACE:
+            logger.info(f"Removing workspace {self.name} from disk")
             shutil.rmtree(self.working_dir)
+        else:
+            logger.info(f"Keeping workspace on disk at {self.working_dir}")
 
     def __enter__(self):
         return self
