@@ -50,16 +50,15 @@ logger = logging.getLogger(__name__)
 
 class Node(NodeBase):
     def __init__(self, name, role, tags, conn, image_path,
-                 network, disk_number, memory, ssh_public_key, ssh_private_key,
-                 workspace):
+                 network, disk_number, memory, workspace):
         super().__init__(name, role, tags)
         self._conn = conn
         self._image_path = image_path
         self._network = network
         self._disk_number = disk_number,
         self._memory = memory * 1024 * 1024
-        self._ssh_public_key = ssh_public_key
-        self._ssh_private_key = ssh_private_key
+        self._ssh_public_key = workspace.public_key
+        self._ssh_private_key = workspace.private_key
         self._snap_img_path = os.path.join(
             workspace.working_dir, f"{self.name}-snapshot.qcow2")
         self._cloud_init_seed_path = os.path.join(
@@ -312,8 +311,7 @@ class Hardware(HardwareBase):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._image_path, self._network, 0,
-                    config.PROVIDER_LIBVIRT_VM_MEMORY,
-                    self.public_key, self.private_key, self.workspace)
+                    config.PROVIDER_LIBVIRT_VM_MEMORY, self.workspace)
         node.boot()
         self.node_add(node)
 

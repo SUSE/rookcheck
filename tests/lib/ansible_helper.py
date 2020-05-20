@@ -68,7 +68,8 @@ class ResultCallback(CallbackModule):
 
 
 class AnsibleRunner(object):
-    def __init__(self, workspace, hardware):
+    def __init__(self, workspace, nodes, inventory_vars=None):
+        self._workspace = workspace
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
@@ -83,7 +84,8 @@ class AnsibleRunner(object):
 
         # create inventory, use path to host config file as source or hosts in
         # a comma separated string
-        self.inventory_dir = self.create_inventory(workspace, hardware)
+        self.inventory_dir = self.create_inventory(
+            workspace, nodes, inventory_vars)
         self.inventory = InventoryManager(
             loader=self.loader, sources=self.inventory_dir)
 
@@ -104,7 +106,11 @@ class AnsibleRunner(object):
                 required_base_class='StrategyBase',
             )
 
-    def create_inventory(self, workspace, hardware):
+    @property
+    def workspace(self):
+        return self._workspace
+
+    def create_inventory(self, workspace, nodes, inventory_vars):
         # create a inventory & group_vars directory
         inventory_dir = os.path.join(workspace.working_dir, 'inventory')
         group_vars_dir = os.path.join(inventory_dir, 'group_vars')
@@ -114,7 +120,7 @@ class AnsibleRunner(object):
         # write hardware groups vars which are useful for *all* nodes
         group_vars_all = os.path.join(group_vars_dir, 'all.yml')
         with open(group_vars_all, 'w') as f:
-            yaml.dump(hardware.ansible_inventory_vars(), f)
+            yaml.dump(inventory_vars, f)
 
         # write node specific inventory
         inv = {
@@ -124,7 +130,7 @@ class AnsibleRunner(object):
             }
         }
 
-        for node in hardware.nodes.values():
+        for node in nodes.values():
             if not node.tags:
                 inv['all']['hosts'][node.name] = node.ansible_inventory_vars()
             else:
@@ -147,8 +153,14 @@ class AnsibleRunner(object):
         ))
         logger.info(f'Running playbook {path}')
         try:
-            subprocess.run(['ansible-playbook', '-i', self.inventory_dir,
-                            path], check=True)
+            subprocess.run(
+                ['ansible-playbook', '-i', self.inventory_dir, path],
+                check=True,
+                env={
+                    'SSH_AUTH_SOCK': self.workspace.ssh_agent_auth_sock,
+                    'SSH_AGENT_PID': self.workspace.ssh_agent_pid,
+                }
+            )
         except subprocess.CalledProcessError:
             logger.exception('An error occured executing Ansible playbook')
             Exception("An error occurred running playbook")
