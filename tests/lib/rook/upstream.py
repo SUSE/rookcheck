@@ -21,84 +21,17 @@ import wget
 from tests import config
 from tests.lib.common import execute
 from tests.lib import common
-
+from tests.lib.rook.base import RookBase
 
 logger = logging.getLogger(__name__)
 
 
-class UploadRook():
-    def upload_image_play(self, buildpath):
-        tasks = []
-
-        tasks.append(
-            dict(
-                name="Copy Rook Ceph image to cluster nodes",
-                action=dict(
-                    module='copy',
-                    args=dict(
-                        src=os.path.join(buildpath, "rook-ceph.tar.gz"),
-                        dest="/root/.images/"
-                    )
-                )
-            )
-        )
-
-        # TODO(jhesketh): build arch may differ
-        tasks.append(
-            dict(
-                name="Load rook ceph image",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd='docker load '
-                            '--input /root/.images/rook-ceph.tar.gz'
-                    )
-                )
-            )
-        )
-
-        play_source = dict(
-            name="Upload rook image",
-            hosts="all",
-            tasks=tasks,
-            gather_facts="no",
-            # Temporary workaround for mitogen failing to copy files or
-            # templates.
-            strategy="free" if config._USE_FREE_STRATEGY else "linear",
-        )
-        return play_source
-
-
-class RookCluster():
+class RookCluster(RookBase):
     def __init__(self, workspace, kubernetes):
-        self._workspace = workspace
-        self.kubernetes = kubernetes
-        self.toolbox_pod = None
-        self.ceph_dir = None
+        super().__init__(workspace, kubernetes)
         self._rook_built = False
         self.builddir = os.path.join(self.workspace.working_dir, 'rook_build')
         os.mkdir(self.builddir)
-
-        logger.info(f"rook init on {self.kubernetes.hardware}")
-
-    @property
-    def workspace(self):
-        return self._workspace
-
-    def destroy(self, skip=True):
-        logger.info(f"rook destroy on {self.kubernetes.hardware}")
-        if skip:
-            # We can skip in most cases since the kubernetes cluster, if not
-            # the nodes themselves will be destroyed instead.
-            return
-        # TODO(jhesketh): Uninstall rook
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.destroy()
 
     def build_rook(self):
         logger.info("[build_rook] Download go")
@@ -220,3 +153,46 @@ class RookCluster():
                 "rook-ceph-tools")
 
         return self.kubernetes.execute_in_pod(command, self.toolbox_pod)
+
+
+class UploadRook():
+    def upload_image_play(self, buildpath):
+        tasks = []
+
+        tasks.append(
+            dict(
+                name="Copy Rook Ceph image to cluster nodes",
+                action=dict(
+                    module='copy',
+                    args=dict(
+                        src=os.path.join(buildpath, "rook-ceph.tar.gz"),
+                        dest="/root/.images/"
+                    )
+                )
+            )
+        )
+
+        # TODO(jhesketh): build arch may differ
+        tasks.append(
+            dict(
+                name="Load rook ceph image",
+                action=dict(
+                    module='shell',
+                    args=dict(
+                        cmd='docker load '
+                            '--input /root/.images/rook-ceph.tar.gz'
+                    )
+                )
+            )
+        )
+
+        play_source = dict(
+            name="Upload rook image",
+            hosts="all",
+            tasks=tasks,
+            gather_facts="no",
+            # Temporary workaround for mitogen failing to copy files or
+            # templates.
+            strategy="free" if config._USE_FREE_STRATEGY else "linear",
+        )
+        return play_source
