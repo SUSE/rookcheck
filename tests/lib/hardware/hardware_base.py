@@ -25,7 +25,7 @@
 from abc import ABC, abstractmethod
 import logging
 import subprocess
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from tests.lib.distro import get_distro
 from tests.lib.hardware.node_base import NodeBase, NodeRole
@@ -57,6 +57,14 @@ class HardwareBase(ABC):
     @property
     def nodes(self):
         return self._nodes
+
+    @property
+    def masters(self) -> List[NodeRole]:
+        return self._get_node_by_role(NodeRole.MASTER)
+
+    @property
+    def workers(self) -> List[NodeRole]:
+        return self._get_node_by_role(NodeRole.WORKER)
 
     def _node_remove_ssh_key(self, node: NodeBase):
         # The mitogen plugin does not correctly ignore host key checking, so we
@@ -117,20 +125,12 @@ class HardwareBase(ABC):
         }
         return vars
 
-    def get_node_by_role(self, role: NodeRole):
+    def _get_node_by_role(self, role: NodeRole):
         items = []
         for node_name, node_obj in self.nodes.items():
             if node_obj._role == role:
                 items.append(node_obj)
         return items
-
-    def get_masters(self):
-        self.masters = self.get_node_by_role(NodeRole.MASTER)
-        return self.masters
-
-    def get_workers(self):
-        self.workers = self.get_node_by_role(NodeRole.WORKER)
-        return self.workers
 
     def __enter__(self):
         return self

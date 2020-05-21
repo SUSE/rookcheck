@@ -52,8 +52,6 @@ class CaaSP(KubernetesBase):
     def install_kubernetes(self):
         super().install_kubernetes()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
-        self.hardware.get_masters()
-        self.hardware.get_workers()
         self._caasp_init()
         with self.workspace.chdir(self._clusterpath):
             self._caasp_bootstrap()
