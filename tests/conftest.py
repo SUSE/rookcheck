@@ -17,6 +17,7 @@ import pytest
 import threading
 
 from tests import config
+from tests.lib.rook import RookCluster
 from tests.lib.workspace import Workspace
 
 
@@ -30,10 +31,8 @@ else:
 
 if config.DISTRO == 'SLES_CaaSP':
     from tests.lib.kubernetes.caasp import CaaSP as Kubernetes
-    from tests.lib.rook.ses import RookCluster as RookCluster
 else:
     from tests.lib.kubernetes.vanilla import Vanilla as Kubernetes  # type: ignore  # noqa: E501
-    from tests.lib.rook.upstream import RookCluster as RookCluster
 
 logger = logging.getLogger(__name__)
 
