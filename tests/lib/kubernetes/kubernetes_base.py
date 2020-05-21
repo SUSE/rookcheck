@@ -44,6 +44,16 @@ class KubernetesBase(ABC):
         logger.info(f"kube init on hardware {self.hardware}")
 
     @abstractmethod
+    def bootstrap(self):
+        """
+        bootstrap a k8s cluster.
+        After calling this method, at least a single master node
+        should be available in the k8s cluster so other master or worker
+        nodes can join
+        """
+        logging.info("bootstrapping the kubernetes cluster")
+
+    @abstractmethod
     def install_kubernetes(self):
         pass
 

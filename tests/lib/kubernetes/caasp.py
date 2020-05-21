@@ -49,14 +49,15 @@ class CaaSP(KubernetesBase):
             return
         # TODO(jhesketh): Uninstall kubernetes
 
-    def install_kubernetes(self):
-        super().install_kubernetes()
+    def bootstrap(self):
+        super().bootstrap()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
-        self.hardware.get_masters()
-        self.hardware.get_workers()
         self._caasp_init()
         with self.workspace.chdir(self._clusterpath):
             self._caasp_bootstrap()
+
+    def install_kubernetes(self):
+        super().install_kubernetes()
         with self.workspace.chdir(self._clusterpath):
             self._caasp_join()
 
@@ -69,10 +70,11 @@ class CaaSP(KubernetesBase):
                 ['skuba', 'cluster', 'init', '--control-plane',
                  self.hardware.masters[0].get_ssh_ip(),
                  self._clusterpath],
-                env=env, check=True)
+                env=env, check=True, capture_output=True)
             logger.debug(res.args)
-        except subprocess.CalledProcessError:
-            logger.exception('Cluster init step failed')
+        except subprocess.CalledProcessError as e:
+            logger.exception('skuba cluster init failed: '
+                             f'{e.stdout}\n{e.stderr}')
             raise
 
     def _caasp_bootstrap(self):
@@ -80,14 +82,16 @@ class CaaSP(KubernetesBase):
             env = os.environ.copy()
             env['SSH_AUTH_SOCK'] = self.workspace.ssh_agent_auth_sock
             env['SSH_AGENT_PID'] = self.workspace.ssh_agent_pid
+            logger.info("skube node bootstrap. This may take a while")
             res = subprocess.run(
                 ['skuba', 'node', 'bootstrap', '--user', 'sles', '--sudo',
                  '--target', self.hardware.masters[0].get_ssh_ip(),
                  self.hardware.masters[0].dnsname],
-                env=env, check=True)
+                env=env, check=True, capture_output=True)
             logger.debug(res.args)
-        except subprocess.CalledProcessError:
-            logger.exception('Cluster bootsrap step failed')
+        except subprocess.CalledProcessError as e:
+            logger.exception('skuba node bootstrap failed: '
+                             f'{e.stdout}\n{e.stderr}')
             raise
 
     def _caasp_join(self):
@@ -100,9 +104,10 @@ class CaaSP(KubernetesBase):
                     ['skuba', 'node', 'join', '--role', 'worker',
                      '--user', 'sles', '--sudo', '--target',
                      worker.get_ssh_ip(), worker.dnsname],
-                    env=env, check=True)
+                    env=env, check=True, capture_output=True)
                 logger.debug(res.args)
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as e:
                 logger.exception(
-                    f'Node {worker.dnsname} failed to join cluster')
+                    f'skuba node join worker for  {worker.dnsname} failed: '
+                    f'{e.stdout}\n{e.stderr}')
                 raise

@@ -44,6 +44,7 @@ Now we can install kubernetes:
 
     import tests.lib.kubernetes
     k = tests.lib.kubernetes.VanillaKubernetes(h)
+    k.bootstrap()
     k.install_kubernetes()
 
 You can then interact with the kubernetes cluster with (for example):
