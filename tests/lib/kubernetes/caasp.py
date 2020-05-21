@@ -49,12 +49,15 @@ class CaaSP(KubernetesBase):
             return
         # TODO(jhesketh): Uninstall kubernetes
 
-    def install_kubernetes(self):
-        super().install_kubernetes()
+    def bootstrap(self):
+        super().bootstrap()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
         self._caasp_init()
         with self.workspace.chdir(self._clusterpath):
             self._caasp_bootstrap()
+
+    def install_kubernetes(self):
+        super().install_kubernetes()
         with self.workspace.chdir(self._clusterpath):
             self._caasp_join()
 

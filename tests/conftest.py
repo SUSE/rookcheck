@@ -62,6 +62,7 @@ def kubernetes(workspace, hardware):
     # etc), we should do them from an ABC so to ensure the interfaces are
     # correct.
     with Kubernetes(workspace, hardware) as kubernetes:
+        kubernetes.bootstrap()
         kubernetes.install_kubernetes()
         yield kubernetes
 
@@ -93,6 +94,7 @@ def rook_cluster(workspace):
                 # build rook thread
                 hardware.boot_nodes()
                 hardware.prepare_nodes()
+                kubernetes.bootstrap()
                 kubernetes.install_kubernetes()
 
                 if config._USE_THREADS:

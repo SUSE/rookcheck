@@ -43,12 +43,17 @@ class Vanilla(KubernetesBase):
         else:
             raise Exception("OS yet to be implemented/unsupport.")
 
-    def install_kubernetes(self):
+    def bootstrap(self):
         self.hardware.execute_ansible_play(self.distro.copy_needed_files())
         self.hardware.execute_ansible_play(self.distro.install_kubeadm_play())
         self.hardware.execute_ansible_play(
             self.distro.copy_needed_files_master())
 
+        self.hardware.execute_ansible_play(self.distro.setup_master_play())
+
+    def install_kubernetes(self):
+        # FIXME(toabctl): we call this already in bootstrap().
+        # Need to figure out how to get "r"
         r = self.hardware.execute_ansible_play(self.distro.setup_master_play())
         # TODO(jhesketh): Figure out a better way to get ansible output/results
         join_command = \
@@ -71,7 +76,7 @@ class Vanilla(KubernetesBase):
 
     def _setup_flannel(self):
         for node in self.hardware.nodes.values():
-            self.kubectl(
+            self.kubtectl(
                 "annotate node %s "
                 "flannel.alpha.coreos.com/public-ip-overwrite=%s "
                 "--overwrite" % (
