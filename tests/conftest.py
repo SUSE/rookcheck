@@ -36,6 +36,16 @@ else:
 
 logger = logging.getLogger(__name__)
 
+# NOTE(jhesketh): Important! When creating a fixture that uses a context
+#                 manager, the __exit__ method is not called if the object is
+#                 unabled to be instantiated. In other words, if __init__ fails
+#                 then no cleanup can occur.
+#                 Therefore, be careful when creating fixtures to not put
+#                 anything particularly time consuming, expensive, or prone to
+#                 failure in the constructor. Instead, move them into a
+#                 separate bootstrapping so that any failures to create
+#                 resources can still be cleaned up.
+
 
 @pytest.fixture(scope="module")
 def workspace():
