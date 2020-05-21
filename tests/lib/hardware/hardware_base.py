@@ -78,6 +78,7 @@ class HardwareBase(ABC):
         subprocess.run(f"ssh-keygen -R {node.get_ssh_ip()}", shell=True)
 
     def destroy(self):
+        logger.info("Remove all nodes from Hardware")
         for n in list(self.nodes):
             self.node_remove(self.nodes[n])
 
