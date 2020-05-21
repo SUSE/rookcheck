@@ -179,16 +179,20 @@ association if any is free...")
         raise Exception("Timeout waiting for node to be state `%s`" % state)
 
     def destroy(self):
+        logger.info(f"Destroy node {self.name}")
         if self._ssh_client:
             self._ssh_client.close()
         for floating_ip in self._floating_ips_created:
+            logger.info(f"Delete floating ip {floating_ip}")
             floating_ip.delete()
         if self._libcloud_node:
             uuid = self._libcloud_node.uuid
+            logger.info(f"Delete node {self._libcloud_node}")
             self._libcloud_node.destroy()
             self._libcloud_node = None
             self._wait_until_state(None, uuid=uuid)
         for volume in self._volumes:
+            logger.info(f"Delete volume {volume}")
             volume.destroy()
 
     def get_ssh_ip(self):
@@ -365,8 +369,11 @@ class Hardware(HardwareBase):
         #     thread.join()
 
     def destroy(self):
+        logger.info("Destroy Hardware")
         super().destroy()
+        logger.info("Remove OpenStack security group")
         self.conn.ex_delete_security_group(self._ex_security_group)
+        logger.info("Remove OpenStack keypair")
         self.conn.delete_key_pair(self._ex_os_key)
 
     def remove_host_keys(self):
