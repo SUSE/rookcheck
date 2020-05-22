@@ -41,14 +41,6 @@ class CaaSP(KubernetesBase):
         # is available
         self._kubectl_exec = 'kubectl'
 
-    def destroy(self, skip=False):
-        logger.info(f"kube destroy on hardware {self.hardware}")
-        if skip:
-            # We can skip in most cases since the nodes themselves will be
-            # destroyed instead.
-            return
-        # TODO(jhesketh): Uninstall kubernetes
-
     def bootstrap(self):
         super().bootstrap()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
