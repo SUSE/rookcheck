@@ -24,6 +24,7 @@ import uuid
 import paramiko.rsakey
 
 from tests import config
+from tests.lib.common import execute
 from tests.lib.ansible_helper import AnsibleRunner
 from tests.lib.hardware.node_base import NodeBase
 
@@ -122,6 +123,22 @@ class Workspace():
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise
+
+    def execute(self, command, capture=False, check=False,
+                disable_logger=False, env=None, chdir=None):
+        """Executes a command inside the workspace
+
+        This is a wrapper around the execute util that will automatically
+        chdir into the workspace and set some common env vars (such as the
+        ssh agent).
+        """
+        if not env:
+            env = {}
+        with self.chdir(chdir):
+            env['SSH_AUTH_SOCK'] = self.ssh_agent_auth_sock
+            env['SSH_AGENT_PID'] = self.ssh_agent_pid
+            return execute(command, capture=capture, check=check,
+                           disable_logger=disable_logger, env=env)
 
     def execute_ansible_play_raw(self, playbook: str,
                                  nodes: Dict[str, NodeBase],
