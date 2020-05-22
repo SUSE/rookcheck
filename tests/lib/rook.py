@@ -15,11 +15,11 @@
 import logging
 import os
 import re
-import subprocess
 import time
 import wget
 
 from tests import config
+from tests.lib.common import execute
 from tests.lib import common
 
 
@@ -101,20 +101,6 @@ class RookCluster():
         self.destroy()
 
     def build_rook(self):
-        def _execute(command):
-            try:
-                out = subprocess.run(
-                    command,
-                    shell=True, check=True, universal_newlines=True,
-                    capture_output=True
-                )
-            except subprocess.CalledProcessError as e:
-                logger.exception(f"Command `{command}` failed")
-                logger.error(f"STDOUT: {e.stdout}")
-                logger.error(f"STDERR: {e.stderr}")
-                raise
-            return out
-
         logger.info("[build_rook] Download go")
         wget.download(
             "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
@@ -122,29 +108,29 @@ class RookCluster():
         )
 
         logger.info("[build_rook] Unpack go")
-        _execute(
+        execute(
             "tar -C %s -xzf %s"
             % (self.builddir, os.path.join(self.builddir, 'go-amd64.tar.gz'))
         )
 
         # TODO(jhesketh): Allow setting rook version
         logger.info("[build_rook] Checkout rook")
-        _execute(
+        execute(
             "mkdir -p %s"
             % os.path.join(self.builddir, 'src/github.com/rook/rook')
         )
-        _execute(
+        execute(
             "git clone https://github.com/rook/rook.git %s"
             % os.path.join(self.builddir, 'src/github.com/rook/rook')
         )
         # TODO(jhesketh): Allow testing various versions of rook
-        _execute(
+        execute(
             "pushd %s && git checkout v1.3.1 && popd"
             % os.path.join(self.builddir, 'src/github.com/rook/rook')
         )
 
         logger.info("[build_rook] Make rook")
-        _execute(
+        execute(
             "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
             "make --directory='{builddir}/src/github.com/rook/rook' "
             "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
@@ -152,11 +138,11 @@ class RookCluster():
         )
 
         logger.info("[build_rook] Tag image")
-        _execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
+        execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
 
         logger.info("[build_rook] Save image tar")
         # TODO(jhesketh): build arch may differ
-        _execute(
+        execute(
             "docker save rook/ceph:master | gzip > %s"
             % os.path.join(self.builddir, 'rook-ceph.tar.gz')
         )
