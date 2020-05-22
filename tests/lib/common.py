@@ -16,6 +16,7 @@ import logging
 import subprocess
 import threading
 import time
+from typing import Dict, Optional, Tuple
 
 
 logger = logging.getLogger(__name__)
@@ -67,8 +68,9 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     raise Exception("Timed out waiting for result")
 
 
-def execute(command, capture=False, check=False, disable_logger=False,
-            env=None):
+def execute(command: str, capture=False, check=False, disable_logger=False,
+            env: Optional[Dict[str, str]] = None) -> Tuple[
+                int, Optional[str], Optional[str]]:
     """A helper util to excute `command`.
 
     If `disable_logger` is False, the stdout and stderr are redirected to the
@@ -83,8 +85,8 @@ def execute(command, capture=False, check=False, disable_logger=False,
 
     `env` is a dictionary of environment vars passed into Popen.
 
-    Returns a tuple of (rc code, output), where output is a dict with stdout
-    and stderr if capture is True.
+    Returns a tuple of (rc code, stdout, stdin), where stdout and stdin are
+    None if `capture` is False, or are a string.
     """
     outpipe = None if disable_logger and not capture else subprocess.PIPE
     process = subprocess.Popen(
@@ -95,30 +97,33 @@ def execute(command, capture=False, check=False, disable_logger=False,
         env=env,
     )
 
-    output = None
+    output: Dict[str, Optional[str]] = {}
+    output['stdout'] = None
+    output['stderr'] = None
     if capture:
         # Use a dictionary to capture the output as it is a mutable object that
         # we can access outside of the threads.
-        output = {'stdout': "", 'stderr': ""}
+        output['stdout'] = ""
+        output['stderr'] = ""
 
-    def read_stdout_from_process(process, capture_dict=None):
+    def read_stdout_from_process(process, capture_dict):
         log = logging.getLogger(process.args)
         while True:
             output = process.stdout.readline()
             if output:
                 log.info(output.rstrip())
-                if capture_dict:
+                if capture_dict['stdout'] is not None:
                     capture_dict['stdout'] += output
             elif output == '' and process.poll() is not None:
                 break
 
-    def read_stderr_from_process(process, capture_dict=None):
+    def read_stderr_from_process(process, capture_dict):
         log = logging.getLogger(process.args)
         while True:
             output = process.stderr.readline()
             if output:
                 log.warning(output.rstrip())
-                if capture_dict:
+                if capture_dict['stderr'] is not None:
                     capture_dict['stderr'] += output
             elif output == '' and process.poll() is not None:
                 break
@@ -134,8 +139,8 @@ def execute(command, capture=False, check=False, disable_logger=False,
         stderr_thread.join()
 
     if disable_logger and capture:
-        output['stdout'] = process.stdout.read()
-        output['stderr'] = process.stderr.read()
+        output['stdout'] = process.stdout.read()  # type: ignore
+        output['stderr'] = process.stderr.read()  # type: ignore
 
     rc = process.wait()
     if not disable_logger:
@@ -148,4 +153,4 @@ def execute(command, capture=False, check=False, disable_logger=False,
         else:
             raise subprocess.CalledProcessError(rc, command)
 
-    return (rc, output)
+    return (rc, output['stdout'], output['stderr'])

@@ -18,7 +18,7 @@ import os
 from pprint import pformat
 import shutil
 import subprocess
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import uuid
 
 import paramiko.rsakey
@@ -101,21 +101,24 @@ class Workspace():
 
     def _ssh_agent(self):
         try:
-            rc, out = execute(f'ssh-agent -a {self.ssh_agent_auth_sock}',
-                              check=True, capture=True)
+            rc, stdout, stderr = execute(
+                f'ssh-agent -a {self.ssh_agent_auth_sock}',
+                check=True, capture=True
+            )
         except subprocess.CalledProcessError:
             logger.exception('Failed to start ssh agent')
             raise
 
-        self._ssh_agent_pid = out['stdout'].split(';')[2].split('=')[1]
+        self._ssh_agent_pid = stdout.split(';')[2].split('=')[1]
         try:
             self.execute(f'ssh-add {self.private_key}', check=True)
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise
 
-    def execute(self, command, capture=False, check=False,
-                disable_logger=False, env=None, chdir=None):
+    def execute(self, command: str, capture=False, check=False,
+                disable_logger=False, env=None,
+                chdir=None) -> Tuple[int, Optional[str], Optional[str]]:
         """Executes a command inside the workspace
 
         This is a wrapper around the execute util that will automatically
