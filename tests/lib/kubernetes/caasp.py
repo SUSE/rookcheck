@@ -88,15 +88,11 @@ class CaaSP(KubernetesBase):
     def _caasp_join(self):
         for worker in self.hardware.workers:
             try:
-                env = os.environ.copy()
-                env['SSH_AUTH_SOCK'] = self.workspace.ssh_agent_auth_sock
-                env['SSH_AGENT_PID'] = self.workspace.ssh_agent_pid
-                res = subprocess.run(
-                    ['skuba', 'node', 'join', '--role', 'worker',
-                     '--user', 'sles', '--sudo', '--target',
-                     worker.get_ssh_ip(), worker.dnsname],
-                    env=env, check=True, capture_output=True)
-                logger.debug(res.args)
+                self.workspace.execute(
+                    "skuba node join --role worker --user sles --sudo"
+                    f"--target {worker.get_ssh_ip()} {worker.dnsname}",
+                    check=True
+                )
             except subprocess.CalledProcessError as e:
                 logger.exception(
                     f'skuba node join worker for  {worker.dnsname} failed: '

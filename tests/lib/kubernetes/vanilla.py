@@ -22,7 +22,6 @@
 import logging
 import os
 import stat
-import subprocess
 import wget
 
 from abc import ABC, abstractmethod
@@ -67,11 +66,7 @@ class Vanilla(KubernetesBase):
 
         self._configure_kubernetes_client()
         self._download_kubectl()
-        try:
-            self.untaint_master()
-        except subprocess.CalledProcessError:
-            # Untainting returns exit status 1 since not all nodes are tainted.
-            pass
+        self.untaint_master()
         self._setup_flannel()
 
     def _setup_flannel(self):
