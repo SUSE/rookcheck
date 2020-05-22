@@ -22,6 +22,7 @@
 import logging
 import os
 import stat
+import subprocess
 import wget
 
 from abc import ABC, abstractmethod
@@ -66,12 +67,16 @@ class Vanilla(KubernetesBase):
 
         self._configure_kubernetes_client()
         self._download_kubectl()
-        self.untaint_master()
+        try:
+            self.untaint_master()
+        except subprocess.CalledProcessError:
+            # Untainting returns exit status 1 since not all nodes are tainted.
+            pass
         self._setup_flannel()
 
     def _setup_flannel(self):
         for node in self.hardware.nodes.values():
-            self.kubectl(
+            self.kubtectl(
                 "annotate node %s "
                 "flannel.alpha.coreos.com/public-ip-overwrite=%s "
                 "--overwrite" % (
@@ -85,12 +90,10 @@ class Vanilla(KubernetesBase):
     def _download_kubectl(self):
         # Download specific kubectl version
         # TODO(jhesketh): Allow setting version
-        logger.info("Downloading kubectl binary")
         wget.download(
             "https://storage.googleapis.com/kubernetes-release/release/v1.17.3"
             "/bin/linux/amd64/kubectl",
-            self.kubectl_exec,
-            bar=None
+            self.kubectl_exec
         )
         st = os.stat(self.kubectl_exec)
         os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)

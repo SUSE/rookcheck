@@ -20,10 +20,10 @@
 
 from abc import ABC, abstractmethod
 import os
+import subprocess
 import kubernetes
 import logging
 
-from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.workspace import Workspace
 
@@ -83,24 +83,32 @@ class KubernetesBase(ABC):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
 
-    def kubectl(self, command, check=True):
+    def kubectl(self, command, surpress_logging=False):
         """
         Run a kubectl command
         """
-        return execute(
-            f"{self.kubectl_exec} --kubeconfig {self.kubeconfig}"
-            f" {command}",
-            check=check
-        )
+        try:
+            out = subprocess.run(
+                "%s --kubeconfig %s %s"
+                % (self.kubectl_exec, self.kubeconfig, command),
+                shell=True, check=True, universal_newlines=True,
+                capture_output=True
+            )
+        except subprocess.CalledProcessError as e:
+            if not surpress_logging:
+                logger.exception(f"Command `{command}` failed")
+                logger.error(f"STDOUT: {e.stdout}")
+                logger.error(f"STDERR: {e.stderr}")
+            raise
+        return out
 
     def kubectl_apply(self, yaml_file):
         return self.kubectl("apply -f %s" % yaml_file)
 
     def untaint_master(self):
-        # Untainting returns exit status 1 since not all nodes are tainted.
         self.kubectl(
             "taint nodes --all node-role.kubernetes.io/master-",
-            check=False
+            surpress_logging=True
         )
 
     def execute_in_pod(self, command, pod, namespace="rook-ceph"):
