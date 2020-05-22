@@ -70,7 +70,8 @@ class CaaSP(KubernetesBase):
             self.workspace.execute(
                 "skuba node bootstrap --user sles --sudo --target"
                 f" {self.hardware.masters[0].get_ssh_ip()}"
-                f" {self.hardware.masters[0].dnsname}", capture=True
+                f" {self.hardware.masters[0].dnsname}", capture=True,
+                chdir=self._clusterpath
             )
         except subprocess.CalledProcessError as e:
             logger.exception('skuba node bootstrap failed: '
@@ -83,7 +84,7 @@ class CaaSP(KubernetesBase):
                 self.workspace.execute(
                     "skuba node join --role worker --user sles --sudo"
                     f"--target {worker.get_ssh_ip()} {worker.dnsname}",
-                    capture=True,
+                    capture=True, chdir=self._clusterpath
                 )
             except subprocess.CalledProcessError as e:
                 logger.exception(
