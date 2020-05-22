@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import logging
+import subprocess
+import threading
 import time
 
 
@@ -63,3 +65,64 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     logger.error(out)
 
     raise Exception("Timed out waiting for result")
+
+
+def execute(command, capture=False):
+    """A helper util to excute `command`.
+
+    The stdout and stderr are redirected to the logging module. You can
+    optionally catpure it by setting `capture` to True.
+    stderr is logged as a warning as it is up to the caller to raise any
+    actual errors from the RC code.
+
+    Returns a tuple of (rc code, output), where output is a dict with stdout
+    and stderr if capture is True.
+    """
+    process = subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+
+    output = None
+    if capture:
+        # Use a dictionary to capture the output as it is a mutable object that
+        # we can access outside of the threads.
+        output = {'stdout': "", 'stderr': ""}
+
+    def read_stdout_from_process(process, capture_dict=None):
+        log = logging.getLogger(process.args)
+        while True:
+            output = process.stdout.readline()
+            if output:
+                log.info(output.rstrip())
+                if capture_dict:
+                    capture_dict['stdout'] += output
+            elif output == '' and process.poll() is not None:
+                break
+
+    def read_stderr_from_process(process, capture_dict=None):
+        log = logging.getLogger(process.args)
+        while True:
+            output = process.stderr.readline()
+            if output:
+                log.warning(output.rstrip())
+                if capture_dict:
+                    capture_dict['stderr'] += output
+            elif output == '' and process.poll() is not None:
+                break
+
+    stdout_thread = threading.Thread(
+        target=read_stdout_from_process, args=(process, output))
+    stderr_thread = threading.Thread(
+        target=read_stderr_from_process, args=(process, output))
+    stdout_thread.start()
+    stderr_thread.start()
+    stdout_thread.join()
+    stderr_thread.join()
+
+    rc = process.wait()
+    logger.info(f"Command {command} finished with RC {rc}")
+
+    return (rc, output)
