@@ -71,7 +71,7 @@ class Vanilla(KubernetesBase):
 
     def _setup_flannel(self):
         for node in self.hardware.nodes.values():
-            self.kubtectl(
+            self.kubectl(
                 "annotate node %s "
                 "flannel.alpha.coreos.com/public-ip-overwrite=%s "
                 "--overwrite" % (
