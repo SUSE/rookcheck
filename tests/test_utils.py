@@ -40,7 +40,8 @@ def test_command_output(disable_logger):
 
 @pytest.mark.parametrize("disable_logger", [False, True])
 def test_command_rc(disable_logger):
-    rc, stdout, stderr = execute('exit 12', disable_logger=disable_logger)
+    rc, stdout, stderr = execute(
+        'exit 12', disable_logger=disable_logger, check=False)
     assert rc == 12
     assert stdout is None
     assert stderr is None
@@ -65,6 +66,13 @@ def test_command_check(disable_logger):
         assert exception.returncode == 1
         assert exception.stdout == "Hello world\n"
         assert exception.stderr == "error\n"
+
+    try:
+        rc, stdout, stderr = execute(
+            'exit 1', check=False
+        )
+    except subprocess.CalledProcessError:
+        assert False, "No error should have been raised with check=False!"
 
 
 def test_command_env():

@@ -68,7 +68,7 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     raise Exception("Timed out waiting for result")
 
 
-def execute(command: str, capture=False, check=False, disable_logger=False,
+def execute(command: str, capture=False, check=True, disable_logger=False,
             env: Optional[Dict[str, str]] = None) -> Tuple[
                 int, Optional[str], Optional[str]]:
     """A helper util to excute `command`.

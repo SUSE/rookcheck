@@ -103,7 +103,7 @@ class Workspace():
         try:
             rc, stdout, stderr = execute(
                 f'ssh-agent -a {self.ssh_agent_auth_sock}',
-                check=True, capture=True
+                capture=True
             )
         except subprocess.CalledProcessError:
             logger.exception('Failed to start ssh agent')
@@ -111,12 +111,12 @@ class Workspace():
 
         self._ssh_agent_pid = stdout.split(';')[2].split('=')[1]
         try:
-            self.execute(f'ssh-add {self.private_key}', check=True)
+            self.execute(f'ssh-add {self.private_key}')
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise
 
-    def execute(self, command: str, capture=False, check=False,
+    def execute(self, command: str, capture=False, check=True,
                 disable_logger=False, env=None,
                 chdir=None) -> Tuple[int, Optional[str], Optional[str]]:
         """Executes a command inside the workspace

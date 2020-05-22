@@ -136,8 +136,7 @@ class Node(NodeBase):
                         f"{self._snap_img_path}")
             os.remove(self._snap_img_path)
         execute(f"qemu-img create -f qcow2 -F qcow2 -o "
-                f"backing_file={self._image_path} {self._snap_img_path} 10G",
-                check=True)
+                f"backing_file={self._image_path} {self._snap_img_path} 10G")
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
@@ -171,7 +170,7 @@ class Node(NodeBase):
                     '-volid', 'cidata',
                     '-joliet', '-rock',
                     tempdir]
-            execute(" ".join(args), check=True, disable_logger=True)
+            execute(" ".join(args), disable_logger=True)
 
     def _get_domain(self, domain_name, image, cloud_init_seed, network_name,
                     memory):
