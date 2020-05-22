@@ -259,14 +259,16 @@ class Hardware(HardwareBase):
     def _get_image_path(self):
         if (config.PROVIDER_LIBVIRT_IMAGE.startswith("http://") or
                 config.PROVIDER_LIBVIRT_IMAGE.startswith("https://")):
-            logging.debug("Downloading image from URL")
+            logging.debug(
+                f"Downloading image from {config.PROVIDER_LIBVIRT_IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
                 os.path.basename(config.PROVIDER_LIBVIRT_IMAGE)
             )
             wget.download(
                 config.PROVIDER_LIBVIRT_IMAGE,
-                download_location
+                download_location,
+                bar=None
             )
             return download_location
         return config.PROVIDER_LIBVIRT_IMAGE

@@ -85,10 +85,12 @@ class Vanilla(KubernetesBase):
     def _download_kubectl(self):
         # Download specific kubectl version
         # TODO(jhesketh): Allow setting version
+        logger.info("Downloading kubectl binary")
         wget.download(
             "https://storage.googleapis.com/kubernetes-release/release/v1.17.3"
             "/bin/linux/amd64/kubectl",
-            self.kubectl_exec
+            self.kubectl_exec,
+            bar=None
         )
         st = os.stat(self.kubectl_exec)
         os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)

@@ -104,7 +104,8 @@ class RookCluster():
         logger.info("[build_rook] Download go")
         wget.download(
             "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
-            os.path.join(self.builddir, 'go-amd64.tar.gz')
+            os.path.join(self.builddir, 'go-amd64.tar.gz'),
+            bar=None,
         )
 
         logger.info("[build_rook] Unpack go")
