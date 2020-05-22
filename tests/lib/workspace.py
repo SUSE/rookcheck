@@ -133,7 +133,10 @@ class Workspace():
         ssh agent).
         """
         if not env:
-            env = {}
+            env = {
+                'PATH': os.environ.get(
+                    'PATH', '/usr/local/bin:/usr/bin/:/bin')
+            }
         with self.chdir(chdir):
             env['SSH_AUTH_SOCK'] = self.ssh_agent_auth_sock
             env['SSH_AGENT_PID'] = self.ssh_agent_pid
