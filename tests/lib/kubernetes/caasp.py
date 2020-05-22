@@ -82,7 +82,7 @@ class CaaSP(KubernetesBase):
         for worker in self.hardware.workers:
             try:
                 self.workspace.execute(
-                    "skuba node join --role worker --user sles --sudo"
+                    "skuba node join --role worker --user sles --sudo "
                     f"--target {worker.get_ssh_ip()} {worker.dnsname}",
                     capture=True, chdir=self._clusterpath
                 )
