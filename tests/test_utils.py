@@ -59,3 +59,9 @@ def test_command_check(disable_logger):
         assert exception.returncode == 1
         assert exception.stdout == "Hello world\n"
         assert exception.stderr == "error\n"
+
+
+def test_command_env():
+    rc, out = execute("echo $MYVAR",
+                      env={'MYVAR': "Hello world"}, capture=True)
+    assert out['stdout'] == "Hello world\n"

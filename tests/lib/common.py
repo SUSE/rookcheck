@@ -67,7 +67,8 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     raise Exception("Timed out waiting for result")
 
 
-def execute(command, capture=False, check=False, disable_logger=False):
+def execute(command, capture=False, check=False, disable_logger=False,
+            env=None):
     """A helper util to excute `command`.
 
     If `disable_logger` is False, the stdout and stderr are redirected to the
@@ -80,6 +81,8 @@ def execute(command, capture=False, check=False, disable_logger=False):
     into memory, stdout and stderr are only available on the exception if
     `capture` was True.
 
+    `env` is a dictionary of environment vars passed into Popen.
+
     Returns a tuple of (rc code, output), where output is a dict with stdout
     and stderr if capture is True.
     """
@@ -89,6 +92,7 @@ def execute(command, capture=False, check=False, disable_logger=False):
         shell=True,
         stdout=outpipe, stderr=outpipe,
         universal_newlines=True,
+        env=env,
     )
 
     output = None
