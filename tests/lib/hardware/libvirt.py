@@ -25,7 +25,6 @@
 import netaddr
 import os
 import shutil
-import subprocess
 import time
 import tempfile
 import textwrap
@@ -40,6 +39,7 @@ import socket
 from typing import List
 from xml.dom import minidom
 
+from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
@@ -135,10 +135,8 @@ class Node(NodeBase):
             logger.info(f"node {self.name}: Delete available backing image "
                         f"{self._snap_img_path}")
             os.remove(self._snap_img_path)
-        subprocess.check_call(f"qemu-img create -f qcow2 -F qcow2 -o "
-                              f"backing_file={self._image_path} "
-                              f"{self._snap_img_path} 10G",
-                              shell=True)
+        execute(f"qemu-img create -f qcow2 -F qcow2 -o "
+                f"backing_file={self._image_path} {self._snap_img_path} 10G")
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
@@ -172,8 +170,7 @@ class Node(NodeBase):
                     '-volid', 'cidata',
                     '-joliet', '-rock',
                     tempdir]
-            subprocess.check_call(args, stdout=subprocess.DEVNULL,
-                                  stderr=subprocess.DEVNULL)
+            execute(" ".join(args), disable_logger=True)
 
     def _get_domain(self, domain_name, image, cloud_init_seed, network_name,
                     memory):
@@ -262,14 +259,16 @@ class Hardware(HardwareBase):
     def _get_image_path(self):
         if (config.PROVIDER_LIBVIRT_IMAGE.startswith("http://") or
                 config.PROVIDER_LIBVIRT_IMAGE.startswith("https://")):
-            logging.debug("Downloading image from URL")
+            logging.debug(
+                f"Downloading image from {config.PROVIDER_LIBVIRT_IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
                 os.path.basename(config.PROVIDER_LIBVIRT_IMAGE)
             )
             wget.download(
                 config.PROVIDER_LIBVIRT_IMAGE,
-                download_location
+                download_location,
+                bar=None
             )
             return download_location
         return config.PROVIDER_LIBVIRT_IMAGE

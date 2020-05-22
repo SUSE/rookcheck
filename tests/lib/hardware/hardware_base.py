@@ -24,7 +24,6 @@
 
 from abc import ABC, abstractmethod
 import logging
-import subprocess
 from typing import Dict, Any, List
 
 from tests.lib.distro import get_distro
@@ -75,7 +74,11 @@ class HardwareBase(ABC):
         # be available (in order to even be able to get them).
         # Therefore simply remove any entries from your known_hosts. It's also
         # helpful to do this after a build to clean up anything locally.
-        subprocess.run(f"ssh-keygen -R {node.get_ssh_ip()}", shell=True)
+        logger.info(
+            f"Removing {node.get_ssh_ip()} from known-hosts if exists.")
+        self.workspace.execute(
+            f"ssh-keygen -R {node.get_ssh_ip()}", check=False,
+            disable_logger=True)
 
     def destroy(self):
         logger.info("Remove all nodes from Hardware")

@@ -18,12 +18,13 @@ import os
 from pprint import pformat
 import shutil
 import subprocess
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import uuid
 
 import paramiko.rsakey
 
 from tests import config
+from tests.lib.common import execute
 from tests.lib.ansible_helper import AnsibleRunner
 from tests.lib.hardware.node_base import NodeBase
 
@@ -100,28 +101,44 @@ class Workspace():
 
     def _ssh_agent(self):
         try:
-            res = subprocess.run(
-                ['ssh-agent', '-a', self._ssh_agent_auth_sock],
-                check=True, capture_output=True)
+            # NOTE(jhesketh): We can't use self.execute yet because
+            #                 self.ssh_agent_pid is not ready yet.
+            rc, stdout, stderr = execute(
+                f'ssh-agent -a {self.ssh_agent_auth_sock}',
+                capture=True
+            )
         except subprocess.CalledProcessError:
             logger.exception('Failed to start ssh agent')
             raise
 
-        logger.info(f"ssh-agent started: {res.stdout.decode('utf-8')}")
-        self._ssh_agent_pid = res.stdout.decode(
-            'utf-8').split(';')[2].split('=')[1]
+        self._ssh_agent_pid = stdout.split(';')[2].split('=')[1]
         try:
-            res = subprocess.run(
-                ['ssh-add', self.private_key],
-                check=True,
-                env={
-                    'SSH_AUTH_SOCK': self.ssh_agent_auth_sock,
-                    'SSH_AGENT_PID': self.ssh_agent_pid,
-                }
-            )
+            logging.info("Adding ssh-key to agent")
+            # NOTE(jhesketh): For some reason, ssh-add outputs to stderr which
+            #                 will be logged as a warning. It's not really
+            #                 dangerous because we're creating and destroying
+            #                 our own agent, so we'll suppress the messages.
+            self.execute(f'ssh-add {self.private_key}', disable_logger=True)
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise
+
+    def execute(self, command: str, capture=False, check=True,
+                disable_logger=False, env=None,
+                chdir=None) -> Tuple[int, Optional[str], Optional[str]]:
+        """Executes a command inside the workspace
+
+        This is a wrapper around the execute util that will automatically
+        chdir into the workspace and set some common env vars (such as the
+        ssh agent).
+        """
+        if not env:
+            env = {}
+        with self.chdir(chdir):
+            env['SSH_AUTH_SOCK'] = self.ssh_agent_auth_sock
+            env['SSH_AGENT_PID'] = self.ssh_agent_pid
+            return execute(command, capture=capture, check=check,
+                           disable_logger=disable_logger, env=env)
 
     def execute_ansible_play_raw(self, playbook: str,
                                  nodes: Dict[str, NodeBase],
@@ -192,17 +209,10 @@ class Workspace():
     def destroy(self):
         # This kills the SSH_AGENT_PID agent
         try:
-            subprocess.run(
-                ['ssh-agent', '-k'],
-                check=True,
-                env={
-                    'SSH_AUTH_SOCK': self.ssh_agent_auth_sock,
-                    'SSH_AGENT_PID': self.ssh_agent_pid,
-                }
-            )
+            self.execute('ssh-agent -k', check=True)
         except subprocess.CalledProcessError:
-            logger.exception(f'Killing ssh-agent with PID'
-                             f' {self._ssh_agent_pid} failed')
+            logger.warning(f'Killing ssh-agent with PID'
+                           f' {self._ssh_agent_pid} failed')
 
         if config._REMOVE_WORKSPACE:
             logger.info(f"Removing workspace {self.working_dir} from disk")
