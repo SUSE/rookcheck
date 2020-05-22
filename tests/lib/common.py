@@ -88,7 +88,8 @@ def execute(command: str, capture=False, check=True, disable_logger=False,
     Returns a tuple of (rc code, stdout, stdin), where stdout and stdin are
     None if `capture` is False, or are a string.
     """
-    outpipe = None if disable_logger and not capture else subprocess.PIPE
+    outpipe = subprocess.DEVNULL \
+        if disable_logger and not capture else subprocess.PIPE
     process = subprocess.Popen(
         command,
         shell=True,
