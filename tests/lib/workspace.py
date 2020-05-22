@@ -101,25 +101,15 @@ class Workspace():
 
     def _ssh_agent(self):
         try:
-            res = subprocess.run(
-                ['ssh-agent', '-a', self._ssh_agent_auth_sock],
-                check=True, capture_output=True)
+            rc, out = execute(f'ssh-agent -a {self.ssh_agent_auth_sock}',
+                              check=True, capture=True)
         except subprocess.CalledProcessError:
             logger.exception('Failed to start ssh agent')
             raise
 
-        logger.info(f"ssh-agent started: {res.stdout.decode('utf-8')}")
-        self._ssh_agent_pid = res.stdout.decode(
-            'utf-8').split(';')[2].split('=')[1]
+        self._ssh_agent_pid = out['stdout'].split(';')[2].split('=')[1]
         try:
-            res = subprocess.run(
-                ['ssh-add', self.private_key],
-                check=True,
-                env={
-                    'SSH_AUTH_SOCK': self.ssh_agent_auth_sock,
-                    'SSH_AGENT_PID': self.ssh_agent_pid,
-                }
-            )
+            self.execute(f'ssh-add {self.private_key}', check=True)
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise
@@ -209,17 +199,10 @@ class Workspace():
     def destroy(self):
         # This kills the SSH_AGENT_PID agent
         try:
-            subprocess.run(
-                ['ssh-agent', '-k'],
-                check=True,
-                env={
-                    'SSH_AUTH_SOCK': self.ssh_agent_auth_sock,
-                    'SSH_AGENT_PID': self.ssh_agent_pid,
-                }
-            )
+            self.execute('ssh-agent -k', check=True)
         except subprocess.CalledProcessError:
-            logger.exception(f'Killing ssh-agent with PID'
-                             f' {self._ssh_agent_pid} failed')
+            logger.warning(f'Killing ssh-agent with PID'
+                           f' {self._ssh_agent_pid} failed')
 
         if config._REMOVE_WORKSPACE:
             logger.info(f"Removing workspace {self.working_dir} from disk")
