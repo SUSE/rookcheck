@@ -101,6 +101,8 @@ class Workspace():
 
     def _ssh_agent(self):
         try:
+            # NOTE(jhesketh): We can't use self.execute yet because
+            #                 self.ssh_agent_pid is not ready yet.
             rc, stdout, stderr = execute(
                 f'ssh-agent -a {self.ssh_agent_auth_sock}',
                 capture=True
@@ -111,7 +113,12 @@ class Workspace():
 
         self._ssh_agent_pid = stdout.split(';')[2].split('=')[1]
         try:
-            self.execute(f'ssh-add {self.private_key}')
+            logging.info("Adding ssh-key to agent")
+            # NOTE(jhesketh): For some reason, ssh-add outputs to stderr which
+            #                 will be logged as a warning. It's not really
+            #                 dangerous because we're creating and destroying
+            #                 our own agent, so we'll suppress the messages.
+            self.execute(f'ssh-add {self.private_key}', disable_logger=True)
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise

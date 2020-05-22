@@ -388,7 +388,10 @@ class Hardware(HardwareBase):
             self.remove_ssh_key(node.get_ssh_ip())
 
     def remove_ssh_key(self, ip):
-        self.workspace.execute(f"ssh-keygen -R {ip}", check=False)
+        logger.info(
+            f"Removing {ip} from known-hosts if exists.")
+        self.workspace.execute(
+            f"ssh-keygen -R {ip}", check=False, disable_logger=True)
 
     def __enter__(self):
         return self
