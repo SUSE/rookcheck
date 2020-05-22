@@ -15,30 +15,36 @@
 import logging
 import subprocess
 
+import pytest
+
 from tests.lib.common import execute
 
 logger = logging.getLogger(__name__)
 
 
-def test_command_output():
-    rc, out = execute('echo "Hello world"')
+@pytest.mark.parametrize("disable_logger", [False, True])
+def test_command_output(disable_logger):
+    rc, out = execute('echo "Hello world"', disable_logger=disable_logger)
     assert rc == 0
     assert out is None
 
-    rc, out = execute('echo "Hello world" && >&2 echo "error"', capture=True)
+    rc, out = execute('echo "Hello world" && >&2 echo "error"', capture=True,
+                      disable_logger=disable_logger)
     assert out['stdout'] == "Hello world\n"
     assert out['stderr'] == "error\n"
 
 
-def test_command_rc():
-    rc, out = execute('exit 12')
+@pytest.mark.parametrize("disable_logger", [False, True])
+def test_command_rc(disable_logger):
+    rc, out = execute('exit 12', disable_logger=disable_logger)
     assert rc == 12
     assert out is None
 
 
-def test_command_check():
+@pytest.mark.parametrize("disable_logger", [False, True])
+def test_command_check(disable_logger):
     try:
-        rc, out = execute('exit 12', check=True)
+        rc, out = execute('exit 12', check=True, disable_logger=disable_logger)
     except subprocess.CalledProcessError as exception:
         assert exception.returncode == 12
         assert exception.stdout is None
@@ -47,7 +53,7 @@ def test_command_check():
     try:
         rc, out = execute(
             'echo "Hello world" && >&2 echo "error" && exit 1',
-            capture=True, check=True
+            capture=True, check=True, disable_logger=disable_logger
         )
     except subprocess.CalledProcessError as exception:
         assert exception.returncode == 1
