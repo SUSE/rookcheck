@@ -26,7 +26,6 @@ import logging
 import threading
 import time
 from typing import Dict, List
-import subprocess
 
 import libcloud.security
 from libcloud.compute.base import NodeImage
@@ -37,6 +36,7 @@ from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from urllib.parse import urlparse
 
+from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
@@ -389,10 +389,7 @@ class Hardware(HardwareBase):
             self.remove_ssh_key(node.get_ssh_ip())
 
     def remove_ssh_key(self, ip):
-        subprocess.run(
-            "ssh-keygen -R %s" % ip,
-            shell=True
-        )
+        execute(f"ssh-keygen -R {ip}")
 
     def __enter__(self):
         return self
