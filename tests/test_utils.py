@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import subprocess
 
 from tests.lib.common import execute
 
@@ -33,3 +34,22 @@ def test_command_rc():
     rc, out = execute('exit 12')
     assert rc == 12
     assert out is None
+
+
+def test_command_check():
+    try:
+        rc, out = execute('exit 12', check=True)
+    except subprocess.CalledProcessError as exception:
+        assert exception.returncode == 12
+        assert exception.stdout is None
+        assert exception.stderr is None
+
+    try:
+        rc, out = execute(
+            'echo "Hello world" && >&2 echo "error" && exit 1',
+            capture=True, check=True
+        )
+    except subprocess.CalledProcessError as exception:
+        assert exception.returncode == 1
+        assert exception.stdout == "Hello world\n"
+        assert exception.stderr == "error\n"

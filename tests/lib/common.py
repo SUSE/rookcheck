@@ -67,13 +67,18 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     raise Exception("Timed out waiting for result")
 
 
-def execute(command, capture=False):
+def execute(command, capture=False, check=False):
     """A helper util to excute `command`.
 
     The stdout and stderr are redirected to the logging module. You can
     optionally catpure it by setting `capture` to True.
     stderr is logged as a warning as it is up to the caller to raise any
-    actual errors from the RC code.
+    actual errors from the RC code (or to use the `check` param).
+
+    If `check` is true, subprocess.CalledProcessError is raised when the RC is
+    non-zero. Note, however, that due to the way we're buffering the output
+    into memory, stdout and stderr are only available on the exception if
+    `capture` was True.
 
     Returns a tuple of (rc code, output), where output is a dict with stdout
     and stderr if capture is True.
@@ -124,5 +129,12 @@ def execute(command, capture=False):
 
     rc = process.wait()
     logger.info(f"Command {command} finished with RC {rc}")
+
+    if check and rc != 0:
+        if capture:
+            raise subprocess.CalledProcessError(
+                rc, command, output['stdout'], output['stderr'])
+        else:
+            raise subprocess.CalledProcessError(rc, command)
 
     return (rc, output)
