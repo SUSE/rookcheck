@@ -391,7 +391,7 @@ class Hardware(HardwareBase):
         logger.info(
             f"Removing {ip} from known-hosts if exists.")
         self.workspace.execute(
-            f"ssh-keygen -R {ip}", check=False, disable_logger=True)
+            f"ssh-keygen -R {ip}", check=False, log_stderr=False)
 
     def __enter__(self):
         return self

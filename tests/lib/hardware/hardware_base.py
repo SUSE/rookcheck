@@ -78,7 +78,7 @@ class HardwareBase(ABC):
             f"Removing {node.get_ssh_ip()} from known-hosts if exists.")
         self.workspace.execute(
             f"ssh-keygen -R {node.get_ssh_ip()}", check=False,
-            disable_logger=True)
+            log_stderr=False)
 
     def destroy(self):
         logger.info("Remove all nodes from Hardware")

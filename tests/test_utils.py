@@ -22,61 +22,68 @@ from tests.lib.common import execute
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("disable_logger", [False, True])
-def test_command_output(disable_logger):
-    rc, stdout, stderr = execute(
-        'echo "Hello world"', disable_logger=disable_logger)
-    assert rc == 0
-    assert stdout is None
-    assert stderr is None
-
-    rc, stdout, stderr = execute(
-        'echo "Hello world" && >&2 echo "error"',
-        capture=True, disable_logger=disable_logger
-    )
-    assert stdout == "Hello world\n"
-    assert stderr == "error\n"
-
-
-@pytest.mark.parametrize("disable_logger", [False, True])
-def test_command_rc(disable_logger):
-    rc, stdout, stderr = execute(
-        'exit 12', disable_logger=disable_logger, check=False)
-    assert rc == 12
-    assert stdout is None
-    assert stderr is None
-
-
-@pytest.mark.parametrize("disable_logger", [False, True])
-def test_command_check(disable_logger):
-    try:
-        rc, stdout, stderr = execute(
-            'exit 12', check=True, disable_logger=disable_logger)
-    except subprocess.CalledProcessError as exception:
-        assert exception.returncode == 12
-        assert exception.stdout is None
-        assert exception.stderr is None
-
-    try:
-        rc, stdout, stderr = execute(
-            'echo "Hello world" && >&2 echo "error" && exit 1',
-            capture=True, check=True, disable_logger=disable_logger
-        )
-    except subprocess.CalledProcessError as exception:
-        assert exception.returncode == 1
-        assert exception.stdout == "Hello world\n"
-        assert exception.stderr == "error\n"
-
-    try:
-        rc, stdout, stderr = execute(
-            'exit 1', check=False
-        )
-    except subprocess.CalledProcessError:
-        assert False, "No error should have been raised with check=False!"
-
-
 def test_command_env():
     rc, stdout, stderr = execute(
         "echo $MYVAR", env={'MYVAR': "Hello world"}, capture=True)
     assert stdout == "Hello world\n"
     assert stderr == ""
+
+
+@pytest.mark.parametrize("log_stdout", [True, False])
+@pytest.mark.parametrize("log_stderr", [True, False])
+@pytest.mark.parametrize("capture", [True, False])
+@pytest.mark.parametrize("check", [True, False])
+@pytest.mark.parametrize("fail_command", [True, False])
+def test_command_matrix(log_stdout, log_stderr, capture, check, fail_command,
+                        caplog):
+    # Capturing behaves differently depending if logging is enabled or an error
+    # is raised, so test with a complete matrix of log_stdout/err.
+    cmd = 'echo "Hello world" && >&2 echo "error"'
+    expected_rc = 0
+    if fail_command:
+        expected_rc = 30
+        cmd += f" && exit {expected_rc}"
+
+    try:
+        rc, stdout, stderr = execute(
+            cmd, capture=capture, log_stdout=log_stdout, log_stderr=log_stderr,
+            check=check
+        )
+    except subprocess.CalledProcessError as exception:
+        if check:
+            # We have to get the return values from the exception
+            rc = exception.returncode
+            stdout = exception.stdout
+            stderr = exception.stderr
+        else:
+            assert False, "No error should have been raised with check=False!"
+
+    assert rc == expected_rc
+    if capture:
+        assert stdout == "Hello world\n"
+        assert stderr == "error\n"
+    else:
+        assert stdout is None
+        assert stderr is None
+
+    if log_stdout and log_stderr:
+        assert len(caplog.records) == 2
+        for record in caplog.records:
+            if record.levelname == 'INFO':
+                assert record.name == cmd
+                assert record.levelname == 'INFO'
+                assert record.getMessage() == 'Hello world'
+            else:
+                assert record.name == cmd
+                assert record.levelname == 'WARNING'
+                assert record.getMessage() == 'error'
+    elif log_stdout:
+        assert len(caplog.records) == 1
+        assert caplog.records[0].name == cmd
+        assert caplog.records[0].levelname == 'INFO'
+        assert caplog.records[0].getMessage() == 'Hello world'
+    elif log_stderr:
+        assert len(caplog.records) == 1
+        assert caplog.records[0].name == cmd
+        assert caplog.records[0].levelname == 'WARNING'
+        assert caplog.records[0].getMessage() == 'error'
