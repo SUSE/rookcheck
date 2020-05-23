@@ -124,7 +124,8 @@ class Workspace():
             raise
 
     def execute(self, command: str, capture=False, check=True,
-                log_stdout=True, log_stderr=True, env=None,
+                log_stdout=True, log_stderr=True,
+                env: Optional[Dict[str, str]] = None,
                 chdir=None) -> Tuple[int, Optional[str], Optional[str]]:
         """Executes a command inside the workspace
 
