@@ -56,7 +56,9 @@ class CaaSP(KubernetesBase):
 
     def _caasp_init(self):
         try:
-            self.workspace.execute("skuba cluster init --control-plane")
+            self.workspace.execute("skuba cluster init --control-plane "
+                                   f"{self.hardware.masters[0].get_ssh_ip()} "
+                                   f"{self._clusterpath}", capture=True)
         except subprocess.CalledProcessError as e:
             logger.exception('skuba cluster init failed: '
                              f'{e.stdout}\n{e.stderr}')
@@ -68,7 +70,8 @@ class CaaSP(KubernetesBase):
             self.workspace.execute(
                 "skuba node bootstrap --user sles --sudo --target"
                 f" {self.hardware.masters[0].get_ssh_ip()}"
-                f" {self.hardware.masters[0].dnsname}"
+                f" {self.hardware.masters[0].dnsname}", capture=True,
+                chdir=self._clusterpath
             )
         except subprocess.CalledProcessError as e:
             logger.exception('skuba node bootstrap failed: '
@@ -79,8 +82,9 @@ class CaaSP(KubernetesBase):
         for worker in self.hardware.workers:
             try:
                 self.workspace.execute(
-                    "skuba node join --role worker --user sles --sudo"
-                    f"--target {worker.get_ssh_ip()} {worker.dnsname}"
+                    "skuba node join --role worker --user sles --sudo "
+                    f"--target {worker.get_ssh_ip()} {worker.dnsname}",
+                    capture=True, chdir=self._clusterpath
                 )
             except subprocess.CalledProcessError as e:
                 logger.exception(
