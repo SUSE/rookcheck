@@ -45,14 +45,14 @@ def decode_wrapper(i):
 
 
 def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
-                    interval=5, decode=decode_wrapper):
+                    interval=5, decode=decode_wrapper, **kwargs):
     """Runs `func` with `args` until `matcher(out)` returns true or timesout
 
     Returns the matching result, or raises an exception.
     """
 
     for i in range(attempts):
-        out = func(*args)
+        out = func(*args, **kwargs)
         if decode:
             out = decode(out)
         if matcher(out):
