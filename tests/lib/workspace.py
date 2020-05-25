@@ -17,6 +17,7 @@ import logging
 import os
 from pprint import pformat
 import shutil
+import stat
 import subprocess
 from typing import Dict, Optional, Tuple
 import uuid
@@ -221,6 +222,25 @@ class Workspace():
 
         if config._REMOVE_WORKSPACE:
             logger.info(f"Removing workspace {self.working_dir} from disk")
+            # NOTE(jhesketh): go clones repos as read-only. We need to chmod
+            #                 all the files back to writable (in particular,
+            #                 the directories) so that we can remove them
+            #                 without failures or warnings.
+            for root, dirs, files in os.walk(self.working_dir):
+                for folder in dirs:
+                    path = os.path.join(root, folder)
+                    try:
+                        os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
+                    except FileNotFoundError:
+                        # Some path's might be broken symlinks
+                        pass
+                for f in files:
+                    path = os.path.join(root, f)
+                    try:
+                        os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
+                    except FileNotFoundError:
+                        # Some path's might be broken symlinks
+                        pass
             shutil.rmtree(self.working_dir)
         else:
             logger.info(f"Keeping workspace on disk at {self.working_dir}")
