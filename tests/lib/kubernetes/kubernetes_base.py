@@ -83,18 +83,24 @@ class KubernetesBase(ABC):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
 
-    def kubectl(self, command, check=True):
+    def kubectl(self, command, check=True, log_stdout=True, log_stderr=True):
         """
         Run a kubectl command
         """
         return execute(
             f"{self.kubectl_exec} --kubeconfig {self.kubeconfig}"
             f" {command}",
-            check=check
+            check=check,
+            capture=True,
+            log_stdout=log_stdout,
+            log_stderr=log_stderr,
         )
 
-    def kubectl_apply(self, yaml_file):
-        return self.kubectl("apply -f %s" % yaml_file)
+    def kubectl_apply(self, yaml_file, log_stdout=True, log_stderr=True):
+        return self.kubectl(
+            "apply -f %s" % yaml_file, log_stdout=log_stdout,
+            log_stderr=log_stderr
+        )
 
     def untaint_master(self):
         # Untainting returns exit status 1 since not all nodes are tainted.
@@ -103,12 +109,15 @@ class KubernetesBase(ABC):
             check=False
         )
 
-    def execute_in_pod(self, command, pod, namespace="rook-ceph"):
+    def execute_in_pod(self, command, pod, namespace="rook-ceph",
+                       log_stdout=True, log_stderr=True):
         return self.kubectl(
             '--namespace %s exec -t "%s" -- bash -c "$(cat <<\'EOF\'\n'
             '%s'
             '\nEOF\n)"'
-            % (namespace, pod, command)
+            % (namespace, pod, command),
+            log_stdout=log_stdout,
+            log_stderr=log_stderr
         )
 
     def get_pod_by_app_label(self, label, namespace="rook-ceph"):
@@ -116,14 +125,18 @@ class KubernetesBase(ABC):
             '--namespace %s get pod -l app="%s"'
             ' --output custom-columns=name:metadata.name --no-headers'
             % (namespace, label)
-        ).stdout.strip()
+        )[1].strip()
 
-    def execute_in_pod_by_label(self, command, label, namespace="rook-ceph"):
+    def execute_in_pod_by_label(self, command, label, namespace="rook-ceph",
+                                log_stdout=True, log_stderr=True):
         # Note(jhesketh): The pod isn't cached, so if running multiple commands
         #                 in the one pod consider calling the following
         #                 manually
         pod = self.get_pod_by_app_label(label, namespace)
-        return self.execute_in_pod(command, pod, namespace)
+        return self.execute_in_pod(
+            command, pod, namespace, log_stdout=log_stdout,
+            log_stderr=log_stderr
+        )
 
     def destroy(self, skip=True):
         logger.info(f"kube destroy on hardware {self.hardware}")
