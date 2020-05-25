@@ -128,6 +128,7 @@ class RookCluster(RookBase):
 
         common.wait_for_result(
             self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 3),
             attempts=90, interval=10)
 
@@ -139,6 +140,7 @@ class RookCluster(RookBase):
 
         common.wait_for_result(
             self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 2),
             attempts=20, interval=5)
 
@@ -147,17 +149,19 @@ class RookCluster(RookBase):
 
         common.wait_for_result(
             self.execute_in_ceph_toolbox, "ceph fs status myfs",
+            log_stdout=False,
             matcher=common.regex_matcher(pattern),
             attempts=20, interval=5)
 
         logger.info("Rook successfully installed and ready!")
 
-    def execute_in_ceph_toolbox(self, command):
+    def execute_in_ceph_toolbox(self, command, log_stdout=False):
         if not self.toolbox_pod:
             self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
                 "rook-ceph-tools")
 
-        return self.kubernetes.execute_in_pod(command, self.toolbox_pod)
+        return self.kubernetes.execute_in_pod(
+            command, self.toolbox_pod, log_stdout=False)
 
 
 class UploadRook():
