@@ -41,7 +41,7 @@ def regex_count_matcher(regex_pattern, matches):
 
 
 def decode_wrapper(i):
-    return i.stdout
+    return i[1]
 
 
 def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
