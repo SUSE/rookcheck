@@ -60,7 +60,7 @@ class CaaSP(KubernetesBase):
                                check=True)
 
     def _caasp_bootstrap(self):
-        logger.info("skube node bootstrap. This may take a while")
+        logger.info("skuba node bootstrap. This may take a while")
         self.workspace.execute(
             "skuba node bootstrap --user sles --sudo --target"
             f" {self.hardware.masters[0].get_ssh_ip()}"
