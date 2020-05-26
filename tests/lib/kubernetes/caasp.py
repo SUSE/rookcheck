@@ -45,13 +45,11 @@ class CaaSP(KubernetesBase):
         super().bootstrap()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
         self._caasp_init()
-        with self.workspace.chdir(self._clusterpath):
-            self._caasp_bootstrap()
+        self._caasp_bootstrap()
 
     def install_kubernetes(self):
         super().install_kubernetes()
-        with self.workspace.chdir(self._clusterpath):
-            self._caasp_join()
+        self._caasp_join()
 
     def _caasp_init(self):
         self.workspace.execute("skuba cluster init --control-plane "
