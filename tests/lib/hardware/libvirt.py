@@ -170,7 +170,7 @@ class Node(NodeBase):
                     '-volid', 'cidata',
                     '-joliet', '-rock',
                     tempdir]
-            execute(" ".join(args), disable_logger=True)
+            execute(" ".join(args), log_stdout=False, log_stderr=False)
 
     def _get_domain(self, domain_name, image, cloud_init_seed, network_name,
                     memory):

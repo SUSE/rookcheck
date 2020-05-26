@@ -17,6 +17,7 @@ import logging
 import os
 from pprint import pformat
 import shutil
+import stat
 import subprocess
 from typing import Dict, Optional, Tuple
 import uuid
@@ -118,13 +119,14 @@ class Workspace():
             #                 will be logged as a warning. It's not really
             #                 dangerous because we're creating and destroying
             #                 our own agent, so we'll suppress the messages.
-            self.execute(f'ssh-add {self.private_key}', disable_logger=True)
+            self.execute(f'ssh-add {self.private_key}', log_stderr=False)
         except subprocess.CalledProcessError:
             logger.exception('Failed to add keys to agent')
             raise
 
     def execute(self, command: str, capture=False, check=True,
-                disable_logger=False, env=None,
+                log_stdout=True, log_stderr=True,
+                env: Optional[Dict[str, str]] = None,
                 chdir=None) -> Tuple[int, Optional[str], Optional[str]]:
         """Executes a command inside the workspace
 
@@ -141,7 +143,8 @@ class Workspace():
             env['SSH_AUTH_SOCK'] = self.ssh_agent_auth_sock
             env['SSH_AGENT_PID'] = self.ssh_agent_pid
             return execute(command, capture=capture, check=check,
-                           disable_logger=disable_logger, env=env)
+                           log_stdout=log_stdout, log_stderr=log_stderr,
+                           env=env)
 
     def execute_ansible_play_raw(self, playbook: str,
                                  nodes: Dict[str, NodeBase],
@@ -219,6 +222,25 @@ class Workspace():
 
         if config._REMOVE_WORKSPACE:
             logger.info(f"Removing workspace {self.working_dir} from disk")
+            # NOTE(jhesketh): go clones repos as read-only. We need to chmod
+            #                 all the files back to writable (in particular,
+            #                 the directories) so that we can remove them
+            #                 without failures or warnings.
+            for root, dirs, files in os.walk(self.working_dir):
+                for folder in dirs:
+                    path = os.path.join(root, folder)
+                    try:
+                        os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
+                    except FileNotFoundError:
+                        # Some path's might be broken symlinks
+                        pass
+                for f in files:
+                    path = os.path.join(root, f)
+                    try:
+                        os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
+                    except FileNotFoundError:
+                        # Some path's might be broken symlinks
+                        pass
             shutil.rmtree(self.working_dir)
         else:
             logger.info(f"Keeping workspace on disk at {self.working_dir}")

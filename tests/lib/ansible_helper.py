@@ -31,7 +31,6 @@ import ansible.executor.task_queue_manager
 from ansible.plugins.callback.default import CallbackModule
 import ansible.constants as C
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -153,14 +152,8 @@ class AnsibleRunner(object):
         ))
         logger.info(f'Running playbook {path}')
         try:
-            subprocess.run(
-                ['ansible-playbook', '-i', self.inventory_dir, path],
-                check=True,
-                env={
-                    'SSH_AUTH_SOCK': self.workspace.ssh_agent_auth_sock,
-                    'SSH_AGENT_PID': self.workspace.ssh_agent_pid,
-                }
-            )
+            self.workspace.execute(
+                f"ansible-playbook -i {self.inventory_dir} {path}")
         except subprocess.CalledProcessError:
             logger.exception('An error occured executing Ansible playbook')
             Exception("An error occurred running playbook")

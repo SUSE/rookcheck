@@ -55,12 +55,14 @@ class RookCluster(RookBase):
         )
         execute(
             "git clone https://github.com/rook/rook.git %s"
-            % os.path.join(self.builddir, 'src/github.com/rook/rook')
+            % os.path.join(self.builddir, 'src/github.com/rook/rook'),
+            log_stderr=False
         )
         # TODO(jhesketh): Allow testing various versions of rook
         execute(
             "pushd %s && git checkout v1.3.1 && popd"
-            % os.path.join(self.builddir, 'src/github.com/rook/rook')
+            % os.path.join(self.builddir, 'src/github.com/rook/rook'),
+            log_stderr=False
         )
 
         logger.info("[build_rook] Make rook")
@@ -68,7 +70,8 @@ class RookCluster(RookBase):
             "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
             "make --directory='{builddir}/src/github.com/rook/rook' "
             "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
-            "build".format(builddir=self.builddir)
+            "build".format(builddir=self.builddir),
+            log_stderr=False
         )
 
         logger.info("[build_rook] Tag image")
@@ -99,6 +102,7 @@ class RookCluster(RookBase):
             raise Exception("Rook must be built before being installed")
         # TODO(jhesketh): We may want to provide ways for tests to override
         #                 these
+        logger.info("Applying common.yaml and operator.yaml")
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'common.yaml'))
         self.kubernetes.kubectl_apply(
@@ -107,6 +111,7 @@ class RookCluster(RookBase):
         # TODO(jhesketh): Check if sleeping is necessary
         time.sleep(10)
 
+        logger.info("Applying cluster.yaml and toolbox.yaml")
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'cluster.yaml'))
         self.kubernetes.kubectl_apply(
@@ -123,6 +128,7 @@ class RookCluster(RookBase):
 
         common.wait_for_result(
             self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 3),
             attempts=90, interval=10)
 
@@ -134,6 +140,7 @@ class RookCluster(RookBase):
 
         common.wait_for_result(
             self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 2),
             attempts=20, interval=5)
 
@@ -142,17 +149,19 @@ class RookCluster(RookBase):
 
         common.wait_for_result(
             self.execute_in_ceph_toolbox, "ceph fs status myfs",
+            log_stdout=False,
             matcher=common.regex_matcher(pattern),
             attempts=20, interval=5)
 
         logger.info("Rook successfully installed and ready!")
 
-    def execute_in_ceph_toolbox(self, command):
+    def execute_in_ceph_toolbox(self, command, log_stdout=False):
         if not self.toolbox_pod:
             self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
                 "rook-ceph-tools")
 
-        return self.kubernetes.execute_in_pod(command, self.toolbox_pod)
+        return self.kubernetes.execute_in_pod(
+            command, self.toolbox_pod, log_stdout=False)
 
 
 class UploadRook():

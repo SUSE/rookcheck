@@ -64,7 +64,7 @@ def test_file_creation(rook_cluster):
     time.sleep(5)
 
     logger.debug("Mount myfs again and output the contents")
-    result = rook_cluster.kubernetes.execute_in_pod_by_label("""
+    rc, stdout, stderr = rook_cluster.kubernetes.execute_in_pod_by_label("""
         # Create the directory
         mkdir /tmp/registry
 
@@ -84,7 +84,7 @@ def test_file_creation(rook_cluster):
     logger.debug("Check result")
     # Assert that the contents is as expected, confirming that writing to the
     # cephfs is working as expected
-    assert result.stdout.strip() == "Hello Rook"
+    assert stdout.strip() == "Hello Rook"
 
     # Cleanup: Uninstall rook-direct-mount
     rook_cluster.kubernetes.kubectl(

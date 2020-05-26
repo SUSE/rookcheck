@@ -41,18 +41,18 @@ def regex_count_matcher(regex_pattern, matches):
 
 
 def decode_wrapper(i):
-    return i.stdout
+    return i[1]
 
 
 def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
-                    interval=5, decode=decode_wrapper):
+                    interval=5, decode=decode_wrapper, **kwargs):
     """Runs `func` with `args` until `matcher(out)` returns true or timesout
 
     Returns the matching result, or raises an exception.
     """
 
     for i in range(attempts):
-        out = func(*args)
+        out = func(*args, **kwargs)
         if decode:
             out = decode(out)
         if matcher(out):
@@ -68,15 +68,16 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     raise Exception("Timed out waiting for result")
 
 
-def execute(command: str, capture=False, check=True, disable_logger=False,
-            env: Optional[Dict[str, str]] = None) -> Tuple[
+def execute(command: str, capture=False, check=True, log_stdout=True,
+            log_stderr=True, env: Optional[Dict[str, str]] = None) -> Tuple[
                 int, Optional[str], Optional[str]]:
     """A helper util to excute `command`.
 
-    If `disable_logger` is False, the stdout and stderr are redirected to the
-    logging module. You can optionally catpure it by setting `capture` to True.
-    stderr is logged as a warning as it is up to the caller to raise any
-    actual errors from the RC code (or to use the `check` param).
+    If `log_stdout` or `log_stderr` are True, the stdout and stderr
+    (respectfully) are redirected to the logging module. You can optionally
+    catpure it by setting `capture` to True. stderr is logged as a warning as
+    it is up to the caller to raise any actual errors from the RC code (or to
+    use the `check` param).
 
     If `check` is true, subprocess.CalledProcessError is raised when the RC is
     non-zero. Note, however, that due to the way we're buffering the output
@@ -88,22 +89,26 @@ def execute(command: str, capture=False, check=True, disable_logger=False,
     Returns a tuple of (rc code, stdout, stdin), where stdout and stdin are
     None if `capture` is False, or are a string.
     """
-    outpipe = subprocess.DEVNULL \
-        if disable_logger and not capture else subprocess.PIPE
+    stdout_pipe = subprocess.PIPE \
+        if log_stdout or capture else subprocess.DEVNULL
+
+    stderr_pipe = subprocess.PIPE \
+        if log_stderr or capture else subprocess.DEVNULL
+
     process = subprocess.Popen(
         command,
         shell=True,
-        stdout=outpipe, stderr=outpipe,
+        stdout=stdout_pipe, stderr=stderr_pipe,
         universal_newlines=True,
         env=env,
     )
 
+    # Use a dictionary to capture the output as it is a mutable object that
+    # we can access outside of the threads.
     output: Dict[str, Optional[str]] = {}
     output['stdout'] = None
     output['stderr'] = None
     if capture:
-        # Use a dictionary to capture the output as it is a mutable object that
-        # we can access outside of the threads.
         output['stdout'] = ""
         output['stderr'] = ""
 
@@ -129,23 +134,27 @@ def execute(command: str, capture=False, check=True, disable_logger=False,
             elif output == '' and process.poll() is not None:
                 break
 
-    if not disable_logger:
+    if log_stdout:
         stdout_thread = threading.Thread(
             target=read_stdout_from_process, args=(process, output))
+        stdout_thread.start()
+    if log_stderr:
         stderr_thread = threading.Thread(
             target=read_stderr_from_process, args=(process, output))
-        stdout_thread.start()
         stderr_thread.start()
+
+    if log_stdout:
         stdout_thread.join()
+    if log_stderr:
         stderr_thread.join()
 
-    if disable_logger and capture:
+    if not log_stdout and capture:
         output['stdout'] = process.stdout.read()  # type: ignore
+    if not log_stderr and capture:
         output['stderr'] = process.stderr.read()  # type: ignore
 
     rc = process.wait()
-    if not disable_logger:
-        logger.info(f"Command {command} finished with RC {rc}")
+    logger.debug(f"Command {command} finished with RC {rc}")
 
     if check and rc != 0:
         if capture:
