@@ -44,20 +44,11 @@ class CaaSP(KubernetesBase):
     def bootstrap(self):
         super().bootstrap()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
-        self._caasp_init()
-        self._caasp_bootstrap()
-
-    def install_kubernetes(self):
-        super().install_kubernetes()
-        self._caasp_join()
-
-    def _caasp_init(self):
         self.workspace.execute("skuba cluster init --control-plane "
                                f"{self.hardware.masters[0].get_ssh_ip()} "
                                f"{self._clusterpath}", capture=True,
                                check=True)
 
-    def _caasp_bootstrap(self):
         logger.info("skuba node bootstrap. This may take a while")
         self.workspace.execute(
             "skuba node bootstrap --user sles --sudo --target"
@@ -65,6 +56,10 @@ class CaaSP(KubernetesBase):
             f" {self.hardware.masters[0].dnsname}", capture=True,
             check=True, chdir=self._clusterpath
         )
+
+    def install_kubernetes(self):
+        super().install_kubernetes()
+        self._caasp_join()
 
     def _caasp_join(self):
         for worker in self.hardware.workers:
