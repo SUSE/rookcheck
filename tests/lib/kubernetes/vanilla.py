@@ -24,7 +24,6 @@ import os
 import stat
 import wget
 
-from abc import ABC, abstractmethod
 from tests import config
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
@@ -45,7 +44,6 @@ class Vanilla(KubernetesBase):
     def bootstrap(self):
         self.hardware.execute_ansible_play_raw(
             'playbook_kubernetes_vanilla.yaml')
-        self.hardware.execute_ansible_play(self.distro.install_kubeadm_play())
         self.hardware.execute_ansible_play(
             self.distro.copy_needed_files_master())
 
@@ -97,139 +95,9 @@ class Vanilla(KubernetesBase):
         os.chmod(self.kubectl_exec, st.st_mode | stat.S_IEXEC)
 
 
-# TODO(toabctl): Move Deploy and DeploySUSE out of kubernetes_base.py
-class Deploy(ABC):
-    @abstractmethod
-    def install_kubeadm_play(self):
-        pass
-
-
-class DeploySUSE(Deploy):
+class DeploySUSE():
     basedir = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                            '../../'))
-
-    def install_kubeadm_play(self):
-        tasks = []
-
-        tasks.append(
-            dict(
-                name="Start required IPVS kernel modules",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="modprobe ip_vs ; modprobe ip_vs_rr ; "
-                            "modprobe ip_vs_wrr ; modprobe ip_vs_sh",
-                    )
-                )
-            )
-        )
-
-        grouped_commands = [
-            ("wget https://github.com/kubernetes-sigs/cri-tools/releases/"
-                "download/{CRICTL_VERSION}/"
-                "crictl-{CRICTL_VERSION}-linux-amd64.tar.gz"),
-            "tar -C /usr/bin -xf crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
-            "chmod +x /usr/bin/crictl",
-            "rm crictl-{CRICTL_VERSION}-linux-amd64.tar.gz",
-        ]
-        tasks.append(
-            dict(
-                name="Download and install crictl",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd=" && ".join(grouped_commands).format(
-                            CRICTL_VERSION=config.CRICTL_VERSION
-                        )
-                    )
-                )
-            )
-        )
-
-        for binary in ['kubeadm', 'kubectl', 'kubelet']:
-            grouped_commands = [
-                ("curl -LO https://storage.googleapis.com/kubernetes-release/"
-                    "release/{K8S_VERSION}/bin/linux/amd64/{binary}"),
-                "chmod +x {binary}",
-                "mv {binary} /usr/bin/"
-            ]
-            tasks.append(
-                dict(
-                    name="Download and install %s" % binary,
-                    action=dict(
-                        module='shell',
-                        args=dict(
-                            cmd=" && ".join(grouped_commands).format(
-                                K8S_VERSION=config.K8S_VERSION,
-                                CRICTL_VERSION=config.CRICTL_VERSION,
-                                binary=binary
-                            )
-                        )
-                    )
-                )
-            )
-
-        # CNI plugins are required for most network addons
-        # https://github.com/containernetworking/plugins/releases
-        CNI_VERSION = "v0.7.5"
-        grouped_commands = [
-            "rm -f cni-plugins-amd64-{CNI_VERSION}.tgz*",
-            ("wget https://github.com/containernetworking/plugins/releases/"
-                "download/{CNI_VERSION}/cni-plugins-amd64-{CNI_VERSION}.tgz"),
-            "mkdir -p /opt/cni/bin",
-            "tar -C /opt/cni/bin -xf cni-plugins-amd64-{CNI_VERSION}.tgz",
-            "rm cni-plugins-amd64-{CNI_VERSION}.tgz"
-        ]
-        tasks.append(
-            dict(
-                name="Download and install CNI plugins",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd=" && ".join(grouped_commands).format(
-                            CNI_VERSION=CNI_VERSION,
-                            CRICTL_VERSION=config.CRICTL_VERSION
-                        )
-                    )
-                )
-            )
-        )
-
-        tasks.append(
-            dict(
-                name="Enable kubelet service",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="systemctl enable kubelet"
-                    )
-                )
-            )
-        )
-
-        tasks.append(
-            dict(
-                name="Disable apparmor",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="systemctl disable apparmor --now || true"
-                    )
-                )
-            )
-        )
-
-        play_source = dict(
-            name="Install kubeadm",
-            hosts="all",
-            tasks=tasks,
-            gather_facts="no",
-            strategy=(
-                "mitogen_free"
-                if config._USE_FREE_STRATEGY else "mitogen_linear"
-            ),
-        )
-        return play_source
 
     def copy_needed_files_master(self):
         # Temporary workaround for mitogen failing to copy files or templates.

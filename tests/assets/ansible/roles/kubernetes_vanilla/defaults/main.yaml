@@ -1,0 +1,7 @@
+---
+# the kubernetes version that is used for installation
+kubernetes_version: 1.17.3
+
+cri_tools_version: 1.17.0
+
+cni_version: 0.7.5
