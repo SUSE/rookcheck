@@ -1,0 +1,15 @@
+---
+# copy needed files
+- name: setup kubelet.service systemd file
+  template:
+    src: kubelet.service.j2
+    dest: /etc/systemd/system/kubelet.service
+    owner: root
+    group: root
+    mode: 0755
+  register: kubelet_service_file
+
+- name: systemd daemon reload
+  systemd:
+    daemon-reload: yes
+  when: kubelet_service_file.changed

@@ -43,7 +43,8 @@ class Vanilla(KubernetesBase):
             raise Exception("OS yet to be implemented/unsupport.")
 
     def bootstrap(self):
-        self.hardware.execute_ansible_play(self.distro.copy_needed_files())
+        self.hardware.execute_ansible_play_raw(
+            'playbook_kubernetes_vanilla.yaml')
         self.hardware.execute_ansible_play(self.distro.install_kubeadm_play())
         self.hardware.execute_ansible_play(
             self.distro.copy_needed_files_master())
@@ -106,48 +107,6 @@ class Deploy(ABC):
 class DeploySUSE(Deploy):
     basedir = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                            '../../'))
-
-    def copy_needed_files(self):
-        # Temporary workaround for mitogen failing to copy files or templates.
-        tasks = []
-
-        service_file = os.path.join(self.basedir, 'assets/kubelet.service')
-        tasks.append(
-            dict(
-                name="Copy kubelet systemd service",
-                action=dict(
-                    module='copy',
-                    args=dict(
-                        src=service_file,
-                        dest="/usr/lib/systemd/system/"
-                    )
-                )
-            )
-        )
-
-        extra_args_file = os.path.join(
-            self.basedir, 'assets/KUBELET_EXTRA_ARGS.j2')
-        tasks.append(
-            dict(
-                name="Copy config files",
-                action=dict(
-                    module='template',
-                    args=dict(
-                        src=extra_args_file,
-                        dest="/root/KUBELET_EXTRA_ARGS"
-                    )
-                )
-            )
-        )
-
-        play_source = dict(
-            name="Copy needed files",
-            hosts="all",
-            tasks=tasks,
-            gather_facts="no",
-            strategy="free" if config._USE_FREE_STRATEGY else "linear",
-        )
-        return play_source
 
     def install_kubeadm_play(self):
         tasks = []

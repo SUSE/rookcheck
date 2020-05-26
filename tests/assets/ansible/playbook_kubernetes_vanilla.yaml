@@ -1,0 +1,4 @@
+---
+- hosts: all
+  roles:
+    - kubernetes_vanilla
