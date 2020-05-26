@@ -20,7 +20,6 @@
 
 import logging
 import os
-import subprocess
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
@@ -45,49 +44,27 @@ class CaaSP(KubernetesBase):
     def bootstrap(self):
         super().bootstrap()
         self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
-        self._caasp_init()
-        with self.workspace.chdir(self._clusterpath):
-            self._caasp_bootstrap()
+        self.workspace.execute("skuba cluster init --control-plane "
+                               f"{self.hardware.masters[0].get_ssh_ip()} "
+                               f"{self._clusterpath}", capture=True,
+                               check=True)
+
+        logger.info("skuba node bootstrap. This may take a while")
+        self.workspace.execute(
+            "skuba node bootstrap --user sles --sudo --target"
+            f" {self.hardware.masters[0].get_ssh_ip()}"
+            f" {self.hardware.masters[0].dnsname}", capture=True,
+            check=True, chdir=self._clusterpath
+        )
 
     def install_kubernetes(self):
         super().install_kubernetes()
-        with self.workspace.chdir(self._clusterpath):
-            self._caasp_join()
-
-    def _caasp_init(self):
-        try:
-            self.workspace.execute("skuba cluster init --control-plane "
-                                   f"{self.hardware.masters[0].get_ssh_ip()} "
-                                   f"{self._clusterpath}", capture=True)
-        except subprocess.CalledProcessError as e:
-            logger.exception('skuba cluster init failed: '
-                             f'{e.stdout}\n{e.stderr}')
-            raise
-
-    def _caasp_bootstrap(self):
-        try:
-            logger.info("skube node bootstrap. This may take a while")
-            self.workspace.execute(
-                "skuba node bootstrap --user sles --sudo --target"
-                f" {self.hardware.masters[0].get_ssh_ip()}"
-                f" {self.hardware.masters[0].dnsname}", capture=True,
-                chdir=self._clusterpath
-            )
-        except subprocess.CalledProcessError as e:
-            logger.exception('skuba node bootstrap failed: '
-                             f'{e.stdout}\n{e.stderr}')
-            raise
+        self._caasp_join()
 
     def _caasp_join(self):
         for worker in self.hardware.workers:
-            try:
-                self.workspace.execute(
-                    "skuba node join --role worker --user sles --sudo "
-                    f"--target {worker.get_ssh_ip()} {worker.dnsname}",
-                    capture=True, chdir=self._clusterpath
-                )
-            except subprocess.CalledProcessError as e:
-                logger.exception(
-                    f'skuba node join worker for  {worker.dnsname} failed: '
-                    f'{e.stdout}\n{e.stderr}')
-                raise
+            self.workspace.execute(
+                "skuba node join --role worker --user sles --sudo "
+                f"--target {worker.get_ssh_ip()} {worker.dnsname}",
+                capture=True, check=True, chdir=self._clusterpath
+            )
