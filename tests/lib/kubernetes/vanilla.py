@@ -40,6 +40,10 @@ class Vanilla(KubernetesBase):
         self.hardware.execute_ansible_play_raw(
             'playbook_kubernetes_vanilla.yaml')
 
+    def join(self, node):
+        super().join(node)
+        # FIXME(toabctl): Implement this
+
     def install_kubernetes(self):
         self._configure_kubernetes_client()
         self._download_kubectl()
