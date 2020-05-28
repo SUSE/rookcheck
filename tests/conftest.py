@@ -30,11 +30,10 @@ else:
 
 if settings.DISTRO == 'SLES_CaaSP':
     from tests.lib.kubernetes.caasp import CaaSP as Kubernetes
-#    from tests.lib.rook.ses import RookCluster as RookCluster ## not
-#    implemented yet
+    from tests.lib.rook.ses import RookSes as RookCluster
 else:
     from tests.lib.kubernetes.vanilla import Vanilla as Kubernetes  # type: ignore  # noqa: E501
-    from tests.lib.rook.upstream import RookCluster as RookCluster
+    from tests.lib.rook.upstream import RookCluster as RookCluster  # type: ignore  # noqa: E501
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +93,9 @@ def linear_rook_cluster(workspace, kubernetes):
         yield rook_cluster
 
 
+# TODO
+# Need to remove reference to build rook because this won't exist in caasp for
+# example
 @pytest.fixture(scope="module")
 def rook_cluster(workspace):
     with Hardware(workspace) as hardware:

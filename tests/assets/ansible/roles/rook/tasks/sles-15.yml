@@ -1,0 +1,9 @@
+---
+- name: add packages
+  vars:
+    pkg:
+      - rook-k8s-yaml
+  zypper:
+      name: '{{ pkg }}'
+      state: present
+      update_cache: no

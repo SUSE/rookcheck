@@ -93,6 +93,8 @@ class RookCluster(RookBase):
     def upload_rook_image(self):
         self.kubernetes.hardware.ansible_run_playbook("playbook_rook.yaml")
 
+    # TODO (bleon)
+    # This method should be replaced inf favor of using base install() one
     def install_rook(self):
         if not self._rook_built:
             raise Exception("Rook must be built before being installed")
@@ -127,6 +129,10 @@ class RookCluster(RookBase):
             log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 3),
             attempts=90, interval=10)
+
+        # TODO (bleon)
+        # this should be enough to a rook deployment to be ready
+        # FS/RBD are not needed to HEALTH_OK
 
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'filesystem.yaml'))

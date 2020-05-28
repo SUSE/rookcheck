@@ -1,0 +1,7 @@
+---
+# TODO Need to harmonize this with upstream rook task
+- hosts: all
+  tasks:
+    - name: tasks for rook
+      import_role:
+        name: rook
