@@ -126,6 +126,7 @@ class HardwareBase(ABC):
             'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
             'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
             'ansible_python_interpreter': '/usr/bin/python3',
+            'rookcheck_workspace_dir': self.workspace.working_dir,
         }
         return vars
 

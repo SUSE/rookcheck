@@ -1,0 +1,72 @@
+---
+# copy needed files
+- name: setup kubelet.service systemd file
+  template:
+    src: kubelet.service.j2
+    dest: /etc/systemd/system/kubelet.service
+    owner: root
+    group: root
+    mode: 0755
+  register: kubelet_service_file
+
+- name: systemd daemon reload
+  systemd:
+    daemon-reload: yes
+  when: kubelet_service_file.changed
+
+- name: Start required IPVS kernel modules
+  shell: |
+    modprobe ip_vs
+    modprobe ip_vs_rr
+    modprobe ip_vs_wrr
+    modprobe ip_vs_sh
+
+- name: Download crictl
+  get_url:
+    url: https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ cri_tools_version }}/crictl-v{{ cri_tools_version }}-linux-amd64.tar.gz
+    dest: /tmp/crictl-v{{ cri_tools_version }}-linux-amd64.tar.gz
+
+- name: Creates cni bin dir
+  file:
+    path: /opt/cni/bin
+    state: directory
+
+- name: Install crictl
+  unarchive:
+    src: /tmp/crictl-v{{ cri_tools_version }}-linux-amd64.tar.gz
+    dest: /opt/cni/bin/
+    mode: 0755
+    remote_src: yes
+
+- name: Download & install kubeadm & kubectl & kubelet binary
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/v{{ kubernetes_version }}/bin/linux/amd64/{{ item }}
+    dest: /usr/bin/{{ item }}
+    mode: 0755
+  loop:
+    - kubeadm
+    - kubectl
+    - kubelet
+
+- name: Download CNI plugins
+  get_url:
+    url: https://github.com/containernetworking/plugins/releases/download/v{{ cni_version }}/cni-plugins-amd64-v{{ cni_version }}.tgz
+    dest: /tmp/cni-plugins-amd64-v{{ cni_version }}.tgz
+
+- name: Install CNI plugins
+  unarchive:
+    src: /tmp/cni-plugins-amd64-v{{ cni_version }}.tgz
+    dest: /opt/cni/bin/
+    mode: 0755
+    remote_src: yes
+
+- name: enable kubelet service
+  systemd:
+    name: kubelet.service
+    enabled: yes
+
+- name: disable apparmor
+  systemd:
+    name: apparmor
+    enabled: no
+    state: stopped

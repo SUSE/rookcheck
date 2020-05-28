@@ -1,0 +1,21 @@
+---
+- hosts: all
+  tasks:
+    - name: common
+      import_role:
+        name: kubernetes_vanilla
+        tasks_from: common
+
+- hosts: first_master
+  tasks:
+    - name: setup first kubernetes master
+      import_role:
+        name: kubernetes_vanilla
+        tasks_from: first_master
+
+- hosts: worker
+  tasks:
+    - name: Join worker nodes
+      import_role:
+        name: kubernetes_vanilla
+        tasks_from: worker

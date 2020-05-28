@@ -1,0 +1,8 @@
+- name: copy kubernetes join command
+  copy:
+    src: "{{ rookcheck_workspace_dir }}/k8s-join-command"
+    dest: /tmp/k8s-join-command.sh
+    mode: 0777
+
+- name: join kubernetes cluster
+  shell: /tmp/k8s-join-command.sh

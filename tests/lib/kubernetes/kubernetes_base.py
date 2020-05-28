@@ -25,6 +25,7 @@ import logging
 
 from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.hardware.node_base import NodeBase
 from tests.lib.workspace import Workspace
 
 
@@ -52,6 +53,10 @@ class KubernetesBase(ABC):
         nodes can join
         """
         logging.info("bootstrapping the kubernetes cluster")
+
+    @abstractmethod
+    def join(self, node: NodeBase):
+        logging.info(f"{node.name} joining kubernetes cluster")
 
     @abstractmethod
     def install_kubernetes(self):

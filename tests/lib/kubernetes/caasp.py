@@ -23,6 +23,7 @@ import os
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
+from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
 
 
@@ -57,14 +58,20 @@ class CaaSP(KubernetesBase):
             check=True, chdir=self._clusterpath
         )
 
+    def join(self, node: NodeBase):
+        super().join(node)
+        if node.role == NodeRole.WORKER:
+            role = 'worker'
+        else:
+            role = 'master'
+
+        self.workspace.execute(
+            f"skuba node join --role {role} --user sles --sudo "
+            f"--target {node.get_ssh_ip()} {node.dnsname}",
+            capture=True, check=True, chdir=self._clusterpath
+        )
+
     def install_kubernetes(self):
         super().install_kubernetes()
-        self._caasp_join()
-
-    def _caasp_join(self):
         for worker in self.hardware.workers:
-            self.workspace.execute(
-                "skuba node join --role worker --user sles --sudo "
-                f"--target {worker.get_ssh_ip()} {worker.dnsname}",
-                capture=True, check=True, chdir=self._clusterpath
-            )
+            self.join(worker)
