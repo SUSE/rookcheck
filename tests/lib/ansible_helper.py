@@ -18,7 +18,6 @@ import shutil
 import tarfile
 import urllib.request
 import yaml
-import subprocess
 
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
@@ -152,12 +151,8 @@ class AnsibleRunner(object):
             os.path.dirname(__file__), '../assets/ansible', playbook
         ))
         logger.info(f'Running playbook {path}')
-        try:
-            self.workspace.execute(
-                f"ansible-playbook -i {self.inventory_dir} {path}")
-        except subprocess.CalledProcessError:
-            logger.exception('An error occured executing Ansible playbook')
-            Exception("An error occurred running playbook")
+        self.workspace.execute(
+            f"ansible-playbook -i {self.inventory_dir} {path}")
 
     def run_play(self, play_source):
         # Create a new results instance for each run
