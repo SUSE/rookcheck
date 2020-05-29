@@ -80,13 +80,13 @@ def kubernetes(hardware):
 
 
 @pytest.fixture(scope="module")
-def linear_rook_cluster(workspace, kubernetes):
+def linear_rook_cluster(kubernetes):
     # (See above re implementation options)
     # This method shows how fixture inheritance can be used to manage the
     # infrastructure. It also builds things in order, the below rook_cluster
     # fixture is preferred as it will build rook locally in a thread while
     # waiting on the infrastructure
-    with RookCluster(workspace, kubernetes) as rook_cluster:
+    with RookCluster(kubernetes) as rook_cluster:
         rook_cluster.build_rook()
         rook_cluster.install_rook()
         yield rook_cluster
@@ -96,7 +96,7 @@ def linear_rook_cluster(workspace, kubernetes):
 def rook_cluster(workspace):
     with Hardware(workspace) as hardware:
         with Kubernetes(hardware) as kubernetes:
-            with RookCluster(workspace, kubernetes) as rook_cluster:
+            with RookCluster(kubernetes) as rook_cluster:
                 if config._USE_THREADS:
                     logger.info("Starting rook build in a thread")
                     build_thread = threading.Thread(

@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class RookCluster(RookBase):
-    def __init__(self, workspace, kubernetes):
-        super().__init__(workspace, kubernetes)
+    def __init__(self, kubernetes):
+        super().__init__(kubernetes)
         self._rook_built = False
         self.builddir = os.path.join(self.workspace.working_dir, 'rook_build')
         os.mkdir(self.builddir)

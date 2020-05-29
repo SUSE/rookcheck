@@ -20,9 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 class RookBase(ABC):
-    def __init__(self, workspace, kubernetes):
-        self._workspace = workspace
+    def __init__(self, kubernetes):
         self.kubernetes = kubernetes
+        # Note(toabctl): keep the workspace shortcut for less typing
+        self._workspace = kubernetes.workspace
         self.toolbox_pod = None
         self.ceph_dir = None
         logger.info(f"rook init on {self.kubernetes.hardware}")
