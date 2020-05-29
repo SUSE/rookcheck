@@ -89,6 +89,14 @@ class HardwareBase(ABC):
     def get_connection(self):
         pass
 
+    @abstractmethod
+    def node_create(self, name: str, role: NodeRole,  # type: ignore
+                    tags: List[str]) -> NodeBase:
+        """
+        Create a new Node object and return it
+        """
+        logger.info(f"creating a new node for hardware {self}")
+
     def node_add(self, node: NodeBase):
         logger.info(f"adding new node {node.name} to hardware {self}")
         self._node_remove_ssh_key(node)

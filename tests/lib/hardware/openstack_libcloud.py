@@ -313,7 +313,9 @@ class Hardware(HardwareBase):
             )
         return security_group
 
-    def _create_node(self, node_name, role, tags=[]):
+    def node_create(self, name: str, role: NodeRole,
+                    tags: List[str]) -> NodeBase:
+        super().node_create(name, role, tags)
         # are there any additional networks for the node wanted?
         additional_networks = []
         if config.OS_INTERNAL_NETWORK:
@@ -321,12 +323,15 @@ class Hardware(HardwareBase):
                 self._get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
             )
 
-        node = Node(node_name, role, tags, self.conn,
+        node = Node(name, role, tags, self.conn,
                     self._get_size_by_name(config.NODE_SIZE),
                     self._get_image(config.NODE_IMAGE),
                     additional_networks, [self._ex_security_group],
                     self.workspace.sshkey_name)
+        return node
 
+    def _create_node(self, node_name, role, tags=[]):
+        node = self.node_create(node_name, role, tags)
         node.boot()
         self.node_add(node)
 

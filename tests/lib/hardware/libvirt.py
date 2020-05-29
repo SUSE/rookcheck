@@ -308,12 +308,18 @@ class Hardware(HardwareBase):
         logger.debug(f"Got connection to libvirt: {conn}")
         return conn
 
-    def _boot_node(self, name: str, role: NodeRole, tags: List[str]):
+    def node_create(self, name: str, role: NodeRole,
+                    tags: List[str]) -> NodeBase:
+        super().node_create(name, role, tags)
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._image_path, self._network, 0,
                     config.PROVIDER_LIBVIRT_VM_MEMORY, self.workspace)
         node.boot()
+        return node
+
+    def _boot_node(self, name: str, role: NodeRole, tags: List[str]):
+        node = self.node_create(name, role, tags)
         self.node_add(node)
 
     def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
