@@ -26,16 +26,17 @@ import logging
 from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase
-from tests.lib.workspace import Workspace
 
 
 logger = logging.getLogger(__name__)
 
 
 class KubernetesBase(ABC):
-    def __init__(self, workspace: Workspace, hardware: HardwareBase):
-        self._workspace = workspace
+    def __init__(self, hardware: HardwareBase):
         self._hardware = hardware
+        # Note(toabctl): keep the workspace shortcut for less typing
+        self._workspace = hardware.workspace
+
         # TODO(toabctl): Make it configurable?
         self._kubeconfig = os.path.join(self.workspace.working_dir,
                                         'kubeconfig')

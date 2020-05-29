@@ -24,15 +24,14 @@ import os
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
-from tests.lib.workspace import Workspace
 
 
 logger = logging.getLogger(__name__)
 
 
 class CaaSP(KubernetesBase):
-    def __init__(self, workspace: Workspace, hardware: HardwareBase):
-        super().__init__(workspace, hardware)
+    def __init__(self, hardware: HardwareBase):
+        super().__init__(hardware)
         self._clusterpath = os.path.join(self.workspace.working_dir, 'cluster')
         self._kubeconfig = os.path.join(self.workspace.working_dir, 'cluster',
                                         'admin.conf')

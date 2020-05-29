@@ -26,15 +26,14 @@ import wget
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
-from tests.lib.workspace import Workspace
 
 
 logger = logging.getLogger(__name__)
 
 
 class Vanilla(KubernetesBase):
-    def __init__(self, workspace: Workspace, hardware: HardwareBase):
-        super().__init__(workspace, hardware)
+    def __init__(self, hardware: HardwareBase):
+        super().__init__(hardware)
 
     def bootstrap(self):
         self.hardware.execute_ansible_play_raw(

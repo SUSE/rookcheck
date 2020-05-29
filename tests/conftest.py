@@ -66,14 +66,14 @@ def hardware(workspace):
 
 
 @pytest.fixture(scope="module")
-def kubernetes(workspace, hardware):
+def kubernetes(hardware):
     # NOTE(jhesketh): We can either choose which Kubernetes class to use here
     # or we can have a master class that makes the decision based off the
     # config.
     # If we implement multiple Kubernetes distributions (eg upstream vs skuba
     # etc), we should do them from an ABC so to ensure the interfaces are
     # correct.
-    with Kubernetes(workspace, hardware) as kubernetes:
+    with Kubernetes(hardware) as kubernetes:
         kubernetes.bootstrap()
         kubernetes.install_kubernetes()
         yield kubernetes
@@ -95,7 +95,7 @@ def linear_rook_cluster(workspace, kubernetes):
 @pytest.fixture(scope="module")
 def rook_cluster(workspace):
     with Hardware(workspace) as hardware:
-        with Kubernetes(workspace, hardware) as kubernetes:
+        with Kubernetes(hardware) as kubernetes:
             with RookCluster(workspace, kubernetes) as rook_cluster:
                 if config._USE_THREADS:
                     logger.info("Starting rook build in a thread")
