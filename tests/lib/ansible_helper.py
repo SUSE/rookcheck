@@ -18,7 +18,6 @@ import shutil
 import tarfile
 import urllib.request
 import yaml
-import subprocess
 
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
@@ -113,12 +112,13 @@ class AnsibleRunner(object):
         # create a inventory & group_vars directory
         inventory_dir = os.path.join(workspace.working_dir, 'inventory')
         group_vars_dir = os.path.join(inventory_dir, 'group_vars')
-        if not os.path.exists(group_vars_dir):
-            os.makedirs(group_vars_dir)
+        group_vars_all_dir = os.path.join(group_vars_dir, 'all')
+        if not os.path.exists(group_vars_all_dir):
+            os.makedirs(group_vars_all_dir)
 
         # write hardware groups vars which are useful for *all* nodes
-        group_vars_all = os.path.join(group_vars_dir, 'all.yml')
-        with open(group_vars_all, 'w') as f:
+        group_vars_all_common = os.path.join(group_vars_all_dir, 'common.yml')
+        with open(group_vars_all_common, 'w') as f:
             yaml.dump(inventory_vars, f)
 
         # write node specific inventory
@@ -151,12 +151,8 @@ class AnsibleRunner(object):
             os.path.dirname(__file__), '../assets/ansible', playbook
         ))
         logger.info(f'Running playbook {path}')
-        try:
-            self.workspace.execute(
-                f"ansible-playbook -i {self.inventory_dir} {path}")
-        except subprocess.CalledProcessError:
-            logger.exception('An error occured executing Ansible playbook')
-            Exception("An error occurred running playbook")
+        self.workspace.execute(
+            f"ansible-playbook -i {self.inventory_dir} {path}")
 
     def run_play(self, play_source):
         # Create a new results instance for each run

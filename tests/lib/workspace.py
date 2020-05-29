@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class Workspace():
     def __init__(self):
         # Set up a common workspace that most modules will expect
-        self._workspace_uuid: str = str(uuid.uuid4())[:8]
+        self._workspace_uuid: str = str(uuid.uuid4())[:4]
         self._working_dir: str = self._get_working_dir()
 
         self._sshkey_name: Optional[str] = None

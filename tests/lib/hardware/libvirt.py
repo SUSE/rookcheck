@@ -275,7 +275,6 @@ class Hardware(HardwareBase):
 
     def _create_network(self):
         network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
-        network_name = "%s_net" % self.workspace.name
         host_ip = str(netaddr.IPAddress(network.first+1))
         netmask = str(network.netmask)
         dhcp_start = str(netaddr.IPAddress(network.first+2))
@@ -291,7 +290,7 @@ class Hardware(HardwareBase):
             </ip>
             </network>
         """ % {
-            "network_name": network_name,
+            "network_name": self.workspace.name,
             "host_ip": host_ip,
             "netmask": netmask,
             "dhcp_start": dhcp_start,
