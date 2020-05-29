@@ -49,10 +49,6 @@ NODE_SIZE = os.getenv('NODE_SIZE', 'm1.medium')
 # Available options: openSUSE_k8s, SLES_CaaSP
 DISTRO = os.getenv('DISTRO', 'openSUSE_k8s')
 
-# The type of kubernetes deployment
-CRICTL_VERSION = os.getenv('CRICTL_VERSION', 'v1.17.0')
-K8S_VERSION = os.getenv('K8S_VERSION', 'v1.17.4')
-
 ##############################
 # Provider specific settings #
 ##############################
