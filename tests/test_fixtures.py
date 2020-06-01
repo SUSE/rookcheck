@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from tests.lib.hardware.node_base import NodeRole
+
+
 rook_cluster_instance = {}
 
 
@@ -32,3 +35,20 @@ def test_rook_cluster_instance_scope_part1(rook_cluster):
 
 def test_rook_cluster_instance_scope_part2(rook_cluster):
     assert rook_cluster is rook_cluster_instance[0]
+
+
+def test_hardware_node_add_remove(hardware):
+    """
+    test the hardware fixture. Especially the handing of nodes
+    """
+    nodes_length = len(hardware.nodes.keys())
+    # create a new node
+    new_node = hardware.node_create('test1', NodeRole.WORKER, [])
+    # add the node to the hardware
+    hardware.node_add(new_node)
+    # we should have one more node now
+    assert len(hardware.nodes.keys()) == nodes_length+1
+    # drop the node again
+    hardware.node_remove(new_node)
+    # we should have the old amount of nodes now
+    assert len(hardware.nodes.keys()) == nodes_length
