@@ -17,8 +17,9 @@ changes to the initial deployment.
 Provided Abstractions
 ---------------------
 
-Currently there are 4 abstractions available:
+Currently there are 5 abstractions available:
 
+* Workspace (basically a directory where files (eg. config) can be stored
 * Hardware (VM's, etc),
 * Operating Systems (packages/configuration etc),
 * Kubernetes (deployment/packages etc),
@@ -32,9 +33,9 @@ generic/pluggable way.
 
 Tests will have access to each of these abstractions to be able to perform
 actions at the various levels. For example, a test may provision a new node
-through `hardware.boot_note()`, or join it to a cluster with
-`kubernetes.join_node(node)` (NOTE: These methods have not been finalised and
-are examples only. The base classes will be documented below).
+through `hardware.node_create(); hardware.node_add()`, or join it to a cluster
+with `kubernetes.join_node(node)` (NOTE: These methods have not been finalised
+and are examples only. The base classes will be documented below).
 
 Each driver for the above abstractions must implement their
 `Abstract Base Class`. This ensures that the expected functions are available
