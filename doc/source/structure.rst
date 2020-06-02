@@ -17,8 +17,9 @@ changes to the initial deployment.
 Provided Abstractions
 ---------------------
 
-Currently there are 4 abstractions available:
+Currently there are 5 abstractions available:
 
+* Workspace (basically a directory where files (eg. config) can be stored
 * Hardware (VM's, etc),
 * Operating Systems (packages/configuration etc),
 * Kubernetes (deployment/packages etc),
