@@ -49,9 +49,6 @@ class Workspace():
             self.working_dir, 'ssh-agent.sock')
         self._ssh_agent()
 
-        self._ansible_runner: Optional[AnsibleRunner] = None
-        self._ansible_runner_nodes: Dict[str, NodeBase] = {}
-
         logger.info(f"Workspace {self.name} set up at {self.working_dir}")
         logger.info(f"public key {self.public_key}")
         logger.info(f"private key {self.private_key}")
@@ -148,25 +145,13 @@ class Workspace():
 
     def execute_ansible_play_raw(self, playbook: str,
                                  nodes: Dict[str, NodeBase]):
-        if not self._ansible_runner or \
-           self._ansible_runner_nodes != nodes:
-            # Create a new AnsibleRunner if the nodes dict has changed (to
-            # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self, nodes)
-            self._ansible_runner_nodes = nodes.copy()
-
-        return self._ansible_runner.run_play_raw(playbook)
+        ansible_runner = AnsibleRunner(self, nodes)
+        return ansible_runner.run_play_raw(playbook)
 
     def _execute_ansible_play(self, play_source: Dict,
                               nodes: Dict[str, NodeBase]):
-        if not self._ansible_runner or \
-           self._ansible_runner_nodes != nodes:
-            # Create a new AnsibleRunner if the nodes dict has changed (to
-            # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self, nodes)
-            self._ansible_runner_nodes = nodes.copy()
-
-        return self._ansible_runner.run_play(play_source)
+        ansible_runner = AnsibleRunner(self, nodes)
+        return ansible_runner.run_play(play_source)
 
     def execute_ansible_play(self, play_source: Dict,
                              nodes: Dict[str, NodeBase]):
