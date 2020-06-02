@@ -68,6 +68,7 @@ class ResultCallback(CallbackModule):
 class AnsibleRunner(object):
     def __init__(self, workspace, nodes):
         self._workspace = workspace
+        self._nodes = nodes
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
         ansible_context.CLIARGS = ImmutableDict(
@@ -82,7 +83,7 @@ class AnsibleRunner(object):
 
         # create inventory, use path to host config file as source or hosts in
         # a comma separated string
-        self.inventory_dir = self.create_inventory(workspace, nodes)
+        self.inventory_dir = self.create_inventory()
         self.inventory = InventoryManager(
             loader=self.loader, sources=self.inventory_dir)
 
@@ -107,18 +108,28 @@ class AnsibleRunner(object):
     def workspace(self):
         return self._workspace
 
-    def create_inventory(self, workspace, nodes):
-        # create a inventory & group_vars directory
-        inventory_dir = os.path.join(workspace.working_dir, 'inventory')
+    @property
+    def nodes(self):
+        return self._nodes
+
+    def create_inventory(self):
+        inventory_dir = os.path.join(self.workspace.working_dir, 'inventory')
         group_vars_dir = os.path.join(inventory_dir, 'group_vars')
         group_vars_all_dir = os.path.join(group_vars_dir, 'all')
-        if not os.path.exists(group_vars_all_dir):
-            os.makedirs(group_vars_all_dir)
+
+        # drop old inventory dir if available
+        if os.path.exists(inventory_dir):
+            shutil.rmtree(inventory_dir)
+            logger.info("deleted current ansible inventory "
+                        f"dir f{inventory_dir}")
+
+        # create a inventory & group_vars directory
+        os.makedirs(group_vars_all_dir)
 
         # write hardware groups vars which are useful for *all* nodes
         group_vars_all_common = os.path.join(group_vars_all_dir, 'common.yml')
         with open(group_vars_all_common, 'w') as f:
-            yaml.dump(workspace.ansible_inventory_vars(), f)
+            yaml.dump(self.workspace.ansible_inventory_vars(), f)
 
         # write node specific inventory
         inv = {
@@ -128,7 +139,7 @@ class AnsibleRunner(object):
             }
         }
 
-        for node in nodes.values():
+        for node in self.nodes.values():
             if not node.tags:
                 inv['all']['hosts'][node.name] = node.ansible_inventory_vars()
             else:
