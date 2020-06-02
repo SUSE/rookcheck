@@ -48,6 +48,17 @@ class NodeBase(ABC):
         """
         pass
 
+    # TODO: We need to add three methods actually
+    # disk_create
+    # disk_attach
+    # disk_detach
+    @abstractmethod
+    def add_data_disk(self, capacity):
+        """
+        Add a disk to the node
+        """
+        pass
+
     @property
     def name(self):
         return self._name
