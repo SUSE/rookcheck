@@ -19,7 +19,7 @@ from pprint import pformat
 import shutil
 import stat
 import subprocess
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import uuid
 
 import paramiko.rsakey
@@ -147,33 +147,30 @@ class Workspace():
                            env=env)
 
     def execute_ansible_play_raw(self, playbook: str,
-                                 nodes: Dict[str, NodeBase],
-                                 inventory_vars: Optional[Dict] = None):
+                                 nodes: Dict[str, NodeBase]):
         if not self._ansible_runner or \
            self._ansible_runner_nodes != nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self, nodes, inventory_vars)
+            self._ansible_runner = AnsibleRunner(self, nodes)
             self._ansible_runner_nodes = nodes.copy()
 
         return self._ansible_runner.run_play_raw(playbook)
 
     def _execute_ansible_play(self, play_source: Dict,
-                              nodes: Dict[str, NodeBase],
-                              inventory_vars: Optional[Dict] = None):
+                              nodes: Dict[str, NodeBase]):
         if not self._ansible_runner or \
            self._ansible_runner_nodes != nodes:
             # Create a new AnsibleRunner if the nodes dict has changed (to
             # generate a new inventory).
-            self._ansible_runner = AnsibleRunner(self, nodes, inventory_vars)
+            self._ansible_runner = AnsibleRunner(self, nodes)
             self._ansible_runner_nodes = nodes.copy()
 
         return self._ansible_runner.run_play(play_source)
 
     def execute_ansible_play(self, play_source: Dict,
-                             nodes: Dict[str, NodeBase],
-                             inventory_vars: Optional[Dict] = None):
-        r = self._execute_ansible_play(play_source, nodes, inventory_vars)
+                             nodes: Dict[str, NodeBase]):
+        r = self._execute_ansible_play(play_source, nodes)
         failure = False
         if r.host_unreachable:
             logger.error("One or more hosts were unreachable")
@@ -189,6 +186,22 @@ class Workspace():
             raise Exception(
                 f"Failure running ansible playbook {play_source['name']}")
         return r
+
+    def ansible_inventory_vars(self) -> Dict[str, Any]:
+        """
+        Some basic ansible inventory variables that are common for this
+        workspace
+        """
+        vars = {
+            'ansible_ssh_private_key_file': self.private_key,
+            'ansible_host_key_checking': False,
+            'ansible_ssh_host_key_checking': False,
+            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
+            'ansible_python_interpreter': '/usr/bin/python3',
+            'rookcheck_workspace_dir': self.working_dir,
+        }
+        return vars
 
     @contextlib.contextmanager
     def chdir(self, path=None):

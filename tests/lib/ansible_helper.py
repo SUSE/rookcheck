@@ -66,7 +66,7 @@ class ResultCallback(CallbackModule):
 
 
 class AnsibleRunner(object):
-    def __init__(self, workspace, nodes, inventory_vars=None):
+    def __init__(self, workspace, nodes):
         self._workspace = workspace
         # since the API is constructed for CLI it expects certain options to
         # always be set in the context object
@@ -82,8 +82,7 @@ class AnsibleRunner(object):
 
         # create inventory, use path to host config file as source or hosts in
         # a comma separated string
-        self.inventory_dir = self.create_inventory(
-            workspace, nodes, inventory_vars)
+        self.inventory_dir = self.create_inventory(workspace, nodes)
         self.inventory = InventoryManager(
             loader=self.loader, sources=self.inventory_dir)
 
@@ -108,7 +107,7 @@ class AnsibleRunner(object):
     def workspace(self):
         return self._workspace
 
-    def create_inventory(self, workspace, nodes, inventory_vars):
+    def create_inventory(self, workspace, nodes):
         # create a inventory & group_vars directory
         inventory_dir = os.path.join(workspace.working_dir, 'inventory')
         group_vars_dir = os.path.join(inventory_dir, 'group_vars')
@@ -119,7 +118,7 @@ class AnsibleRunner(object):
         # write hardware groups vars which are useful for *all* nodes
         group_vars_all_common = os.path.join(group_vars_all_dir, 'common.yml')
         with open(group_vars_all_common, 'w') as f:
-            yaml.dump(inventory_vars, f)
+            yaml.dump(workspace.ansible_inventory_vars(), f)
 
         # write node specific inventory
         inv = {
