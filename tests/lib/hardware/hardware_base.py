@@ -24,7 +24,7 @@
 
 from abc import ABC, abstractmethod
 import logging
-from typing import Dict, Any, List
+from typing import Dict, List
 
 from tests.lib.distro import get_distro
 from tests.lib.hardware.node_base import NodeBase, NodeRole
@@ -119,24 +119,10 @@ class HardwareBase(ABC):
         self.execute_ansible_play(d.bootstrap_play())
 
     def execute_ansible_play_raw(self, playbook):
-        return self.workspace.execute_ansible_play_raw(
-            playbook, self.nodes, self.ansible_inventory_vars())
+        return self.workspace.execute_ansible_play_raw(playbook, self.nodes)
 
     def execute_ansible_play(self, play_source):
-        return self.workspace.execute_ansible_play(
-            play_source, self.nodes, self.ansible_inventory_vars())
-
-    def ansible_inventory_vars(self) -> Dict[str, Any]:
-        vars = {
-            'ansible_ssh_private_key_file': self.workspace.private_key,
-            'ansible_host_key_checking': False,
-            'ansible_ssh_host_key_checking': False,
-            'ansible_scp_extra_args': '-o StrictHostKeyChecking=no',
-            'ansible_ssh_extra_args': '-o StrictHostKeyChecking=no',
-            'ansible_python_interpreter': '/usr/bin/python3',
-            'rookcheck_workspace_dir': self.workspace.working_dir,
-        }
-        return vars
+        return self.workspace.execute_ansible_play(play_source, self.nodes)
 
     def _get_node_by_role(self, role: NodeRole):
         items = []
