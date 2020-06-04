@@ -41,6 +41,7 @@ def test_hardware_node_add_remove(hardware):
     new_node = hardware.node_create('test1', NodeRole.WORKER, [])
     # add the node to the hardware
     hardware.node_add(new_node)
+    hardware.prepare_nodes(limit_to_nodes=[new_node])
     # we should have one more node now
     assert len(hardware.nodes.keys()) == nodes_length+1
     # drop the node again

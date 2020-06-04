@@ -117,9 +117,9 @@ class HardwareBase(ABC):
     def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
         logger.info("boot nodes")
 
-    def prepare_nodes(self):
+    def prepare_nodes(self, limit_to_nodes: List[NodeBase] = []):
         logger.info("prepare nodes")
-        self.ansible_run_playbook("playbook_node_base.yml")
+        self.ansible_run_playbook("playbook_node_base.yml", limit_to_nodes)
 
     def ansible_run_playbook(self, playbook: str,
                              limit_to_nodes: List[NodeBase] = []):
