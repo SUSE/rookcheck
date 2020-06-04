@@ -1,0 +1,56 @@
+---
+
+# NOTE(toabctl): we assume here, that repositories are already configured
+
+- name: install dependencies
+  zypper:
+    name:
+      - bash-completion
+      - ca-certificates
+      - conntrack-tools
+      - curl
+      - docker
+      - ebtables
+      - ethtool
+      - lvm2
+      - lsof
+      - ntp
+      - vim
+      - wget
+      - xfsprogs
+    state: present
+
+- name: update kernel
+  zypper:
+    name: kernel-default
+    state: latest
+    force: yes
+    extra_args: "--force-resolution"
+
+- name: drop firewalld
+  zypper:
+    name: firewalld
+    state: absent
+
+- name: enable docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+# TODO(jhesketh): Figure out if this is appropriate for all OpenStack
+#                 clouds.
+- name: IPADDR for eth0
+  lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    line: "IPADDR_0={{ ansible_host }}/32"
+    create: yes
+
+- name: LABEL for eth0
+  lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    line: "LABEL_0=Floating"
+    create: yes
+
+- name: reboot nodes
+  reboot:

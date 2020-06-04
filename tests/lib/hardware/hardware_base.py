@@ -26,7 +26,6 @@ from abc import ABC, abstractmethod
 import logging
 from typing import Dict, List
 
-from tests.lib.distro import get_distro
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 
 from tests.lib.workspace import Workspace
@@ -113,10 +112,7 @@ class HardwareBase(ABC):
 
     def prepare_nodes(self):
         logger.info("prepare nodes")
-        d = get_distro()()
-
-        self.execute_ansible_play(d.wait_for_connection_play())
-        self.execute_ansible_play(d.bootstrap_play())
+        self.execute_ansible_play_raw("playbook_node_base.yml")
 
     def execute_ansible_play_raw(self, playbook):
         return self.workspace.execute_ansible_play_raw(playbook, self.nodes)

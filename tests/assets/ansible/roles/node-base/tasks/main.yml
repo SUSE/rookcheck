@@ -1,0 +1,34 @@
+---
+# common for all nodes
+- name: wait for nodes
+  wait_for_connection:
+    timeout: 300
+
+- name: raise max open files
+  sysctl:
+    name: fs.file-max
+    value: "1200000"
+    state: present
+    sysctl_file: /etc/sysctl.d/80-rookcheck.conf
+
+- name: minimize swappiness
+  sysctl:
+    name: vm.swappiness
+    value: "0"
+    state: present
+    sysctl_file: /etc/sysctl.d/80-rookcheck.conf
+
+- name: distro specific node setup
+  include_tasks: '{{ item }}'
+  vars:
+    params:
+      files:
+        # eg. "opensuse_leap-15.1"
+        - "{{ ansible_distribution | replace(' ', '_') | lower }}-{{ ansible_distribution_version}}.yml"
+        # eg. "opensuse_leap-15"
+        - "{{ ansible_distribution | replace(' ', '_') |lower }}-{{ ansible_distribution_major_version}}.yml"
+        # eg. "opensuse_leap"
+        - "{{ ansible_distribution | replace(' ', '_') | lower }}.yml"
+        # eg. "suse"
+        - "{{ ansible_os_family | lower }}.yml"
+  loop: "{{ query('first_found', params, errors='ignore') }}"
