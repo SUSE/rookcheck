@@ -18,8 +18,6 @@
   vars:
     pkg:
       - ca-certificates-suse
-      # kernel-default-base is not enough (skuba needs vxlan which is not in the base kernel currently (see bsc#1171903)
-      - kernel-default
   zypper:
       name: '{{ pkg }}'
       state: present

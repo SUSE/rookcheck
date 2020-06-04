@@ -32,3 +32,19 @@
   vars:
     sle_major: "{{ ansible_distribution_version.split('.')[0] }}"
     sle_minor: "{{ ansible_distribution_version.split('.')[1] }}"
+
+# kernel-default-base is not enough (eg. skuba needs vxlan which is not in the base kernel currently (see bsc#1171903)
+- name: update kernel
+  zypper:
+    name: kernel-default
+    state: latest
+    force: yes
+    extra_args: "--force-resolution"
+
+- name: drop firewalld
+  zypper:
+    name: firewalld
+    state: absent
+
+- name: reboot nodes
+  reboot:
