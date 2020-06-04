@@ -24,37 +24,8 @@
 
 from abc import ABC, abstractmethod
 
-from tests import config
-
 
 class Distro(ABC):
-    def wait_for_connection_play(self):
-        # In order to be able to use mitogen we need to install python on the
-        # nodes
-        tasks = []
-
-        tasks.append(
-            dict(
-                name="Wait for connection to hosts",
-                action=dict(
-                    module='wait_for_connection',
-                    args=dict(
-                        timeout=300
-                    )
-                )
-            )
-        )
-
-        play_source = dict(
-            name="Wait for nodes",
-            hosts="all",
-            tasks=tasks,
-            gather_facts="no",
-            strategy="free" if config._USE_FREE_STRATEGY else "linear",
-        )
-
-        return play_source
-
     @abstractmethod
     def bootstrap_play(self):
         pass

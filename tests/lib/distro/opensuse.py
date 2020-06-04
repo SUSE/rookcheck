@@ -104,33 +104,6 @@ class openSUSE_k8s(base.Distro):
             )
         )
 
-        # TODO(jhesketh): These commands are lifted from dev-rook-ceph. However
-        # it appears that the sysctl settings are reset after reboot so they
-        # may not be useful here.
-        tasks.append(
-            dict(
-                name="Raising max open files",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="sysctl -w fs.file-max=1200000",
-                    )
-                )
-            )
-        )
-
-        tasks.append(
-            dict(
-                name="Minimize swappiness",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd="sysctl -w vm.swappiness=0",
-                    )
-                )
-            )
-        )
-
         # TODO(jhesketh): Figure out if this is appropriate for all OpenStack
         #                 clouds.
         data = "\nIPADDR_0={{ ansible_host }}/32"

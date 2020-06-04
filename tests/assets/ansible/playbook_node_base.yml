@@ -1,0 +1,6 @@
+---
+- hosts: all
+  tasks:
+    - name: common tasks for all nodes
+      import_role:
+        name: node-base

@@ -115,7 +115,8 @@ class HardwareBase(ABC):
         logger.info("prepare nodes")
         d = get_distro()()
 
-        self.execute_ansible_play(d.wait_for_connection_play())
+        self.execute_ansible_play_raw("playbook_node_base.yml")
+        # TODO(toabctl): Drop the following ansible calls
         self.execute_ansible_play(d.bootstrap_play())
 
     def execute_ansible_play_raw(self, playbook):
