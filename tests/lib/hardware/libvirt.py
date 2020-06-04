@@ -145,15 +145,8 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
-    def _data_disk_count(self):
-        count = len(minidom.parseString(self._dom.XMLDesc()).
-                    getElementsByTagName('devices')[0].
-                    getElementsByTagName('disk'))
-        # We have two device by default - OS and Cloudinit seed
-        return count - 2
-
     def add_data_disk(self, capacity='10G'):
-        _id = self._data_disk_count()
+        _id = len(self._disks) + 2  # one for root disk, one for cloud-init
         volume_name = f'data-{_id}'
         block_device = f'vd{string.ascii_lowercase[_id + 1]}'
         disk_path = os.path.join(self._workspace.working_dir,
