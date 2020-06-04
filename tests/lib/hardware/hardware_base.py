@@ -121,13 +121,21 @@ class HardwareBase(ABC):
         logger.info("prepare nodes")
         self.ansible_run_playbook("playbook_node_base.yml")
 
-    def ansible_run_playbook(self, playbook):
+    def ansible_run_playbook(self, playbook: str,
+                             limit_to_nodes: List[NodeBase] = []):
         path = os.path.abspath(os.path.join(
             os.path.dirname(__file__), '../../assets/ansible', playbook
         ))
-        logger.info(f'Running playbook {path}')
+
+        if limit_to_nodes:
+            limit = "--limit " + ":".join([n.name for n in limit_to_nodes])
+        else:
+            limit = ""
+
+        logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
-            f"ansible-playbook -i {self._ansible_inventory_dir} {path}")
+            f"ansible-playbook -i {self._ansible_inventory_dir} "
+            f"{limit} {path}")
 
     def _ansible_create_inventory(self):
         """
