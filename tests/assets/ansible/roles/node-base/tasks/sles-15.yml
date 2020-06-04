@@ -1,0 +1,34 @@
+---
+# FIXME(toabctl): Allow usage of SCC and official channels for repos
+- name: add basic sle15 repositories
+  block:
+    - name: add basic repositories
+      zypper_repository:
+        name: "{{ repo.name }}"
+        repo: "{{ repo.url }}"
+        state: present
+        auto_import_keys: yes
+        overwrite_multiple: yes
+        runrefresh: yes
+      loop:
+        - name: "basesystem_pool"
+          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Basesystem/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
+        - name: "basesystem_updates"
+          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Basesystem/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
+        - name: "containers_pool"
+          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Containers/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
+        - name: "containers_updates"
+          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Containers/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
+        - name: "serverapps_pool"
+          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Server-Applications/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
+        - name: "serverapps_updates"
+          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Server-Applications/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
+        - name: "sle_server_pool"
+          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Product-SLES/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
+        - name: "sle_server_updates"
+          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Product-SLES/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
+      loop_control:
+        loop_var: repo
+  vars:
+    sle_major: "{{ ansible_distribution_version.split('.')[0] }}"
+    sle_minor: "{{ ansible_distribution_version.split('.')[1] }}"
