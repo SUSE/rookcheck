@@ -15,7 +15,6 @@
 import contextlib
 import logging
 import os
-from pprint import pformat
 import shutil
 import stat
 import subprocess
@@ -147,30 +146,6 @@ class Workspace():
                                  nodes: Dict[str, NodeBase]):
         ansible_runner = AnsibleRunner(self, nodes)
         return ansible_runner.run_play_raw(playbook)
-
-    def _execute_ansible_play(self, play_source: Dict,
-                              nodes: Dict[str, NodeBase]):
-        ansible_runner = AnsibleRunner(self, nodes)
-        return ansible_runner.run_play(play_source)
-
-    def execute_ansible_play(self, play_source: Dict,
-                             nodes: Dict[str, NodeBase]):
-        r = self._execute_ansible_play(play_source, nodes)
-        failure = False
-        if r.host_unreachable:
-            logger.error("One or more hosts were unreachable")
-            logger.error(pformat(r.host_unreachable))
-            failure = True
-        if r.host_failed:
-            logger.error("One or more hosts failed")
-            logger.error(pformat(r.host_failed))
-            failure = True
-        if failure:
-            logger.debug("The successful hosts returned:")
-            logger.debug(pformat(r.host_ok))
-            raise Exception(
-                f"Failure running ansible playbook {play_source['name']}")
-        return r
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         """

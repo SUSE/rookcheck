@@ -18,7 +18,6 @@ import re
 import time
 import wget
 
-from tests import config
 from tests.lib.common import execute
 from tests.lib import common
 from tests.lib.rook.base import RookBase
@@ -92,10 +91,7 @@ class RookCluster(RookBase):
         self._rook_built = True
 
     def upload_rook_image(self):
-        d = UploadRook()
-
-        self.kubernetes.hardware.execute_ansible_play(
-            d.upload_image_play(self.builddir))
+        self.kubernetes.hardware.execute_ansible_play_raw("playbook_rook.yaml")
 
     def install_rook(self):
         if not self._rook_built:
@@ -162,46 +158,3 @@ class RookCluster(RookBase):
 
         return self.kubernetes.execute_in_pod(
             command, self.toolbox_pod, log_stdout=False)
-
-
-class UploadRook():
-    def upload_image_play(self, buildpath):
-        tasks = []
-
-        tasks.append(
-            dict(
-                name="Copy Rook Ceph image to cluster nodes",
-                action=dict(
-                    module='copy',
-                    args=dict(
-                        src=os.path.join(buildpath, "rook-ceph.tar.gz"),
-                        dest="/root/.images/"
-                    )
-                )
-            )
-        )
-
-        # TODO(jhesketh): build arch may differ
-        tasks.append(
-            dict(
-                name="Load rook ceph image",
-                action=dict(
-                    module='shell',
-                    args=dict(
-                        cmd='docker load '
-                            '--input /root/.images/rook-ceph.tar.gz'
-                    )
-                )
-            )
-        )
-
-        play_source = dict(
-            name="Upload rook image",
-            hosts="all",
-            tasks=tasks,
-            gather_facts="no",
-            # Temporary workaround for mitogen failing to copy files or
-            # templates.
-            strategy="free" if config._USE_FREE_STRATEGY else "linear",
-        )
-        return play_source
