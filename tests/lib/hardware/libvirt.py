@@ -65,7 +65,7 @@ class Node(NodeBase):
             workspace.working_dir, f"{self.name}-snapshot.qcow2")
         self._cloud_init_seed_path = os.path.join(
             workspace.working_dir, f"{self.name}-cloud-init-seed.img")
-        self.disks = []
+        self._disks = []
 
     def boot(self):
         self._backing_file_create()
@@ -88,7 +88,7 @@ class Node(NodeBase):
             os.remove(self._cloud_init_seed_path)
         if os.path.exists(self._snap_img_path):
             os.remove(self._snap_img_path)
-        for disk in self.disks:
+        for disk in self._disks:
             os.remove(disk)
 
     def get_ssh_ip(self):
@@ -145,15 +145,8 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
-    def _data_disk_count(self):
-        count = len(minidom.parseString(self._dom.XMLDesc()).
-                    getElementsByTagName('devices')[0].
-                    getElementsByTagName('disk'))
-        # We have two device by default - OS and Cloudinit seed
-        return count - 2
-
     def add_data_disk(self, capacity='10G'):
-        _id = self._data_disk_count()
+        _id = len(self._disks) + 2  # one for root disk, one for cloud-init
         volume_name = f'data-{_id}'
         block_device = f'vd{string.ascii_lowercase[_id + 1]}'
         disk_path = os.path.join(self._workspace.working_dir,
@@ -168,7 +161,7 @@ class Node(NodeBase):
             </disk>
         """ % {"disk_path": disk_path, "block_device": block_device})
         self._dom.attachDevice(disk)
-        self.disks.append(disk_path)
+        self._disks.append(disk_path)
 
     def _cloud_init_seed_create(self):
         user_data = textwrap.dedent("""
