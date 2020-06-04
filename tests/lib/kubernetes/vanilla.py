@@ -37,8 +37,7 @@ class Vanilla(KubernetesBase):
         super().__init__(workspace, hardware)
 
     def bootstrap(self):
-        self.hardware.execute_ansible_play_raw(
-            'playbook_kubernetes_vanilla.yaml')
+        self.hardware.ansible_run_playbook('playbook_kubernetes_vanilla.yaml')
 
     def join(self, node):
         super().join(node)

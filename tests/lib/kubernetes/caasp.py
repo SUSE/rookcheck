@@ -44,7 +44,7 @@ class CaaSP(KubernetesBase):
 
     def bootstrap(self):
         super().bootstrap()
-        self.hardware.execute_ansible_play_raw('playbook_caasp.yaml')
+        self.hardware.ansible_run_playbook('playbook_caasp.yaml')
         self.workspace.execute("skuba cluster init --control-plane "
                                f"{self.hardware.masters[0].get_ssh_ip()} "
                                f"{self._clusterpath}", capture=True,

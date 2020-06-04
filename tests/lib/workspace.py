@@ -25,8 +25,6 @@ import paramiko.rsakey
 
 from tests import config
 from tests.lib.common import execute
-from tests.lib.ansible_helper import AnsibleRunner
-from tests.lib.hardware.node_base import NodeBase
 
 
 logger = logging.getLogger(__name__)
@@ -141,11 +139,6 @@ class Workspace():
             return execute(command, capture=capture, check=check,
                            log_stdout=log_stdout, log_stderr=log_stderr,
                            env=env)
-
-    def execute_ansible_play_raw(self, playbook: str,
-                                 nodes: Dict[str, NodeBase]):
-        ansible_runner = AnsibleRunner(self, nodes)
-        return ansible_runner.run_play_raw(playbook)
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         """
