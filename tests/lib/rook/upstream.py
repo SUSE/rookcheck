@@ -91,7 +91,7 @@ class RookCluster(RookBase):
         self._rook_built = True
 
     def upload_rook_image(self):
-        self.kubernetes.hardware.execute_ansible_play_raw("playbook_rook.yaml")
+        self.kubernetes.hardware.ansible_run_playbook("playbook_rook.yaml")
 
     def install_rook(self):
         if not self._rook_built:
