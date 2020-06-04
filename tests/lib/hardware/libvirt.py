@@ -38,6 +38,7 @@ import paramiko
 import socket
 from typing import List
 from xml.dom import minidom
+import string
 
 from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
@@ -57,12 +58,14 @@ class Node(NodeBase):
         self._network = network
         self._disk_number = disk_number,
         self._memory = memory * 1024 * 1024
+        self._workspace = workspace
         self._ssh_public_key = workspace.public_key
         self._ssh_private_key = workspace.private_key
         self._snap_img_path = os.path.join(
             workspace.working_dir, f"{self.name}-snapshot.qcow2")
         self._cloud_init_seed_path = os.path.join(
             workspace.working_dir, f"{self.name}-cloud-init-seed.img")
+        self.disks = []
 
     def boot(self):
         self._backing_file_create()
@@ -85,6 +88,8 @@ class Node(NodeBase):
             os.remove(self._cloud_init_seed_path)
         if os.path.exists(self._snap_img_path):
             os.remove(self._snap_img_path)
+        for disk in self.disks:
+            os.remove(disk)
 
     def get_ssh_ip(self):
         return self._ips[0]
@@ -140,6 +145,31 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
+    def _data_disk_count(self):
+        count = len(minidom.parseString(self._dom.XMLDesc()).
+                    getElementsByTagName('devices')[0].
+                    getElementsByTagName('disk'))
+        # We have two device by default - OS and Cloudinit seed
+        return count - 2
+
+    def add_data_disk(self, capacity='10G'):
+        _id = self._data_disk_count()
+        volume_name = f'data-{_id}'
+        block_device = f'vd{string.ascii_lowercase[_id + 1]}'
+        disk_path = os.path.join(self._workspace.working_dir,
+                                 f"{self.name}-{volume_name}.qcow2")
+        execute(f"qemu-img create -f qcow2 {disk_path} {capacity}")
+        logger.info(f'Created volume "{volume_name}" / size={capacity}')
+        disk = textwrap.dedent("""
+            <disk type='file' device='disk'>
+                <driver name='qemu' type='qcow2' cache='none'/>
+                <source file='%(disk_path)s'/>
+                <target dev='%(block_device)s' bus='virtio'/>
+            </disk>
+        """ % {"disk_path": disk_path, "block_device": block_device})
+        self._dom.attachDevice(disk)
+        self.disks.append(disk_path)
+
     def _cloud_init_seed_create(self):
         user_data = textwrap.dedent("""
             #cloud-config
@@ -188,6 +218,9 @@ class Node(NodeBase):
                     <type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
                     <boot dev='hd'/>
                 </os>
+                <features>
+                    <acpi/>
+                </features>
                 <on_poweroff>destroy</on_poweroff>
                 <on_reboot>restart</on_reboot>
                 <on_crash>restart</on_crash>

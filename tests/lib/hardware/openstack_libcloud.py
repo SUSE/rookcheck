@@ -201,6 +201,15 @@ association if any is free...")
         # NOTE(jhesketh): For now, just use the last floating IP
         return self._floating_ips[-1].ip_address
 
+    def add_data_disk(self, capacity):
+        # TODO: We need to add three methods actually
+        # disk_create
+        # disk_attach
+        # disk_detach
+        # _create_and_attach_volume() above is already doign part of it
+        logger.warn('add_data_disk() not implemented for'
+                    'openstack backend yet')
+
 
 class Hardware(HardwareBase):
     def __init__(self, workspace: Workspace):
