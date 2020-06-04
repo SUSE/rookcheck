@@ -65,7 +65,7 @@ class Node(NodeBase):
             workspace.working_dir, f"{self.name}-snapshot.qcow2")
         self._cloud_init_seed_path = os.path.join(
             workspace.working_dir, f"{self.name}-cloud-init-seed.img")
-        self.disks = []
+        self._disks = []
 
     def boot(self):
         self._backing_file_create()
@@ -88,7 +88,7 @@ class Node(NodeBase):
             os.remove(self._cloud_init_seed_path)
         if os.path.exists(self._snap_img_path):
             os.remove(self._snap_img_path)
-        for disk in self.disks:
+        for disk in self._disks:
             os.remove(disk)
 
     def get_ssh_ip(self):
@@ -168,7 +168,7 @@ class Node(NodeBase):
             </disk>
         """ % {"disk_path": disk_path, "block_device": block_device})
         self._dom.attachDevice(disk)
-        self.disks.append(disk_path)
+        self._disks.append(disk_path)
 
     def _cloud_init_seed_create(self):
         user_data = textwrap.dedent("""
