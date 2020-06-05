@@ -36,6 +36,9 @@ WORKSPACE_DIR = os.getenv('WORKSPACE_DIR', '/tmp/rookcheck')
 CLUSTER_PREFIX = os.getenv('CLUSTER_PREFIX', 'rookcheck-%s-%s-' % (
     getpass.getuser(), datetime.datetime.today().strftime('%Y%m%d')))
 
+ROOKCHECK_MASTERS = int(os.getenv('ROOKCHECK_MASTERS', 1))
+ROOKCHECK_WORKERS = int(os.getenv('ROOKCHECK_WORKERS', 3))
+
 # The node image by either ID or NAME
 NODE_IMAGE = os.getenv('NODE_IMAGE', "openSUSE-Leap-15.1-OpenStack-201905")
 

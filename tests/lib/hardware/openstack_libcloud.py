@@ -344,7 +344,7 @@ class Hardware(HardwareBase):
         node.boot()
         self.node_add(node)
 
-    def boot_nodes(self, masters=1, workers=2, offset=0):
+    def boot_nodes(self, masters: int, workers: int, offset: int = 0):
         """
         Boot n nodes
         Start them at a number offset

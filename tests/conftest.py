@@ -60,7 +60,9 @@ def hardware(workspace):
     # NOTE(jhesketh): The Hardware() object is expected to take care of any
     # cloud provider abstraction. It primarily does this via libcloud.
     with Hardware(workspace) as hardware:
-        hardware.boot_nodes()
+        hardware.boot_nodes(
+            masters=config.ROOKCHECK_MASTERS,
+            workers=config.ROOKCHECK_WORKERS)
         hardware.prepare_nodes()
         yield hardware
 
