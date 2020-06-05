@@ -81,7 +81,7 @@ class Node(NodeBase):
             image=self._image,
             **kwargs
         )
-        logging.debug(f"node {self.name} booted")
+        logging.info(f"node {self.name} booted")
 
         self._get_floating_ip()
         # Wait for node to be ready
@@ -111,7 +111,7 @@ association if any is free...")
         self._wait_until_state()
         self.conn.ex_attach_floating_ip_to_node(
             self._libcloud_node, floating_ip)
-        logger.debug(f"node {self.name} floating ip {floating_ip} attached")
+        logger.info(f"node {self.name}: floating ip {floating_ip} attached")
 
     def _create_and_attach_volume(self, size=10):
         vol_name = "%s-vol-%d" % (self.name, len(self._volumes))
