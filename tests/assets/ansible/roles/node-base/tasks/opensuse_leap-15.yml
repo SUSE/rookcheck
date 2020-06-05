@@ -37,7 +37,7 @@
 - name: update kernel
   zypper:
     name: kernel-default
-    state: latest
+    state: latest  # noqa 403
     force: yes
     extra_args: "--force-resolution"
 

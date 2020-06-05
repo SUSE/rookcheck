@@ -24,9 +24,9 @@
     params:
       files:
         # eg. "opensuse_leap-15.1" or "sles-15.1"
-        - "{{ ansible_distribution | replace(' ', '_') | lower }}-{{ ansible_distribution_version}}.yml"
+        - "{{ ansible_distribution | replace(' ', '_') | lower }}-{{ ansible_distribution_version }}.yml"
         # eg. "opensuse_leap-15" or "sles-15"
-        - "{{ ansible_distribution | replace(' ', '_') |lower }}-{{ ansible_distribution_major_version}}.yml"
+        - "{{ ansible_distribution | replace(' ', '_') |lower }}-{{ ansible_distribution_major_version }}.yml"
         # eg. "opensuse_leap" or "sles"
         - "{{ ansible_distribution | replace(' ', '_') | lower }}.yml"
         # eg. "suse"

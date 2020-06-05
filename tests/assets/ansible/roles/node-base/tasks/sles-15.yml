@@ -36,7 +36,7 @@
 # kernel-default-base is not enough (eg. skuba needs vxlan which is not in the base kernel currently (see bsc#1171903)
 - name: update kernel
   zypper:
-    name: kernel-default
+    name: kernel-default  # noqa 403
     state: latest
     force: yes
     extra_args: "--force-resolution"

@@ -4,9 +4,10 @@
   tasks:
     - name: copy rook ceph image to cluster nodes
       copy:
-        src: "{{ rookcheck_workspace_dir}}/rook_build/rook-ceph.tar.gz"
+        src: "{{ rookcheck_workspace_dir }}/rook_build/rook-ceph.tar.gz"
         dest: "/root/.images/"
 
     - name: load rook ceph image into docker
-      shell: |
-        docker load --input /root/.images/rook-ceph.tar.gz
+      docker_image:
+        load_path: /root/.images/rook-ceph.tar.gz
+        source: load
