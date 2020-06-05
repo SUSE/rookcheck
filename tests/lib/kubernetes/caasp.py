@@ -20,6 +20,8 @@
 
 import logging
 import os
+from typing import List
+import threading
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
@@ -58,8 +60,7 @@ class CaaSP(KubernetesBase):
             check=True, chdir=self._clusterpath
         )
 
-    def join(self, node: NodeBase):
-        super().join(node)
+    def _skuba_join(self, node: NodeBase):
         if node.role == NodeRole.WORKER:
             role = 'worker'
         else:
@@ -71,7 +72,21 @@ class CaaSP(KubernetesBase):
             capture=True, check=True, chdir=self._clusterpath
         )
 
+    def join(self, nodes: List[NodeBase]):
+        super().join(nodes)
+
+        self.hardware.ansible_run_playbook('playbook_caasp.yaml', nodes)
+
+        # join nodes in parallel
+        threads = []
+        for node in nodes:
+            t = threading.Thread(target=self._skuba_join, args=(node,))
+            threads.append(t)
+            t.start()
+        # wait for all threads to finish
+        for t in threads:
+            t.join()
+
     def install_kubernetes(self):
         super().install_kubernetes()
-        for worker in self.hardware.workers:
-            self.join(worker)
+        self.join(self.hardware.workers)

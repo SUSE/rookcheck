@@ -14,7 +14,7 @@
 
 import logging
 
-from tests.lib.hardware.node_base import NodeRole
+from tests.lib.hardware.node_base import NodeRole, NodeBase
 
 
 logger = logging.getLogger(__name__)
@@ -32,19 +32,41 @@ def test_workspace_instance_scope_part2(workspace):
     assert workspace is workspace_instance[0]
 
 
+def _hardware_add_node(h, name, role) -> NodeBase:
+    """
+    helper method to create a new hardware node
+    """
+    nodes_length = len(h.nodes.keys())
+    # create a new node
+    new_node = h.node_create(name, role, [])
+    # add the node to the hardware
+    h.node_add(new_node)
+    h.prepare_nodes(limit_to_nodes=[new_node])
+    # we should have one more node now
+    assert len(h.nodes.keys()) == nodes_length+1
+    return new_node
+
+
 def test_hardware_node_add_remove(hardware):
     """
     test the hardware fixture. Especially the handing of nodes
     """
     nodes_length = len(hardware.nodes.keys())
-    # create a new node
-    new_node = hardware.node_create('test1', NodeRole.WORKER, [])
-    # add the node to the hardware
-    hardware.node_add(new_node)
-    hardware.prepare_nodes(limit_to_nodes=[new_node])
-    # we should have one more node now
-    assert len(hardware.nodes.keys()) == nodes_length+1
+    new_node = _hardware_add_node(hardware, 'test1', NodeRole.WORKER)
     # drop the node again
     hardware.node_remove(new_node)
     # we should have the old amount of nodes now
     assert len(hardware.nodes.keys()) == nodes_length
+
+
+def test_kubernetes_node_join(kubernetes):
+    # current number of nodes in the k8s cluster
+    kubernetes_nodes_length = len(kubernetes.v1.list_node().items)
+    # create a new node
+    new_node = _hardware_add_node(kubernetes.hardware, 'test1',
+                                  NodeRole.WORKER)
+    # add the node to the kubernetes cluster
+    kubernetes.join([new_node])
+    assert (len(kubernetes.v1.list_node().items) ==
+            kubernetes_nodes_length + 1)
+    # TODO(toabctl): This test does not cleanup the added k8s node yet
