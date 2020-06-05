@@ -21,6 +21,7 @@
 import logging
 import os
 from typing import List
+import threading
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
@@ -59,23 +60,32 @@ class CaaSP(KubernetesBase):
             check=True, chdir=self._clusterpath
         )
 
+    def _skuba_join(self, node: NodeBase):
+        if node.role == NodeRole.WORKER:
+            role = 'worker'
+        else:
+            role = 'master'
+
+        self.workspace.execute(
+            f"skuba node join --role {role} --user sles --sudo "
+            f"--target {node.get_ssh_ip()} {node.dnsname}",
+            capture=True, check=True, chdir=self._clusterpath
+        )
+
     def join(self, nodes: List[NodeBase]):
         super().join(nodes)
 
         self.hardware.ansible_run_playbook('playbook_caasp.yaml', nodes)
 
-        # TODO (toabctl): use threads to speed things up
+        # join nodes in parallel
+        threads = []
         for node in nodes:
-            if node.role == NodeRole.WORKER:
-                role = 'worker'
-            else:
-                role = 'master'
-
-            self.workspace.execute(
-                f"skuba node join --role {role} --user sles --sudo "
-                f"--target {node.get_ssh_ip()} {node.dnsname}",
-                capture=True, check=True, chdir=self._clusterpath
-            )
+            t = threading.Thread(target=self._skuba_join, args=(node,))
+            threads.append(t)
+            t.start()
+        # wait for all threads to finish
+        for t in threads:
+            t.join()
 
     def install_kubernetes(self):
         super().install_kubernetes()
