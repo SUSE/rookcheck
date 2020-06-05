@@ -60,6 +60,9 @@ class CaaSP(KubernetesBase):
 
     def join(self, node: NodeBase):
         super().join(node)
+
+        self.hardware.ansible_run_playbook('playbook_caasp.yaml', [node])
+
         if node.role == NodeRole.WORKER:
             role = 'worker'
         else:
