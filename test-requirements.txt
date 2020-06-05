@@ -1,4 +1,5 @@
 ansible
+ansible-lint
 apache-libcloud>=2.7.0
 flake8
 kubernetes

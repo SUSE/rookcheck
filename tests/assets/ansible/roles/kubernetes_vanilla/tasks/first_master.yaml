@@ -14,7 +14,7 @@
     src: kubeadm-init-config.yaml.j2
     dest: /root/.setup-kube/kubeadm-init-config.yaml
 
-- name: run kubeadm init
+- name: run kubeadm init  # noqa 301 306
   shell: |
     # for idempotency, do not run init if docker is already
     # running kube resources
@@ -22,34 +22,34 @@
         kubeadm init --config=/root/.setup-kube/kubeadm-init-config.yaml
     fi
 
-- name: set up root user as kubernetes admin
+- name: set up root user as kubernetes admin  # noqa 301 302
   shell: |
     mkdir -p /root/.kube
     ln -f -s /etc/kubernetes/admin.conf /root/.kube/config
     kubectl completion bash > ~/.kube/kubectl-completion.sh
     chmod +x ~/.kube/kubectl-completion.sh
 
-- name: wait until kubernetes is ready
+- name: wait until kubernetes is ready  # noqa 301
   command: kubectl get nodes
   retries: 20
   delay: 5
   register: cmd_result
   until: cmd_result.rc == 0
 
-- name: set up default clutser pod security policies (PSPs)
+- name: set up default clutser pod security policies (PSPs)  # noqa 301
   shell: |
     kubectl apply -f /root/.setup-kube/cluster-psp.yaml
 
-- name: get kubernetes join command
+- name: get kubernetes join command  # noqa 301 306
   shell: |
     kubeadm token create --print-join-command | grep 'kubeadm join'
   register: join_command
 
 - name: copy kubernetes join command to local file
-  local_action:
-    module: copy
+  copy:
     content: "{{ join_command.stdout_lines[0] }}"
     dest: "{{ rookcheck_workspace_dir }}/k8s-join-command"
+  delegate_to: localhost
 
 - name: download kubeconfig
   fetch:

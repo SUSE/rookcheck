@@ -4,5 +4,5 @@
     dest: /tmp/k8s-join-command.sh
     mode: 0777
 
-- name: join kubernetes cluster
+- name: join kubernetes cluster  # noqa 301 305
   shell: /tmp/k8s-join-command.sh

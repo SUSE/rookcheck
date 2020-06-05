@@ -9,12 +9,12 @@
     mode: 0755
   register: kubelet_service_file
 
-- name: systemd daemon reload
+- name: systemd daemon reload  # noqa 503
   systemd:
     daemon-reload: yes
   when: kubelet_service_file.changed
 
-- name: Start required IPVS kernel modules
+- name: Start required IPVS kernel modules  # noqa 301
   shell: |
     modprobe ip_vs
     modprobe ip_vs_rr
