@@ -1,9 +1,5 @@
 ---
 # common for all nodes
-- name: wait for nodes
-  wait_for_connection:
-    timeout: 300
-
 - name: raise max open files
   sysctl:
     name: fs.file-max

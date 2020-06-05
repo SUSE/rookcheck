@@ -1,5 +1,12 @@
 ---
 - hosts: all
+  gather_facts: no
+  tasks:
+    - name: wait for nodes
+      wait_for_connection:
+        timeout: 300
+
+- hosts: all
   tasks:
     - name: common tasks for all nodes
       import_role:
