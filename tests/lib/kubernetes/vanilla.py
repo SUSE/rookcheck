@@ -44,7 +44,7 @@ class Vanilla(KubernetesBase):
         # FIXME(toabctl): Implement this
 
     def install_kubernetes(self):
-        self._configure_kubernetes_client()
+        super().install_kubernetes()
         self._download_kubectl()
         self.untaint_master()
         self._setup_flannel()

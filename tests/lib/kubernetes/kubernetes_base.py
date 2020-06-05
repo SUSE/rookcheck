@@ -61,7 +61,7 @@ class KubernetesBase(ABC):
 
     @abstractmethod
     def install_kubernetes(self):
-        pass
+        self._configure_kubernetes_client()
 
     @property
     def workspace(self):
