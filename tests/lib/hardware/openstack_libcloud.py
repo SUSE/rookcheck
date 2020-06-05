@@ -337,11 +337,11 @@ class Hardware(HardwareBase):
                     self._get_image(config.NODE_IMAGE),
                     additional_networks, [self._ex_security_group],
                     self.workspace.sshkey_name)
+        node.boot()
         return node
 
     def _create_node(self, node_name, role, tags=[]):
         node = self.node_create(node_name, role, tags)
-        node.boot()
         self.node_add(node)
 
     def boot_nodes(self, masters=1, workers=2, offset=0):
