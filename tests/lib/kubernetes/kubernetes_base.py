@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 import os
 import kubernetes
 import logging
+from typing import List
 
 from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
@@ -55,8 +56,8 @@ class KubernetesBase(ABC):
         logging.info("bootstrapping the kubernetes cluster")
 
     @abstractmethod
-    def join(self, node: NodeBase):
-        logging.info(f"{node.name} joining kubernetes cluster")
+    def join(self, nodes: List[NodeBase]):
+        logging.info(f"{len(nodes)} node(s) joining kubernetes cluster")
 
     @abstractmethod
     def install_kubernetes(self):
