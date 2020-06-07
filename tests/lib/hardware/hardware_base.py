@@ -114,7 +114,7 @@ class HardwareBase(ABC):
         node.destroy()
 
     @abstractmethod
-    def boot_nodes(self, masters: int = 1, workers: int = 2, offset: int = 0):
+    def boot_nodes(self, masters: int, workers: int, offset: int = 0):
         logger.info("boot nodes")
 
     def prepare_nodes(self, limit_to_nodes: List[NodeBase] = []):
