@@ -107,7 +107,8 @@ def rook_cluster(workspace):
                     build_thread.start()
 
                 # build rook thread
-                hardware.boot_nodes()
+                hardware.boot_nodes(masters=settings.NUMBER_MASTERS,
+                                    workers=settings.NUMBER_WORKERS)
                 hardware.prepare_nodes()
                 kubernetes.bootstrap()
                 kubernetes.install_kubernetes()
