@@ -27,6 +27,7 @@ import threading
 import time
 from typing import Dict, List
 
+from dynaconf import settings
 import libcloud.security
 from libcloud.compute.base import NodeImage
 from libcloud.compute.drivers.openstack import (
@@ -39,10 +40,9 @@ from urllib.parse import urlparse
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
-from tests import config
 
 logger = logging.getLogger(__name__)
-libcloud.security.VERIFY_SSL_CERT = config.VERIFY_SSL_CERT
+libcloud.security.VERIFY_SSL_CERT = settings.as_bool('OS_VERIFY_SSL_CERT')
 
 
 class Node(NodeBase):
@@ -92,7 +92,7 @@ class Node(NodeBase):
     def _get_floating_ip(self):
         try:
             floating_ip = self.conn.ex_create_floating_ip(
-                config.OS_EXTERNAL_NETWORK)
+                settings.OS_EXTERNAL_NETWORK)
             logger.info(f"Created floating IP: {floating_ip}")
             self._floating_ips.append(floating_ip)
             self._floating_ips_created.append(floating_ip)
@@ -234,19 +234,20 @@ class Hardware(HardwareBase):
 
         # Strip any path from OS_AUTH_URL to be compatable with libcloud's
         # auth_verion.
-        auth_url_parts = urlparse(config.OS_AUTH_URL)
+        auth_url_parts = urlparse(settings.OS_AUTH_URL)
         auth_url = \
             "%s://%s" % (auth_url_parts.scheme, auth_url_parts.netloc)
         connection = OpenStackDriver(
-            config.OS_USERNAME,
-            config.OS_PASSWORD,
+            settings.OS_USERNAME,
+            settings.OS_PASSWORD,
             ex_force_auth_url=auth_url,
-            ex_force_auth_version=config.OS_AUTH_VERSION,
-            ex_domain_name=config.OS_USER_DOMAIN_NAME,
-            ex_tenant_name=config.OS_PROJECT_NAME,
-            ex_tenant_domain_id=config.OS_PROJECT_DOMAIN_ID,
-            ex_force_service_region=config.OS_REGION_NAME,
-            secure=config.VERIFY_SSL_CERT,
+            ex_force_auth_version=settings.OS_AUTH_VERSION,
+            ex_domain_name=settings.OS_USER_DOMAIN_NAME,
+            ex_tenant_name=settings.OS_PROJECT_NAME,
+            ex_tenant_domain_id=settings.OS_PROJECT_DOMAIN_ID,
+            ex_force_service_region=(
+                settings.OS_REGION_NAME if settings.OS_REGION_NAME else None),
+            secure=settings.as_bool('OS_VERIFY_SSL_CERT'),
         )
         return connection
 
@@ -327,14 +328,14 @@ class Hardware(HardwareBase):
         super().node_create(name, role, tags)
         # are there any additional networks for the node wanted?
         additional_networks = []
-        if config.OS_INTERNAL_NETWORK:
+        if settings.OS_INTERNAL_NETWORK:
             additional_networks.append(
-                self._get_ex_network_by_name(config.OS_INTERNAL_NETWORK)
+                self._get_ex_network_by_name(settings.OS_INTERNAL_NETWORK)
             )
 
         node = Node(name, role, tags, self.conn,
-                    self._get_size_by_name(config.NODE_SIZE),
-                    self._get_image(config.NODE_IMAGE),
+                    self._get_size_by_name(settings.OS_NODE_SIZE),
+                    self._get_image(settings.OS_NODE_IMAGE),
                     additional_networks, [self._ex_security_group],
                     self.workspace.sshkey_name)
         node.boot()

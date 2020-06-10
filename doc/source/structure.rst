@@ -47,9 +47,6 @@ regardless of what hardware or other resource a developer is using.
 .. autoclass:: tests.lib.hardware.node_base.NodeBase
    :members:
 
-.. autoclass:: tests.lib.distro.base.Distro
-   :members:
-
 TODO: Finish documenting the available base classes
 
 pytest

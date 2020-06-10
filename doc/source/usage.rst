@@ -2,11 +2,7 @@ Usage
 =====
 
 Make sure to have followed the :ref:`configuration` steps first, and to source
-or ensure the correct environment variables are set:
-
-.. code-block:: bash
-
-    source my.env
+or ensure the correct environment variables are set.
 
 .. _running_tests:
 

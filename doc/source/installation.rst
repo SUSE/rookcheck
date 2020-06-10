@@ -9,7 +9,7 @@ Install requirements:
 .. code-block:: bash
 
     sudo zypper in python-pip
-    sudo pip install tox
+    sudo pip install -U tox
     sudo zypper in $(tox -qq -e bindep -- -b)
     sudo systemctl start docker
     sudo usermod -aG docker $USER
@@ -21,14 +21,15 @@ Requirements are tracked with
 `bindep <https://docs.openstack.org/infra/bindep/readme.html>`_ and
 `pip <https://pip.pypa.io/en/stable/reference/pip_install>`_'s requiements.txt.
 
-First we need python-tox to be able to manage our virtual environments. This is
-best installed from pip, but can be installed from your system packages as
-well.
+First we need python-tox to be able to manage our virtual environments. Version
+3.15.2 or greater is recommended as it fixes an issue with cleaning up
+resources when being manually terminated. This is best installed from pip, but
+could alternatively be installed from your system packages.
 
 .. code-block:: bash
 
     sudo zypper in python-pip
-    sudo pip install tox
+    sudo pip install -U tox
 
 Next we run bindep from inside a tox environment to get the list of missing
 system packages. By specifying the HARDWARE_PROVIDER and DISTRO we are going
@@ -37,9 +38,11 @@ to use we can ensure the requirements for our infrastructure are met (see
 
 .. code-block:: bash
 
-    HARDWARE_PROVIDER=libvirt
-    DISTRO=SLES_CaaSP
-    tox -e bindep ${HARDWARE_PROVIDER} ${DISTRO}
+    ROOKCHECK_HARDWARE_PROVIDER=libvirt
+    ROOKCHECK_DISTRO=openSUSE_k8s
+    # Alternatively, source these from .env if you have already set up your
+    # configuration.
+    tox -e bindep ${ROOKCHECK_HARDWARE_PROVIDER} ${ROOKCHECK_DISTRO}
 
 Then we can take the list and install them.
 
@@ -71,4 +74,3 @@ Verify that you can run docker::
     docker run hello-world
 
 If that fails then see your systems instructions for setting up docker.
-

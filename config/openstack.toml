@@ -1,0 +1,31 @@
+[default]
+
+# The node image by either ID or NAME
+os_node_image = "openSUSE-Leap-15.1-OpenStack-201905"
+
+# The node size or flavour name as known by the provider
+os_node_size = "m1.medium"
+
+# libcloud settings:
+os_auth_version = "@jinja {{env['OS_AUTH_VERSION'] or '3.x_password'}}"
+os_verify_ssl_cert = true
+
+# The following settings can be sourced from your openrc v3
+# NOTE(jhesketh): libcloud doesn't load clouds.yaml, so env vars must be set.
+
+os_auth_url = "@jinja {{env['OS_AUTH_URL']}}"
+
+# NOTE(jhesketh): OS_PROJECT_ID is not supported
+
+os_project_name = "@jinja {{env['OS_PROJECT_NAME'] or 'default'}}"
+os_user_domain_name = "@jinja {{env['OS_USER_DOMAIN_NAME'] or 'default'}}"
+os_project_domain_id = "@jinja {{env['OS_PROJECT_DOMAIN_ID'] or 'default'}}"
+os_username = "@jinja {{env['OS_USERNAME']}}"
+os_password = "@jinja {{env['OS_PASSWORD']}}"
+os_region_name = "@jinja {{env['OS_REGION_NAME']}}"
+
+# If multiple possible networks exist, you need to specify which one to use:
+os_internal_network = "@jinja {{env['OS_INTERNAL_NETWORK']}}"
+
+# The external network that smoke-rook can create floating ip's on
+os_external_network = "@jinja {{env['OS_EXTERNAL_NETWORK'] or 'floating'}}"

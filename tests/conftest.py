@@ -16,19 +16,20 @@ import logging
 import pytest
 import threading
 
-from tests import config
+from dynaconf import settings
+
 from tests.lib.workspace import Workspace
 
 
-if config.HARDWARE_PROVIDER == 'OPENSTACK':
+if settings.HARDWARE_PROVIDER == 'OPENSTACK':
     from tests.lib.hardware.openstack_libcloud import Hardware as Hardware
-elif config.HARDWARE_PROVIDER == 'LIBVIRT':
+elif settings.HARDWARE_PROVIDER == 'LIBVIRT':
     from tests.lib.hardware.libvirt import Hardware as Hardware  # type: ignore
 else:
     raise Exception("Hardware provider '{}' not yet supported by "
-                    "rookcheck".format(config.HARDWARE_PROVIDER))
+                    "rookcheck".format(settings.HARDWARE_PROVIDER))
 
-if config.DISTRO == 'SLES_CaaSP':
+if settings.DISTRO == 'SLES_CaaSP':
     from tests.lib.kubernetes.caasp import CaaSP as Kubernetes
 #    from tests.lib.rook.ses import RookCluster as RookCluster ## not
 #    implemented yet
@@ -61,8 +62,8 @@ def hardware(workspace):
     # cloud provider abstraction. It primarily does this via libcloud.
     with Hardware(workspace) as hardware:
         hardware.boot_nodes(
-            masters=config.ROOKCHECK_MASTERS,
-            workers=config.ROOKCHECK_WORKERS)
+            masters=settings.NUMBER_MASTERS,
+            workers=settings.NUMBER_WORKERS)
         hardware.prepare_nodes()
         yield hardware
 
@@ -99,7 +100,7 @@ def rook_cluster(workspace):
     with Hardware(workspace) as hardware:
         with Kubernetes(workspace, hardware) as kubernetes:
             with RookCluster(workspace, kubernetes) as rook_cluster:
-                if config._USE_THREADS:
+                if settings.as_bool('_USE_THREADS'):
                     logger.info("Starting rook build in a thread")
                     build_thread = threading.Thread(
                         target=rook_cluster.build_rook)
@@ -111,7 +112,7 @@ def rook_cluster(workspace):
                 kubernetes.bootstrap()
                 kubernetes.install_kubernetes()
 
-                if config._USE_THREADS:
+                if settings.as_bool('_USE_THREADS'):
                     logger.info("Re-joining rook build thread")
                     build_thread.join()
                 else:

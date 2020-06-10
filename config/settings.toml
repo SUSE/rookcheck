@@ -1,0 +1,41 @@
+[default]
+
+# Prevent workspace/cluster collisions in shared environments with a resource
+# name prefix.
+# TODO(jhesketh): Add the datetime back into cluster_prefix
+cluster_prefix = "@jinja rookcheck-{{env.USER}}-"
+
+# The location for all of the build assets and state to be stored in. A
+# sub-folder will be created using each CLUSTER_PREFIX
+workspace_dir = "/tmp/rookcheck"
+
+# A hardware provider (OPENSTACK or LIBVIRT)
+hardware_provider = "OPENSTACK"
+
+# Set the number of master and worker nodes used by default for the cluster
+number_masters = 1
+number_workers = 3
+
+# The distro used on the underlying nodes
+# Available options: openSUSE_k8s, SLES_CaaSP
+distro = "openSUSE_k8s"
+
+# The user to SSH into (must be root or sudoer). The node image is configured
+# in the provider specific config file.
+node_image_user = "opensuse"
+
+# Whether or not to perform some options as a thread. Turning this off may help
+# with debugging at the cost of performance.
+_use_threads = false
+
+# Whether or not to use the ansible "free" strategy. It is generally faster
+# but causes the output to be intertwined and more confusing.
+# TODO(jhesketh): This may not be used anymore.
+_use_free_strategy = false
+
+# If set to True, the workspacing and all created files from a test will be
+# removed from the disk.
+_remove_workspace = true
+
+# You will only need to edit the config relating to your hardware provider
+dynaconf_include = ["libvirt.toml", "openstack.toml"]

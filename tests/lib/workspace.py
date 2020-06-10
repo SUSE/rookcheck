@@ -21,9 +21,9 @@ import subprocess
 from typing import Any, Dict, Optional, Tuple
 import uuid
 
+from dynaconf import settings
 import paramiko.rsakey
 
-from tests import config
 from tests.lib.common import execute
 
 
@@ -54,7 +54,7 @@ class Workspace():
 
     @property
     def name(self) -> str:
-        return "%s%s" % (config.CLUSTER_PREFIX, self._workspace_uuid)
+        return "%s%s" % (settings.CLUSTER_PREFIX, self._workspace_uuid)
 
     @property
     def working_dir(self) -> str:
@@ -173,7 +173,7 @@ class Workspace():
 
     def _get_working_dir(self):
         working_dir_path = os.path.join(
-            config.WORKSPACE_DIR, self.name
+            settings.WORKSPACE_DIR, self.name
         )
         os.makedirs(working_dir_path)
         return working_dir_path
@@ -186,7 +186,7 @@ class Workspace():
             logger.warning(f'Killing ssh-agent with PID'
                            f' {self._ssh_agent_pid} failed')
 
-        if config._REMOVE_WORKSPACE:
+        if settings.as_bool('_REMOVE_WORKSPACE'):
             logger.info(f"Removing workspace {self.working_dir} from disk")
             # NOTE(jhesketh): go clones repos as read-only. We need to chmod
             #                 all the files back to writable (in particular,
