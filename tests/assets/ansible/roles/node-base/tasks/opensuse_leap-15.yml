@@ -2,19 +2,19 @@
 
 # NOTE(toabctl): we assume here, that repositories are already configured
 
-- name: add basic repositories
-  zypper_repository:
-    name: "{{ repo.name }}"
-    repo: "{{ repo.url }}"
-    state: present
-    auto_import_keys: yes
-    overwrite_multiple: yes
-    runrefresh: yes
-  loop:
-    - { name: "pool", url: "http://download.opensuse.org/distribution/leap/{{ ansible_distribution_version }}/repo/oss/" }
-    - { name: "update", url: "http://download.opensuse.org/update/leap/{{ ansible_distribution_version }}/oss/" }
-  loop_control:
-    loop_var: repo
+# - name: add basic repositories
+#   zypper_repository:
+#     name: "{{ repo.name }}"
+#     repo: "{{ repo.url }}"
+#     state: present
+#     auto_import_keys: yes
+#     overwrite_multiple: yes
+#     runrefresh: yes
+#   loop:
+#     - { name: "pool", url: "http://download.opensuse.org/distribution/leap/{{ ansible_distribution_version }}/repo/oss/" }
+#     - { name: "update", url: "http://download.opensuse.org/update/leap/{{ ansible_distribution_version }}/oss/" }
+#   loop_control:
+#     loop_var: repo
 
 - name: install dependencies
   zypper:
