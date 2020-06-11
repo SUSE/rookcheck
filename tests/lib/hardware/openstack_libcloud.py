@@ -274,11 +274,11 @@ class Hardware(HardwareBase):
                 return image
         raise Exception(f'No image found matching NAME {name}')
 
-    def _get_image_by_id(self, id):
-        if id in self._image_cache:
-            return self._image_cache[id]
-        self._image_cache[id] = self.conn.get_image(id)
-        return self._image_cache[id]
+    def _get_image_by_id(self, id_):
+        if id_ in self._image_cache:
+            return self._image_cache[id_]
+        self._image_cache[id_] = self.conn.get_image(id_)
+        return self._image_cache[id_]
 
     def _get_size_by_name(self, name=None):
         if self._size_cache:
