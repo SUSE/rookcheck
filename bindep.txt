@@ -7,4 +7,4 @@ git
 libvirt-client [libvirt]
 libvirt-devel [libvirt platform:rpm]
 
-openssh [SLES_CaaSP]
+openssh [sles-caasp]
