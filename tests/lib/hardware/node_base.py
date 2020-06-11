@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, Any, List
 
-from dynaconf import settings
+from tests.config import settings
 
 
 class NodeRole(Enum):

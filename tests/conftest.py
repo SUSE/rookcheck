@@ -16,8 +16,7 @@ import logging
 import pytest
 import threading
 
-from dynaconf import settings
-
+from tests.config import settings
 from tests.lib.workspace import Workspace
 
 

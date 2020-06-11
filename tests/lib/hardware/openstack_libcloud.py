@@ -27,7 +27,6 @@ import threading
 import time
 from typing import Dict, List
 
-from dynaconf import settings
 import libcloud.security
 from libcloud.compute.base import NodeImage
 from libcloud.compute.drivers.openstack import (
@@ -37,6 +36,7 @@ from libcloud.compute.types import Provider, NodeState, StorageVolumeState
 from libcloud.compute.providers import get_driver
 from urllib.parse import urlparse
 
+from tests.config import settings
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
