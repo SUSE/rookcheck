@@ -2,9 +2,9 @@
 - name: add repositories
   vars:
     repositories:
-      caasp_devel: http://download.suse.de/ibs/Devel:/CaaSP:/4.0/SLE_15_SP1/
+      caasp: http://download.suse.de/ibs/SUSE/Products/SUSE-CAASP/4.0/x86_64/product/
+      caasp_updates: http://download.suse.de/ibs/SUSE/Updates/SUSE-CAASP/4.0/x86_64/update/
       suse_ca: http://download.suse.de/ibs/SUSE:/CA/SLE_15_SP1/
-      storage: http://download.suse.de/ibs/SUSE:/SLE-15-SP2:/Update:/Products:/SES7/standard
   zypper_repository:
     name: '{{ repo.key }}'
     repo: '{{ repo.value }}'
