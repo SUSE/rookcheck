@@ -216,13 +216,16 @@ class Hardware(HardwareBase):
         super().__init__(workspace)
         self._ex_os_key = self.conn.import_key_pair_from_string(
             self.workspace.sshkey_name, self.workspace.public_key)
-        self._ex_security_group: OpenStackSecurityGroup = \
-            self._create_security_group()
         self._ex_network_cache: List[OpenStackNetwork] = []
 
         self._image_cache: Dict[str, NodeImage] = {}
         self._full_image_cache: List[NodeImage] = []
         self._size_cache: List[OpenStackNodeSize] = []
+
+        self._network_private, self._subnet_private, self._router_private = \
+            self._create_network_private()
+        self._ex_security_group: OpenStackSecurityGroup = \
+            self._create_security_group()
 
     def get_connection(self):
         """ Get a libcloud connection object for the configured driver """
@@ -248,6 +251,7 @@ class Hardware(HardwareBase):
             ex_force_service_region=(
                 settings.OS_REGION_NAME if settings.OS_REGION_NAME else None),
             secure=settings.as_bool('OS_VERIFY_SSL_CERT'),
+            api_version='2.2',
         )
         return connection
 
@@ -270,11 +274,11 @@ class Hardware(HardwareBase):
                 return image
         raise Exception(f'No image found matching NAME {name}')
 
-    def _get_image_by_id(self, id):
-        if id in self._image_cache:
-            return self._image_cache[id]
-        self._image_cache[id] = self.conn.get_image(id)
-        return self._image_cache[id]
+    def _get_image_by_id(self, id_):
+        if id_ in self._image_cache:
+            return self._image_cache[id_]
+        self._image_cache[id_] = self.conn.get_image(id_)
+        return self._image_cache[id_]
 
     def _get_size_by_name(self, name=None):
         if self._size_cache:
@@ -305,6 +309,25 @@ class Hardware(HardwareBase):
 
         return None
 
+    def _create_network_private(self):
+        """
+        create the openstack network/subnet/router and set external gateway
+        """
+        logger.info("creating openstack network/subnet/router")
+        network_public = self._get_ex_network_by_name(
+            name=settings.OS_EXTERNAL_NETWORK)
+        network = self.conn.ex_create_network(f"{self.workspace.name}-net")
+        subnet = self.conn.ex_create_subnet(f"{self.workspace.name}-subnet",
+                                            network, "192.168.100.0/24")
+        external_gateway_info = {
+            "network_id": network_public.id
+            }
+        router = self.conn.ex_create_router(
+            f"{self.workspace.name}-router",
+            external_gateway_info=external_gateway_info)
+        self.conn.ex_add_router_subnet(router, subnet)
+        return network, subnet, router
+
     def _create_security_group(self):
         """
         Creates a security group used for this set of hardware. For now,
@@ -327,12 +350,7 @@ class Hardware(HardwareBase):
                     tags: List[str]) -> NodeBase:
         super().node_create(name, role, tags)
         # are there any additional networks for the node wanted?
-        additional_networks = []
-        if settings.OS_INTERNAL_NETWORK:
-            additional_networks.append(
-                self._get_ex_network_by_name(settings.OS_INTERNAL_NETWORK)
-            )
-
+        additional_networks = [self._network_private]
         node = Node(name, role, tags, self.conn,
                     self._get_size_by_name(settings.OS_NODE_SIZE),
                     self._get_image(settings.OS_NODE_IMAGE),
@@ -385,6 +403,12 @@ class Hardware(HardwareBase):
     def destroy(self):
         logger.info("Destroy Hardware")
         super().destroy()
+        logger.info("Remove OpenStack private net/subnet/router")
+        self.conn.ex_del_router_subnet(self._router_private,
+                                       self._subnet_private)
+        self.conn.ex_delete_router(self._router_private)
+        self.conn.ex_delete_subnet(self._subnet_private)
+        self.conn.ex_delete_network(self._network_private)
         logger.info("Remove OpenStack security group")
         self.conn.ex_delete_security_group(self._ex_security_group)
         logger.info("Remove OpenStack keypair")

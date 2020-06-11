@@ -24,8 +24,5 @@ os_username = "@jinja {{env['OS_USERNAME']}}"
 os_password = "@jinja {{env['OS_PASSWORD']}}"
 os_region_name = "@jinja {{env['OS_REGION_NAME']}}"
 
-# If multiple possible networks exist, you need to specify which one to use:
-os_internal_network = "@jinja {{env['OS_INTERNAL_NETWORK']}}"
-
 # The external network that smoke-rook can create floating ip's on
 os_external_network = "@jinja {{env['OS_EXTERNAL_NETWORK'] or 'floating'}}"
