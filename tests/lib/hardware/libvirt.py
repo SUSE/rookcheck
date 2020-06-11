@@ -40,11 +40,12 @@ from typing import List
 from xml.dom import minidom
 import string
 
+from dynaconf import settings
+
 from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
-from tests import config
 
 logger = logging.getLogger(__name__)
 
@@ -100,13 +101,13 @@ class Node(NodeBase):
         ip = self.get_ssh_ip()
         stop = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
         logger.info(f"node {self.name}: waiting {timeout} s for ssh to "
-                    f"{config.NODE_IMAGE_USER}@{ip}")
+                    f"{settings.NODE_IMAGE_USER}@{ip}")
         while datetime.datetime.now() < stop:
             try:
-                ssh.connect(ip, username=config.NODE_IMAGE_USER,
+                ssh.connect(ip, username=settings.NODE_IMAGE_USER,
                             key_filename=self._ssh_private_key)
                 logger.info(f"node {self.name}: ssh ready for user "
-                            f"{config.NODE_IMAGE_USER}")
+                            f"{settings.NODE_IMAGE_USER}")
                 return
             except (paramiko.BadHostKeyException,
                     paramiko.AuthenticationException,
@@ -278,29 +279,29 @@ class Hardware(HardwareBase):
         self._network = self._create_network()
         if not self._network:
             raise Exception('Can not get libvirt network %s' %
-                            config.PROVIDER_LIBVIRT_NETWORK_RANGE)
+                            settings.LIBVIRT_NETWORK_RANGE)
         logger.info(f"Got libvirt network {self._network.name()}")
         self._image_path = self._get_image_path()
 
     def _get_image_path(self):
-        if (config.PROVIDER_LIBVIRT_IMAGE.startswith("http://") or
-                config.PROVIDER_LIBVIRT_IMAGE.startswith("https://")):
+        if (settings.LIBVIRT_IMAGE.startswith("http://") or
+                settings.LIBVIRT_IMAGE.startswith("https://")):
             logging.debug(
-                f"Downloading image from {config.PROVIDER_LIBVIRT_IMAGE}")
+                f"Downloading image from {settings.LIBVIRT_IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
-                os.path.basename(config.PROVIDER_LIBVIRT_IMAGE)
+                os.path.basename(settings.LIBVIRT_IMAGE)
             )
             wget.download(
-                config.PROVIDER_LIBVIRT_IMAGE,
+                settings.LIBVIRT_IMAGE,
                 download_location,
                 bar=None
             )
             return download_location
-        return config.PROVIDER_LIBVIRT_IMAGE
+        return settings.LIBVIRT_IMAGE
 
     def _create_network(self):
-        network = netaddr.IPNetwork(config.PROVIDER_LIBVIRT_NETWORK_RANGE)
+        network = netaddr.IPNetwork(settings.LIBVIRT_NETWORK_RANGE)
         host_ip = str(netaddr.IPAddress(network.first+1))
         netmask = str(network.netmask)
         dhcp_start = str(netaddr.IPAddress(network.first+2))
@@ -327,10 +328,10 @@ class Hardware(HardwareBase):
         return net
 
     def get_connection(self):
-        conn = libvirt.open(config.PROVIDER_LIBVIRT_CONNECTION)
+        conn = libvirt.open(settings.LIBVIRT_CONNECTION)
         if not conn:
             raise Exception('Can not open libvirt connection %s' %
-                            config.PROVIDER_LIBVIRT_CONNECTION)
+                            settings.LIBVIRT_CONNECTION)
         logger.debug(f"Got connection to libvirt: {conn}")
         return conn
 
@@ -340,7 +341,7 @@ class Hardware(HardwareBase):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._image_path, self._network, 0,
-                    config.PROVIDER_LIBVIRT_VM_MEMORY, self.workspace)
+                    settings.LIBVIRT_VM_MEMORY, self.workspace)
         node.boot()
         return node
 

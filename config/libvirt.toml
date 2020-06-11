@@ -1,0 +1,14 @@
+[default]
+
+libvirt_connection = "qemu:///system"
+
+# A new bridge network will be created in libvirt with this range.
+libvirt_network_range = "192.168.124.0/24"
+
+# The qcow2 image that will be used for libvirt. The image must
+# contain cloud-init. This can be an system path or a URL which rookcheck will
+# download.
+libvirt_image = "https://download.opensuse.org/distribution/leap/15.1/jeos/openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud.qcow2"
+
+# Memory use for libvirt VMs (in GB)
+libvirt_vm_memory = 8

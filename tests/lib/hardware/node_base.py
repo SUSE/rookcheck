@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, Any, List
 
-from tests import config
+from dynaconf import settings
 
 
 class NodeRole(Enum):
@@ -71,9 +71,9 @@ class NodeBase(ABC):
         vars = {
             'ansible_host': self.get_ssh_ip(),
             # FIXME(jhesketh): Set username depending on OS
-            'ansible_user': config.NODE_IMAGE_USER,
+            'ansible_user': settings.NODE_IMAGE_USER,
         }
-        if config.NODE_IMAGE_USER != "root":
+        if settings.NODE_IMAGE_USER != "root":
             vars['ansible_become'] = 'true'
             vars['ansible_become_method'] = 'sudo'
             vars['ansible_become_user'] = 'root'
