@@ -40,8 +40,7 @@ from typing import List
 from xml.dom import minidom
 import string
 
-from dynaconf import settings
-
+from tests.config import settings
 from tests.lib.common import execute
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole

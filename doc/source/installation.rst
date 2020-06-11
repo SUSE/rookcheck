@@ -54,7 +54,7 @@ Or as one command the above can be:
 
 .. code-block:: bash
 
-    sudo zypper in $(tox -qq -e bindep -- -b ${HARDWARE_PROVIDER} ${DISTRO})
+    sudo zypper in $(tox -qq -e bindep -- -b ${ROOKCHECK_HARDWARE_PROVIDER,,} ${ROOKCHECK_DISTRO,,})
 
 One of the system requirements to build rook is docker. Make sure the docker
 daemon is running:

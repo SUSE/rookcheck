@@ -11,3 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from dynaconf import LazySettings
+
+
+settings = LazySettings(
+    ENVVAR_PREFIX_FOR_DYNACONF='ROOKCHECK',
+)

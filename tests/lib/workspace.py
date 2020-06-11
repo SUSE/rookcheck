@@ -21,9 +21,9 @@ import subprocess
 from typing import Any, Dict, Optional, Tuple
 import uuid
 
-from dynaconf import settings
 import paramiko.rsakey
 
+from tests.config import settings
 from tests.lib.common import execute
 
 
