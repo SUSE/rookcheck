@@ -300,31 +300,40 @@ class Hardware(HardwareBase):
         return settings.LIBVIRT_IMAGE
 
     def _create_network(self):
-        network = netaddr.IPNetwork(settings.LIBVIRT_NETWORK_RANGE)
-        host_ip = str(netaddr.IPAddress(network.first+1))
-        netmask = str(network.netmask)
-        dhcp_start = str(netaddr.IPAddress(network.first+2))
-        dhcp_end = str(netaddr.IPAddress(network.last-1))
-        xml = textwrap.dedent("""
-            <network>
-            <name>%(network_name)s</name>
-            <forward mode="nat"/>
-            <ip address="%(host_ip)s" netmask="%(netmask)s">
-                <dhcp>
-                    <range start="%(dhcp_start)s" end="%(dhcp_end)s" />
-                </dhcp>
-            </ip>
-            </network>
-        """ % {
-            "network_name": self.workspace.name,
-            "host_ip": host_ip,
-            "netmask": netmask,
-            "dhcp_start": dhcp_start,
-            "dhcp_end": dhcp_end,
-        })
-        net = self._conn.networkCreateXML(xml)
-        logger.info(f"created network {net.name()}")
-        return net
+        network_range = netaddr.IPNetwork(settings.LIBVIRT_NETWORK_RANGE)
+        subnets = network_range.subnet(
+            settings.as_int('LIBVIRT_NETWORK_SUBNET'))
+        for network in subnets:
+            host_ip = str(netaddr.IPAddress(network.first+1))
+            netmask = str(network.netmask)
+            dhcp_start = str(netaddr.IPAddress(network.first+2))
+            dhcp_end = str(netaddr.IPAddress(network.last-1))
+            xml = textwrap.dedent("""
+                <network>
+                <name>%(network_name)s</name>
+                <forward mode="nat"/>
+                <ip address="%(host_ip)s" netmask="%(netmask)s">
+                    <dhcp>
+                        <range start="%(dhcp_start)s" end="%(dhcp_end)s" />
+                    </dhcp>
+                </ip>
+                </network>
+            """ % {
+                "network_name": self.workspace.name,
+                "host_ip": host_ip,
+                "netmask": netmask,
+                "dhcp_start": dhcp_start,
+                "dhcp_end": dhcp_end,
+            })
+            try:
+                net = self._conn.networkCreateXML(xml)
+            except libvirt.libvirtError as e:
+                if "Network is already in use" in e.get_error_message():
+                    logger.debug(f"Network {network} is already in use."
+                                 f" Trying next subnet..")
+                    continue
+            logger.info(f"created network {network} as {net.name()}")
+            return net
 
     def get_connection(self):
         conn = libvirt.open(settings.LIBVIRT_CONNECTION)

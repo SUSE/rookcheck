@@ -2,8 +2,15 @@
 
 libvirt_connection = "qemu:///system"
 
-# A new bridge network will be created in libvirt with this range.
-libvirt_network_range = "192.168.124.0/24"
+# The range of networks to use across builds. Each instance of hardware will
+# get a subnet inside this range given by libvirt_network_subnet. If multiple
+# tests are being ran in parallel ensure there are enough subnets.
+# (/20 with subnets of 26 will give 64 networks)
+libvirt_network_range = "192.168.128.0/20"
+
+# Break libvirt_network_range into subnets of the following size.
+# (26 gives 64 hosts per hardware build/network)
+libvirt_network_subnet = 26
 
 # The qcow2 image that will be used for libvirt. The image must
 # contain cloud-init. This can be an system path or a URL which rookcheck will
