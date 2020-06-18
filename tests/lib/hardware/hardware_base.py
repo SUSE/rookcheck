@@ -135,7 +135,8 @@ class HardwareBase(ABC):
         logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
             f"ansible-playbook -i {self._ansible_inventory_dir} "
-            f"{limit} {path}")
+            f"{limit} {path}",
+            logger_name=f"ansible {playbook}")
 
     def _ansible_create_inventory(self):
         """

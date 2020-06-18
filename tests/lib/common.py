@@ -68,8 +68,10 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     raise Exception("Timed out waiting for result")
 
 
-def execute(command: str, capture=False, check=True, log_stdout=True,
-            log_stderr=True, env: Optional[Dict[str, str]] = None) -> Tuple[
+def execute(command: str, capture: bool = False, check: bool = True,
+            log_stdout: bool = True, log_stderr: bool = True,
+            env: Optional[Dict[str, str]] = None,
+            logger_name: Optional[str] = None) -> Tuple[
                 int, Optional[str], Optional[str]]:
     """A helper util to excute `command`.
 
@@ -85,6 +87,8 @@ def execute(command: str, capture=False, check=True, log_stdout=True,
     `capture` was True.
 
     `env` is a dictionary of environment vars passed into Popen.
+
+    `logger_name` changes the logger used. Otherwise `command` is used.
 
     Returns a tuple of (rc code, stdout, stdin), where stdout and stdin are
     None if `capture` is False, or are a string.
@@ -112,8 +116,8 @@ def execute(command: str, capture=False, check=True, log_stdout=True,
         output['stdout'] = ""
         output['stderr'] = ""
 
-    def read_stdout_from_process(process, capture_dict):
-        log = logging.getLogger(process.args)
+    def read_stdout_from_process(process, capture_dict, logger_name):
+        log = logging.getLogger(logger_name)
         while True:
             output = process.stdout.readline()
             if output:
@@ -123,8 +127,8 @@ def execute(command: str, capture=False, check=True, log_stdout=True,
             elif output == '' and process.poll() is not None:
                 break
 
-    def read_stderr_from_process(process, capture_dict):
-        log = logging.getLogger(process.args)
+    def read_stderr_from_process(process, capture_dict, logger_name):
+        log = logging.getLogger(logger_name)
         while True:
             output = process.stderr.readline()
             if output:
@@ -134,13 +138,18 @@ def execute(command: str, capture=False, check=True, log_stdout=True,
             elif output == '' and process.poll() is not None:
                 break
 
+    logger_name = logger_name if logger_name is not None else command
     if log_stdout:
         stdout_thread = threading.Thread(
-            target=read_stdout_from_process, args=(process, output))
+            target=read_stdout_from_process,
+            args=(process, output, logger_name)
+        )
         stdout_thread.start()
     if log_stderr:
         stderr_thread = threading.Thread(
-            target=read_stderr_from_process, args=(process, output))
+            target=read_stderr_from_process,
+            args=(process, output, logger_name)
+        )
         stderr_thread.start()
 
     if log_stdout:

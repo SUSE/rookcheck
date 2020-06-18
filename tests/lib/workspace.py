@@ -118,10 +118,12 @@ class Workspace():
             logger.exception('Failed to add keys to agent')
             raise
 
-    def execute(self, command: str, capture=False, check=True,
-                log_stdout=True, log_stderr=True,
+    def execute(self, command: str, capture: bool = False, check: bool = True,
+                log_stdout: bool = True, log_stderr: bool = True,
                 env: Optional[Dict[str, str]] = None,
-                chdir=None) -> Tuple[int, Optional[str], Optional[str]]:
+                logger_name: Optional[str] = None,
+                chdir: Optional[str] = None) -> Tuple[
+                    int, Optional[str], Optional[str]]:
         """Executes a command inside the workspace
 
         This is a wrapper around the execute util that will automatically
@@ -138,7 +140,7 @@ class Workspace():
             env['SSH_AGENT_PID'] = self.ssh_agent_pid
             return execute(command, capture=capture, check=check,
                            log_stdout=log_stdout, log_stderr=log_stderr,
-                           env=env)
+                           env=env, logger_name=logger_name)
 
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         """
