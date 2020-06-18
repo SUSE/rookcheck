@@ -332,6 +332,7 @@ class Hardware(HardwareBase):
                     logger.debug(f"Network {network} is already in use."
                                  f" Trying next subnet..")
                     continue
+                raise
             logger.info(f"created network {network} as {net.name()}")
             return net
 
