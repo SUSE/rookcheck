@@ -70,7 +70,8 @@ class RookCluster(RookBase):
             "make --directory='{builddir}/src/github.com/rook/rook' "
             "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
             "build".format(builddir=self.builddir),
-            log_stderr=False
+            log_stderr=False,
+            logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
         )
 
         logger.info("[build_rook] Tag image")
