@@ -83,7 +83,10 @@ python interpreter.
 
 
 Once the infrastructure is set up you can interact with the provided fixtures
-`workspace`, `hardware`, `kubernetes`, `rook_cluster`
+`workspace`, `hardware`, `kubernetes`, `rook_cluster`.
+
+When you are finished, exit the interpreter with `quit()` and rookcheck will
+clean up the resources.
 
 
 
