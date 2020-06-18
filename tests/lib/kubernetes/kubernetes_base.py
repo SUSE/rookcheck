@@ -100,6 +100,7 @@ class KubernetesBase(ABC):
             capture=True,
             log_stdout=log_stdout,
             log_stderr=log_stderr,
+            logger_name=f"kubectl {command}",
         )
 
     def kubectl_apply(self, yaml_file, log_stdout=True, log_stderr=True):

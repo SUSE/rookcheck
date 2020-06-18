@@ -69,6 +69,27 @@ And lastly install rook:
 Now the environment is set up and you can play around.
 
 
+Using the playground test
+-------------------------
+
+As an alternative to doing the above steps manually, there is a "playground"
+test that will bring up all of the fixtures for you and drop you into a
+python interpreter.
+
+
+.. code-block:: bash
+
+    tox -e py38 -- tests/test_playground.py
+
+
+Once the infrastructure is set up you can interact with the provided fixtures
+`workspace`, `hardware`, `kubernetes`, `rook_cluster`.
+
+When you are finished, exit the interpreter with `quit()` and rookcheck will
+clean up the resources.
+
+
+
 Current issues
 --------------
 

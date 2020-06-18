@@ -34,10 +34,15 @@ def test_command_env():
 @pytest.mark.parametrize("capture", [True, False])
 @pytest.mark.parametrize("check", [True, False])
 @pytest.mark.parametrize("fail_command", [True, False])
+@pytest.mark.parametrize("logger_name", [None, "mycommand"])
 def test_command_matrix(log_stdout, log_stderr, capture, check, fail_command,
-                        caplog):
+                        logger_name, caplog):
     # Capturing behaves differently depending if logging is enabled or an error
     # is raised, so test with a complete matrix of log_stdout/err.
+
+    # Force caplog to INFO level so that we get what we expect
+    caplog.set_level(logging.INFO)
+
     cmd = 'echo "Hello world" && >&2 echo "error"'
     expected_rc = 0
     if fail_command:
@@ -47,7 +52,7 @@ def test_command_matrix(log_stdout, log_stderr, capture, check, fail_command,
     try:
         rc, stdout, stderr = execute(
             cmd, capture=capture, log_stdout=log_stdout, log_stderr=log_stderr,
-            check=check
+            check=check, logger_name=logger_name
         )
     except subprocess.CalledProcessError as exception:
         if check:
@@ -66,24 +71,26 @@ def test_command_matrix(log_stdout, log_stderr, capture, check, fail_command,
         assert stdout is None
         assert stderr is None
 
+    logger_name_check = logger_name if logger_name is not None else cmd
+
     if log_stdout and log_stderr:
         assert len(caplog.records) == 2
         for record in caplog.records:
             if record.levelname == 'INFO':
-                assert record.name == cmd
+                assert record.name == logger_name_check
                 assert record.levelname == 'INFO'
                 assert record.getMessage() == 'Hello world'
             else:
-                assert record.name == cmd
+                assert record.name == logger_name_check
                 assert record.levelname == 'WARNING'
                 assert record.getMessage() == 'error'
     elif log_stdout:
         assert len(caplog.records) == 1
-        assert caplog.records[0].name == cmd
+        assert caplog.records[0].name == logger_name_check
         assert caplog.records[0].levelname == 'INFO'
         assert caplog.records[0].getMessage() == 'Hello world'
     elif log_stderr:
         assert len(caplog.records) == 1
-        assert caplog.records[0].name == cmd
+        assert caplog.records[0].name == logger_name_check
         assert caplog.records[0].levelname == 'WARNING'
         assert caplog.records[0].getMessage() == 'error'
