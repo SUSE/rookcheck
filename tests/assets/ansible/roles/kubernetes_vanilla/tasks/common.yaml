@@ -65,8 +65,12 @@
     name: kubelet.service
     enabled: yes
 
+- name: populate service facts
+  service_facts:
+
 - name: disable apparmor
   systemd:
     name: apparmor
     enabled: no
     state: stopped
+  when: "'apparmor' in services"
