@@ -197,15 +197,21 @@ class Workspace():
                     path = os.path.join(root, folder)
                     try:
                         os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
-                    except FileNotFoundError:
-                        # Some path's might be broken symlinks
+                    except (FileNotFoundError, PermissionError):
+                        # Some path's might be broken symlinks.
+                        # Some files may be owned by somebody else (eg qemu)
+                        # but are still safe to remove so ignore the
+                        # permissions issue.
                         pass
                 for f in files:
                     path = os.path.join(root, f)
                     try:
                         os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
-                    except FileNotFoundError:
-                        # Some path's might be broken symlinks
+                    except (FileNotFoundError, PermissionError):
+                        # Some path's might be broken symlinks.
+                        # Some files may be owned by somebody else (eg qemu)
+                        # but are still safe to remove so ignore the
+                        # permissions issue.
                         pass
             shutil.rmtree(self.working_dir)
         else:
