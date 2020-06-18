@@ -351,6 +351,7 @@ class Hardware(HardwareBase):
         node = Node(name, role, tags, conn, self._image_path, self._network, 0,
                     settings.LIBVIRT_VM_MEMORY, self.workspace)
         node.boot()
+        node.add_data_disk()
         return node
 
     def _boot_node(self, name: str, role: NodeRole, tags: List[str]):
