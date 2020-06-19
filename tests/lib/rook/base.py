@@ -40,6 +40,13 @@ class RookBase(ABC):
         # TODO(jhesketh): Uninstall rook
         pass
 
+    def execute_in_ceph_toolbox(self, command):
+        if not self.toolbox_pod:
+            self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
+                "rook-ceph-tools")
+
+        return self.kubernetes.execute_in_pod(command, self.toolbox_pod)
+
     def __enter__(self):
         return self
 
