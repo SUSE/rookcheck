@@ -68,11 +68,11 @@ class RookCluster(RookBase):
         logger.info("[build_rook] Make rook")
         execute(
             "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
-            "TMPDIR={workspace_dir} "
+            "TMPDIR={tmpdir} "
             "make --directory='{builddir}/src/github.com/rook/rook' "
             "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
             "build".format(builddir=self.builddir,
-                           workspace_dir=settings.WORKSPACE_DIR),
+                           tmpdir=os.path.join(settings.WORKSPACE_DIR, 'tmp')),
             log_stderr=False,
             logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
         )
