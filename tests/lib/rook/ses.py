@@ -41,8 +41,9 @@ class RookSes(RookBase):
 
     # TODO: DISCUSS how to handle registry.suse.com vs registry.suse.de
     def _fix_yaml(self):
+        # 'suse.com': 'suse.de/devel/storage/7.0/containers',
         replacements = {
-            'suse.com': 'suse.de/devel/storage/7.0/containers',
+            'suse.com': 'suse.de/suse/containers/ses/6/containers',
             '# ROOK_CSI_CEPH_IMAGE': 'ROOK_CSI_CEPH_IMAGE'
         }
         for root, dirs, files in os.walk(self.ceph_dir):

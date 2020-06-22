@@ -1,4 +1,18 @@
 ---
+- name: add repositories
+  vars:
+    repositories:
+      storage6: http://download.suse.de/ibs/SUSE/Products/Storage/6/x86_64/product/
+      storage6_updates: http://download.suse.de/ibs/SUSE/Updates/Storage/6/x86_64/update/
+  zypper_repository:
+    name: '{{ repo.key }}'
+    repo: '{{ repo.value }}'
+    state: present
+    auto_import_keys: yes
+  loop: "{{ lookup('dict', repositories) }}"
+  loop_control:
+    loop_var: repo
+
 - name: add packages
   vars:
     pkg:
