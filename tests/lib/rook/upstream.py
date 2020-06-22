@@ -18,6 +18,7 @@ import re
 import time
 import wget
 
+from tests.config import settings
 from tests.lib.common import execute
 from tests.lib import common
 from tests.lib.rook.base import RookBase
@@ -67,9 +68,11 @@ class RookCluster(RookBase):
         logger.info("[build_rook] Make rook")
         execute(
             "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
+            "TMPDIR={tmpdir} "
             "make --directory='{builddir}/src/github.com/rook/rook' "
             "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
-            "build".format(builddir=self.builddir),
+            "build".format(builddir=self.builddir,
+                           tmpdir=os.path.join(settings.WORKSPACE_DIR, 'tmp')),
             log_stderr=False,
             logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
         )
