@@ -59,7 +59,7 @@ class RookCluster(RookBase):
         )
         # TODO(jhesketh): Allow testing various versions of rook
         execute(
-            "pushd %s && git checkout v1.3.1 && popd"
+            "cd %s && git checkout v1.3.1"
             % os.path.join(self.builddir, 'src/github.com/rook/rook'),
             log_stderr=False
         )
