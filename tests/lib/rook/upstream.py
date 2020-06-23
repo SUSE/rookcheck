@@ -18,7 +18,6 @@ import re
 import time
 import wget
 
-from tests.config import settings
 from tests.lib.common import execute
 from tests.lib import common
 from tests.lib.rook.base import RookBase
@@ -32,6 +31,8 @@ class RookCluster(RookBase):
         self._rook_built = False
         self.builddir = os.path.join(self.workspace.working_dir, 'rook_build')
         os.mkdir(self.builddir)
+        self.go_tmpdir = os.path.join(self.workspace.working_dir, 'tmp')
+        os.mkdir(self.go_tmpdir)
 
     def build_rook(self):
         logger.info("[build_rook] Download go")
@@ -72,7 +73,7 @@ class RookCluster(RookBase):
             "make --directory='{builddir}/src/github.com/rook/rook' "
             "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
             "build".format(builddir=self.builddir,
-                           tmpdir=os.path.join(settings.WORKSPACE_DIR, 'tmp')),
+                           tmpdir=self.go_tmpdir),
             log_stderr=False,
             logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
         )
