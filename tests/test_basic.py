@@ -20,6 +20,18 @@ import time
 logger = logging.getLogger(__name__)
 
 
+def test_infra(hardware):
+    pass
+
+
+def test_k8s(kubernetes):
+    pass
+
+
+def test_rook(rook_cluster):
+    pass
+
+
 def test_file_creation(rook_cluster):
     logger.debug("Create direct-mount deployment")
     rook_cluster.kubernetes.kubectl_apply(
