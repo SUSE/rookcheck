@@ -261,7 +261,7 @@ class Hardware(HardwareBase):
         except libcloud.common.exceptions.BaseHTTPError:
             logger.debug('No image found by id. '
                          'Falling back to search by name')
-            return self._get_image_by_name(identifier)
+            return self._get_image_by_name(settings.OS_NODE_IMAGE)
 
     def _get_image_by_name(self, name):
         # NOTE(jhesketh): In general we wouldn't expect the provider list of
@@ -353,7 +353,7 @@ class Hardware(HardwareBase):
         additional_networks = [self._network_private]
         node = Node(name, role, tags, self.conn,
                     self._get_size_by_name(settings.OS_NODE_SIZE),
-                    self._get_image(settings.OS_NODE_IMAGE),
+                    self._get_image(settings.OS_NODE_IMAGE_ID),
                     additional_networks, [self._ex_security_group],
                     self.workspace.sshkey_name)
         node.boot()
