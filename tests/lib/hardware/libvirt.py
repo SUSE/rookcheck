@@ -14,9 +14,6 @@
 
 # The Hardware module should take care of the operating system abstraction
 # through images.
-# libcloud will provide a common set of cloud-agnostic objects such as Node[s]
-# We might extend the Node object to have an easy way to run arbitrary commands
-# on the node such as Node.execute().
 # There will be a challenge where those arbitrary commands differ between OS's;
 # this is an abstraction that is not yet well figured out, but will likely
 # take the form of cloud-init or similar bringing the target node to an

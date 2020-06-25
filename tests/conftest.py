@@ -21,8 +21,6 @@ from tests.lib.workspace import Workspace
 
 
 if settings.HARDWARE_PROVIDER.upper() == 'OPENSTACK':
-    from tests.lib.hardware.openstack_libcloud import Hardware as Hardware
-elif settings.HARDWARE_PROVIDER.upper() == 'OPENSTACKSDK':
     from tests.lib.hardware.openstack_sdk import Hardware as Hardware  # type: ignore  # noqa: E501
 elif settings.HARDWARE_PROVIDER.upper() == 'LIBVIRT':
     from tests.lib.hardware.libvirt import Hardware as Hardware  # type: ignore
@@ -60,7 +58,7 @@ def workspace():
 @pytest.fixture(scope="module")
 def hardware(workspace):
     # NOTE(jhesketh): The Hardware() object is expected to take care of any
-    # cloud provider abstraction. It primarily does this via libcloud.
+    # cloud provider abstraction.
     with Hardware(workspace) as hardware:
         hardware.boot_nodes(
             masters=settings.NUMBER_MASTERS,
