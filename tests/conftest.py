@@ -91,8 +91,9 @@ def linear_rook_cluster(workspace, kubernetes):
     # fixture is preferred as it will build rook locally in a thread while
     # waiting on the infrastructure
     with RookCluster(workspace, kubernetes) as rook_cluster:
-        rook_cluster.build_rook()
-        rook_cluster.install_rook()
+        rook_cluster.build()
+        rook_cluster.preinstall()
+        rook_cluster.install()
         yield rook_cluster
 
 
@@ -107,7 +108,7 @@ def rook_cluster(workspace):
                 if settings.as_bool('_USE_THREADS'):
                     logger.info("Starting rook build in a thread")
                     build_thread = threading.Thread(
-                        target=rook_cluster.build_rook)
+                        target=rook_cluster.build())
                     build_thread.start()
 
                 # build rook thread
@@ -121,12 +122,12 @@ def rook_cluster(workspace):
                     logger.info("Re-joining rook build thread")
                     build_thread.join()
                 else:
-                    rook_cluster.build_rook()
+                    rook_cluster.build()
 
                 # NOTE(jhesketh): The upload is very slow.. may want to
                 #                 consider how to do this in a thread too but
                 #                 is more complex with ansible.
-                rook_cluster.upload_rook_image()
-                rook_cluster.install_rook()
+                rook_cluster.preinstall()
+                rook_cluster.install()
 
                 yield rook_cluster
