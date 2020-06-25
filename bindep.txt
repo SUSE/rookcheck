@@ -4,7 +4,9 @@
 docker
 git
 
-libvirt-client [libvirt]
+libvirt-client [libvirt platform:rpm]
+libvirt-clients [libvirt platform:dpkg]
 libvirt-devel [libvirt platform:rpm]
+libvirt-dev [libvirt platform:dpkg]
 
 openssh [sles-caasp]
