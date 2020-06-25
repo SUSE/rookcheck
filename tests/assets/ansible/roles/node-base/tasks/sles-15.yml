@@ -41,6 +41,11 @@
     force: yes
     extra_args: "--force-resolution"
 
+- name: remove kernel-default-base
+  zypper:
+    name: kernel-default-base  # noqa 403
+    state: absent
+
 - name: drop firewalld
   zypper:
     name: firewalld
