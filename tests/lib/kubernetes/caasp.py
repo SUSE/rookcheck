@@ -22,11 +22,14 @@ import logging
 import os
 from typing import List
 import threading
+import re
+import time
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
+from tests.lib import common
 
 
 logger = logging.getLogger(__name__)
@@ -90,3 +93,16 @@ class CaaSP(KubernetesBase):
     def install_kubernetes(self):
         super().install_kubernetes()
         self.join(self.hardware.workers)
+        logger.info("Wait for all nodes to be in 'Ready' state"
+                    "(this may take a while...)")
+        pattern = re.compile(r' +Ready.*')
+        common.wait_for_result(
+            self.workspace.execute, "skuba cluster status",
+            matcher=common.regex_count_matcher(
+                pattern, len(self.hardware.nodes)),
+            attempts=60,
+            interval=10,
+            chdir=self._clusterpath,
+            capture=True)
+        # Give skupa-update/zypper some time to release lock
+        time.sleep(5)

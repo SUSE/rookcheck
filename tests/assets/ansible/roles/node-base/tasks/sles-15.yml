@@ -46,6 +46,11 @@
     name: kernel-default-base  # noqa 403
     state: absent
 
+- name: update all packages
+  zypper:
+    name: '*' # noqa 403
+    state: latest
+
 - name: drop firewalld
   zypper:
     name: firewalld
