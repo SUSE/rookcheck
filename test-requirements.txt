@@ -12,4 +12,4 @@ pytest
 pyyaml
 wget
 # for the libvirt provider
-# libvirt-python
+libvirt-python
