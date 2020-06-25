@@ -1,6 +1,5 @@
 ansible
 ansible-lint
-apache-libcloud>=2.7.0
 dynaconf
 flake8
 kubernetes

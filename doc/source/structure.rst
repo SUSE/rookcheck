@@ -79,14 +79,14 @@ For example:
 
     # tests/conftest.py
 
-    from tests.lib.hardware.openstack_libcloud import Hardware
+    from tests.lib.hardware.openstacksdk import Hardware
     @pytest.fixture
     def hardware():
         return Hardware()
 
     # tests/test_example.py
 
-    from tests.lib.hardware.openstack_libcloud import Hardware
+    from tests.lib.hardware.openstacksdk import Hardware
     def test_hardware(hardware):
         assert type(hardware) == Hardware
 
@@ -102,7 +102,7 @@ in the fixture like so:
 
     # tests/conftest.py
 
-    from tests.lib.hardware.openstack_libcloud import Hardware
+    from tests.lib.hardware.openstacksdk import Hardware
     @pytest.fixture
     def hardware():
         h = Hardware()

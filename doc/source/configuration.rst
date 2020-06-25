@@ -24,20 +24,13 @@ Start by copying the example configuration.env:
 OpenStack provider specifics
 ----------------------------
 
-If you are using OpenStack you can use your openrc for most of the
-configuration. To do this, you just need to source the file into your bash
-session:
+If you are using OpenStack you can use your
+`clouds.yaml <https://docs.openstack.org/openstacksdk/latest/user/guides/connect_from_config.html>`_
+configuration file and reference a cloud defined in that file with OS_CLOUD
 
 .. code-block:: bash
 
-    source ~/openrc
-
-
-Alternatively you can set the OpenStack credentials in your .env file, but you
-will have to use the `ROOKCHECK_` prefix.
-
-TODO(jhesketh): Autodoc the config options once configuration is reworked into
-something more useful.
+    export OS_CLOUD=my-cloud
 
 libvirt provider specifics
 --------------------------

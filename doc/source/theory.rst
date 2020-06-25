@@ -34,20 +34,6 @@ Why tox?
 `tox <https://tox.readthedocs.io/>`_ makes it easier to manage virtual
 environments for tests. As such, it gives us a very easy and common entrypoint.
 
-Why libcloud?
--------------
-
-We need a way for an individual test to provision machines. We also want to
-ensure this tool is useful to both developers testing/building locally and the
-community who may be testing in a CI. Therefore we want compatibility with
-multiple public and private clouds, as well as things such as libvirt.
-
-`Apache Libcloud <https://libcloud.apache.org/>`_ gives us a head start on a
-common API that we can use to provision hardware. `rookcheck` may end up
-further abstracting the hardware provisioner for various clouds/platforms, but
-the general intent is to provide a common interface to common actions such as
-creating new nodes, attaching disks, bringing up networks etc.
-
 Why not terraform?
 ------------------
 
@@ -70,8 +56,7 @@ There are a number of reasons not to use
    means that we would likely need to "sed" or otherwise modify the Terraform
    configuration files. This further blurs the line between where modifications
    are made. That is, they are either made in Terraform configuration or in
-   `rookcheck`'s python code somewhere. By using `libcloud` we are able to
-   limit this to one place.
+   `rookcheck`'s python code somewhere.
 
 Having said all of that, `rookcheck` is still a young and growing tool, and the
 above reasons may be fallacies. So it is possible that in the future this
