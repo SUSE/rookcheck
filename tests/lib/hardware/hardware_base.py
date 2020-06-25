@@ -28,6 +28,7 @@ import yaml
 import shutil
 import logging
 from typing import Dict, List
+import threading
 
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 
@@ -46,6 +47,9 @@ class HardwareBase(ABC):
         self._conn = self.get_connection()
         self._ansible_inventory_dir = os.path.join(self.workspace.working_dir,
                                                    'inventory')
+        # when nodes are created in threads, we need to lock the recreation
+        # of the ansible inventory dir
+        self._ansible_create_inventory_lock = threading.Lock()
 
         logger.info(f"hardware {self}: Using {self.workspace.name}")
 
@@ -105,12 +109,14 @@ class HardwareBase(ABC):
         logger.info(f"adding new node {node.name} to hardware {self}")
         self._node_remove_ssh_key(node)
         self.nodes[node.name] = node
-        self._ansible_create_inventory()
+        with self._ansible_create_inventory_lock:
+            self._ansible_create_inventory()
 
     def node_remove(self, node: NodeBase):
         logger.info(f"removing node {node.name} from hardware {self}")
         del self.nodes[node.name]
-        self._ansible_create_inventory()
+        with self._ansible_create_inventory_lock:
+            self._ansible_create_inventory()
         node.destroy()
 
     @abstractmethod
