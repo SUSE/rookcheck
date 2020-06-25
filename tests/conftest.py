@@ -20,9 +20,9 @@ from tests.config import settings
 from tests.lib.workspace import Workspace
 
 
-if settings.HARDWARE_PROVIDER.upper() == 'OPENSTACK':
+if settings.HARDWARE_PROVIDER.upper() == 'OPENSTACKLIBCLOUD':
     from tests.lib.hardware.openstack_libcloud import Hardware as Hardware
-elif settings.HARDWARE_PROVIDER.upper() == 'OPENSTACKSDK':
+elif settings.HARDWARE_PROVIDER.upper() == 'OPENSTACK':
     from tests.lib.hardware.openstack_sdk import Hardware as Hardware  # type: ignore  # noqa: E501
 elif settings.HARDWARE_PROVIDER.upper() == 'LIBVIRT':
     from tests.lib.hardware.libvirt import Hardware as Hardware  # type: ignore
