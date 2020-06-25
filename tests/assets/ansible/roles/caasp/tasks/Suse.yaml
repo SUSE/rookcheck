@@ -22,3 +22,11 @@
       name: '{{ pkg }}'
       state: present
       update_cache: yes
+
+- name: set skuba-update to annotate-only mode
+  copy:
+    src: skuba-update
+    dest: /etc/sysconfig/skuba-update
+    owner: root
+    group: root
+    mode: 0644
