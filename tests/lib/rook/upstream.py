@@ -14,12 +14,10 @@
 
 import logging
 import os
-import re
-import time
 import wget
 
+
 from tests.lib.common import execute
-from tests.lib import common
 from tests.lib.rook.base import RookBase
 
 logger = logging.getLogger(__name__)
@@ -34,7 +32,8 @@ class RookCluster(RookBase):
         self.go_tmpdir = os.path.join(self.workspace.working_dir, 'tmp')
         os.mkdir(self.go_tmpdir)
 
-    def build_rook(self):
+    def build(self):
+        super().build()
         logger.info("[build_rook] Download go")
         wget.download(
             "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
@@ -95,77 +94,9 @@ class RookCluster(RookBase):
 
         self._rook_built = True
 
+    def preinstall(self):
+        super().preinstall()
+        self.upload_rook_image()
+
     def upload_rook_image(self):
         self.kubernetes.hardware.ansible_run_playbook("playbook_rook.yaml")
-
-    # TODO (bleon)
-    # This method should be replaced inf favor of using base install() one
-    def install_rook(self):
-        if not self._rook_built:
-            raise Exception("Rook must be built before being installed")
-        # TODO(jhesketh): We may want to provide ways for tests to override
-        #                 these
-        logger.info("Applying common.yaml and operator.yaml")
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'common.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'operator.yaml'))
-
-        # TODO(jhesketh): Check if sleeping is necessary
-        time.sleep(10)
-
-        logger.info("Applying cluster.yaml and toolbox.yaml")
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'cluster.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'toolbox.yaml'))
-
-        time.sleep(10)
-
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'csi/rbd/storageclass.yaml'))
-
-        logger.info("Wait for OSD prepare to complete "
-                    "(this may take a while...)")
-        pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
-
-        common.wait_for_result(
-            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
-            log_stdout=False,
-            matcher=common.regex_count_matcher(pattern, 3),
-            attempts=90, interval=10)
-
-        # TODO (bleon)
-        # this should be enough to a rook deployment to be ready
-        # FS/RBD are not needed to HEALTH_OK
-
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'filesystem.yaml'))
-
-        logger.info("Wait for 2 mdses to start")
-        pattern = re.compile(r'.*rook-ceph-mds-myfs.*Running')
-
-        common.wait_for_result(
-            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
-            log_stdout=False,
-            matcher=common.regex_count_matcher(pattern, 2),
-            attempts=20, interval=5)
-
-        logger.info("Wait for myfs to be active")
-        pattern = re.compile(r'.*active')
-
-        common.wait_for_result(
-            self.execute_in_ceph_toolbox, "ceph fs status myfs",
-            log_stdout=False,
-            matcher=common.regex_matcher(pattern),
-            attempts=20, interval=5)
-
-        logger.info("Rook successfully installed and ready!")
-
-    def execute_in_ceph_toolbox(self, command, log_stdout=False):
-        if not self.toolbox_pod:
-            self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
-                "rook-ceph-tools")
-
-        return self.kubernetes.execute_in_pod(
-            command, self.toolbox_pod, log_stdout=False)

@@ -15,10 +15,7 @@
 import logging
 import os
 import filecmp
-import time
-import re
 
-from tests.lib import common
 from tests.lib.common import execute
 from tests.lib.rook.base import RookBase
 
@@ -30,6 +27,16 @@ class RookSes(RookBase):
         super().__init__(workspace, kubernetes)
         self.ceph_dir = os.path.join(
             self.workspace.working_dir, 'rook', 'ceph')
+
+    def build(self):
+        super().build()
+        logger.info('SES based rook does not require building')
+
+    def preinstall(self):
+        super().preinstall()
+        self.kubernetes.hardware.ansible_run_playbook('playbook_ses.yaml')
+        self._get_rook_files()
+        self._fix_yaml()
 
     def _get_rook_files(self):
         # TODO (bleon)
@@ -62,43 +69,3 @@ class RookSes(RookBase):
                 else:
                     os.rename(src, f'{src}.back')
                     os.rename(tmp, src)
-
-    def preinstall(self):
-        self.kubernetes.hardware.ansible_run_playbook('playbook_ses.yaml')
-        self._get_rook_files()
-        self._fix_yaml()
-
-    def install(self):
-        # TODO(jhesketh): We may want to provide ways for tests to override
-        #                 these
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'common.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'operator.yaml'))
-
-        # TODO(jhesketh): Check if sleeping is necessary
-        time.sleep(10)
-
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'cluster.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'toolbox.yaml'))
-
-        logger.info("Wait for OSD prepare to complete "
-                    "(this may take a while...)")
-        pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
-
-        common.wait_for_result(
-            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
-            matcher=common.regex_count_matcher(pattern, 3),
-            attempts=90, interval=10)
-
-        logger.info("Wait for Ceph HEALTH_OK")
-        pattern = re.compile(r'.*HEALTH_OK')
-
-        common.wait_for_result(
-            self.execute_in_ceph_toolbox, "ceph status",
-            matcher=common.regex_matcher(pattern),
-            attempts=20, interval=5)
-
-        logger.info("Rook successfully installed and ready!")
