@@ -161,11 +161,3 @@ class RookCluster(RookBase):
             attempts=20, interval=5)
 
         logger.info("Rook successfully installed and ready!")
-
-    def execute_in_ceph_toolbox(self, command, log_stdout=False):
-        if not self.toolbox_pod:
-            self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
-                "rook-ceph-tools")
-
-        return self.kubernetes.execute_in_pod(
-            command, self.toolbox_pod, log_stdout=False)

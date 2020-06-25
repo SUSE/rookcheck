@@ -63,12 +63,19 @@ class RookSes(RookBase):
                     os.rename(src, f'{src}.back')
                     os.rename(tmp, src)
 
-    def preinstall(self):
+    def build_rook(self):
+        logger.info("Using pre-build rook images")
+
+    def upload_rook_image(self):
+        logger.info("Using pre-build rook images")
+
+    def rook_preinstall(self):
         self.kubernetes.hardware.ansible_run_playbook('playbook_ses.yaml')
         self._get_rook_files()
         self._fix_yaml()
 
-    def install(self):
+    def install_rook(self):
+        self.rook_preinstall()
         # TODO(jhesketh): We may want to provide ways for tests to override
         #                 these
         self.kubernetes.kubectl_apply(
