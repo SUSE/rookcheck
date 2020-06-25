@@ -12,6 +12,7 @@ matrix:
 
 install:
   - pip install tox
+  - sudo apt-get -y install $(tox -qq -e bindep -- -b libvirt)
 
 script:
   - tox
