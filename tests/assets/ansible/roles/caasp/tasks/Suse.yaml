@@ -30,3 +30,31 @@
     owner: root
     group: root
     mode: 0644
+
+- name: install skuba
+  zypper:
+      name: skuba
+      state: present
+      update_cache: no
+  when: inventory_hostname in groups['first_master']
+
+- name: retrieve skuba binary into workspace
+  fetch:
+    src: /usr/bin/skuba
+    dest: '{{ rookcheck_workspace_dir }}/'
+    flat: yes
+  when: inventory_hostname in groups['first_master']
+
+- name: make skuba binary executable
+  file:
+    path: '{{ rookcheck_workspace_dir }}/skuba'
+    mode: 0755
+  delegate_to: 127.0.0.1
+  when: inventory_hostname in groups['first_master']
+
+- name: remove skuba
+  zypper:
+      name: skuba
+      state: absent
+      update_cache: no
+  when: inventory_hostname in groups['first_master']

@@ -39,8 +39,9 @@ class CaaSP(KubernetesBase):
     def __init__(self, workspace: Workspace, hardware: HardwareBase):
         super().__init__(workspace, hardware)
         self._clusterpath = os.path.join(self.workspace.working_dir, 'cluster')
-        self._kubeconfig = os.path.join(self.workspace.working_dir, 'cluster',
-                                        'admin.conf')
+        self._kubeconfig = os.path.join(
+            self.workspace.working_dir, 'cluster', 'admin.conf')
+        self._skuba = os.path.join(self.workspace.working_dir, 'skuba')
         # FIXME(toabctl): The CaaSP implementation is not downloading the
         # 'kubectl' executable so it's not available in the workspace dir.
         # We currently just assume that on the local machine, 'kubectl'
@@ -50,14 +51,14 @@ class CaaSP(KubernetesBase):
     def bootstrap(self):
         super().bootstrap()
         self.hardware.ansible_run_playbook('playbook_caasp.yaml')
-        self.workspace.execute("skuba cluster init --control-plane "
+        self.workspace.execute(f"{self._skuba} cluster init --control-plane "
                                f"{self.hardware.masters[0].get_ssh_ip()} "
                                f"{self._clusterpath}", capture=True,
                                check=True)
 
         logger.info("skuba node bootstrap. This may take a while")
         self.workspace.execute(
-            "skuba node bootstrap --user sles --sudo --target"
+            f"{self._skuba} node bootstrap --user sles --sudo --target"
             f" {self.hardware.masters[0].get_ssh_ip()}"
             f" {self.hardware.masters[0].dnsname}", capture=True,
             check=True, chdir=self._clusterpath
@@ -70,7 +71,7 @@ class CaaSP(KubernetesBase):
             role = 'master'
 
         self.workspace.execute(
-            f"skuba node join --role {role} --user sles --sudo "
+            f"{self._skuba} node join --role {role} --user sles --sudo "
             f"--target {node.get_ssh_ip()} {node.dnsname}",
             capture=True, check=True, chdir=self._clusterpath
         )
@@ -97,7 +98,7 @@ class CaaSP(KubernetesBase):
                     "(this may take a while...)")
         pattern = re.compile(r' +Ready.*')
         common.wait_for_result(
-            self.workspace.execute, "skuba cluster status",
+            self.workspace.execute, f"{self._skuba} cluster status",
             matcher=common.regex_count_matcher(
                 pattern, len(self.hardware.nodes)),
             attempts=60,
