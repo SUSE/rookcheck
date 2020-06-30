@@ -1,6 +1,6 @@
 ansible
 ansible-lint
-dynaconf
+dynaconf<3.0.0
 flake8
 kubernetes
 mypy
