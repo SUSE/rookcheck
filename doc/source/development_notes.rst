@@ -90,6 +90,28 @@ clean up the resources.
 
 
 
+Finding orphaned resources
+--------------------------
+
+Sometimes a failed test run doesn't clean up resources correctly. This usually
+occurs when there is a failure on the cloud provider or on the network
+preventing rookcheck from doing its usual clean up.
+
+Because rookcheck doesn't currently keep any state from a test run, there is
+a helper tool for finding orphaned resources and removing them. currently
+this is only available for the OpenStack provider. It can be ran like
+so:
+
+
+.. code-block:: bash
+
+    tox -e venv -- python ./tools/clean_openstack_resources.py -s "rookcheck*"
+
+
+The script will prompt you before deleting anything. It is also recommended
+that you set the search pattern to your environment prefix.
+
+
 Current issues
 --------------
 
