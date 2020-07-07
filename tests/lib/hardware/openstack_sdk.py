@@ -71,23 +71,47 @@ class Node(NodeBase):
             pass
         self._floating_ip = self._get_floating_ip()
         logger.info(f"Node {self._name} has IP {self._floating_ip}")
-        # FIXME: do not unconditionally add data disks (but this is done
-        # currently in all implementations)
-        self.add_data_disk(10)
+        if self._role == NodeRole.WORKER:
+            for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
+                disk_name = self.disk_create()
+                self.disk_attach(name=disk_name)
 
     def get_ssh_ip(self) -> str:
         return self._floating_ip
 
-    def add_data_disk(self, capacity):
-        super().add_data_disk(capacity)
+    def _get_vol_name_by_vol(self, volume):
+        for k, v in self._disks.items():
+            if v['volume'].id == volume.id:
+                return k
+
+    def disk_create(self, capacity='10'):
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
         volume = self._conn.create_volume(capacity, name=name,
                                           delete_on_termination=True)
-        logger.info(f"Node volume {name} ({volume.id}) created")
+        self._disks[name] = {'volume': volume, 'attached': False}
+        logger.info(f"Volume {name} created - ({volume.id}) / size={capacity}")
+        return name
+
+    def disk_attach(self, name=None, volume=None):
+        if name is None and volume is None:
+            raise Exception("Please specify either name or volume parameter")
+        if name is not None:
+            volume = self._disks[name]['volume']
+        else:
+            name = self._get_vol_name_by_vol(volume)
         self._conn.attach_volume(self._instance, volume)
-        logger.info(f"Node volume {name} attached to {self._instance.name}")
+        self._disks[name]['attached'] = True
+        logger.info(f"Volume {name} attached")
+        # update instance data (so _instance.volumes is up-to-date)
+        self._instance = self._conn.get_server(self._instance)
+
+    def disk_detach(self, name):
+        volume = self._disks[name]['volume']
+        self._conn.detach_volume(self._instance, volume)
+        self._disks[name]['attached'] = False
+        logger.info(f"Volume {name} detached")
         # update instance data (so _instance.volumes is up-to-date)
         self._instance = self._conn.get_server(self._instance)
 
@@ -97,6 +121,10 @@ class Node(NodeBase):
             self._conn.delete_server(self._instance, wait=True,
                                      delete_ips=True)
             logger.info(f"Node {self._name} ({self._instance.id}) deleted")
+            for k, v in self._disks.items():
+                _id = v['volume'].id
+                self._conn.delete_volume(v['volume'])
+                logger.info(f"Deleted volume {k} ({_id})")
 
     def _get_floating_ip(self) -> Optional[str]:
         """

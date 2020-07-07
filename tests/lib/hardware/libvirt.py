@@ -36,6 +36,7 @@ import socket
 from typing import List
 from xml.dom import minidom
 import string
+import random
 
 from tests.config import settings
 from tests.lib.common import execute
@@ -48,12 +49,11 @@ logger = logging.getLogger(__name__)
 
 class Node(NodeBase):
     def __init__(self, name, role, tags, conn, image_path,
-                 network, disk_number, memory, workspace):
+                 network, memory, workspace):
         super().__init__(name, role, tags)
         self._conn = conn
         self._image_path = image_path
         self._network = network
-        self._disk_number = disk_number,
         self._memory = memory * 1024 * 1024
         self._workspace = workspace
         self._ssh_public_key = workspace.public_key
@@ -62,7 +62,6 @@ class Node(NodeBase):
             workspace.working_dir, f"{self.name}-snapshot.qcow2")
         self._cloud_init_seed_path = os.path.join(
             workspace.working_dir, f"{self.name}-cloud-init-seed.img")
-        self._disks = []
 
     def boot(self):
         self._backing_file_create()
@@ -75,6 +74,10 @@ class Node(NodeBase):
         logger.debug(f"node {self.name}: libvirt xml: {xml}")
         self._dom = self._conn.defineXML(xml)
         self._dom.create()
+        if self._role == NodeRole.WORKER:
+            for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
+                disk_name = self.disk_create()
+                self.disk_attach(name=disk_name)
         self._ips = self._get_ips()
         self._wait_for_ssh()
 
@@ -85,8 +88,9 @@ class Node(NodeBase):
             os.remove(self._cloud_init_seed_path)
         if os.path.exists(self._snap_img_path):
             os.remove(self._snap_img_path)
-        for disk in self._disks:
-            os.remove(disk)
+        for k, v in self._disks.items():
+            os.remove(v['path'])
+            logger.info(f"Deleted disk {k} at path {v['path']}")
 
     def get_ssh_ip(self):
         return self._ips[0]
@@ -142,23 +146,64 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
-    def add_data_disk(self, capacity='10G'):
-        _id = len(self._disks) + 2  # one for root disk, one for cloud-init
-        volume_name = f'data-{_id}'
-        block_device = f'vd{string.ascii_lowercase[_id + 1]}'
+    def disk_create(self, capacity='10G'):
+        """
+        Create a disk volume
+        """
+        suffix = ''.join(random.choice(string.ascii_lowercase)
+                         for i in range(5))
+        name = f"{self._name}-volume-{suffix}"
         disk_path = os.path.join(self._workspace.working_dir,
-                                 f"{self.name}-{volume_name}.qcow2")
+                                 f"{name}.qcow2")
         execute(f"qemu-img create -f qcow2 {disk_path} {capacity}")
-        logger.info(f'Created volume "{volume_name}" / size={capacity}')
+        self._disks[name] = {
+            'path': disk_path,
+            'attached': False,
+            'xml': None
+        }
+        logger.info(f"Volume {name} / size={capacity} created")
+        return name
+
+    def _get_next_disk_letter(self):
+        """
+        Return the next available device name for disks
+        """
+        alphabet = list(string.ascii_lowercase)
+        xmldoc = minidom.parseString(self._dom.XMLDesc())
+        disks = xmldoc.getElementsByTagName('disk')
+        for element in disks:
+            # get X in vdX and remove it from usable ones
+            # only consider 'virtio' bus
+            if element.getElementsByTagName(
+                    'target')[0].getAttribute('bus') == 'virtio':
+                alphabet.remove(element.getElementsByTagName(
+                    'target')[0].getAttribute('dev')[-1])
+        return 'vd' + alphabet[0]
+
+    def disk_attach(self, name):
+        """
+        Attach a disk volume
+        """
+        block_device = self._get_next_disk_letter()
         disk = textwrap.dedent("""
             <disk type='file' device='disk'>
                 <driver name='qemu' type='qcow2' cache='none'/>
                 <source file='%(disk_path)s'/>
                 <target dev='%(block_device)s' bus='virtio'/>
             </disk>
-        """ % {"disk_path": disk_path, "block_device": block_device})
+        """ % {"disk_path": self._disks[name]['path'],
+               "block_device": block_device
+               })
+        self._disks[name]['xml'] = disk
         self._dom.attachDevice(disk)
-        self._disks.append(disk_path)
+        logger.info(f"Attached volume {name} as device {block_device}")
+
+    def disk_detach(self, name):
+        """
+        Detach a disk volume
+        """
+        self._dom.detachDevice(self._disks[name]['xml'])
+        logger.info(f"Detached volume {name}")
 
     def _cloud_init_seed_create(self):
         user_data = textwrap.dedent("""
@@ -346,10 +391,9 @@ class Hardware(HardwareBase):
         super().node_create(name, role, tags)
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
-        node = Node(name, role, tags, conn, self._image_path, self._network, 0,
+        node = Node(name, role, tags, conn, self._image_path, self._network,
                     settings.LIBVIRT_VM_MEMORY, self.workspace)
         node.boot()
-        node.add_data_disk()
         return node
 
     def _boot_node(self, name: str, role: NodeRole, tags: List[str]):

@@ -16,6 +16,9 @@ hardware_provider = "OPENSTACK"
 number_masters = 1
 number_workers = 3
 
+# Set the initial number of data drives for workers
+worker_initial_data_disks = 1
+
 # The distro used on the underlying nodes
 # Available options: openSUSE_k8s, SLES_CaaSP
 distro = "openSUSE_k8s"
