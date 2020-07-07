@@ -46,6 +46,7 @@ class Workspace():
             self.working_dir, 'ssh-agent.sock')
         self._ssh_agent()
 
+        logger.info(settings.as_dict())
         logger.info(f"Workspace {self.name} set up at {self.working_dir}")
         logger.info(f"public key {self.public_key}")
         logger.info(f"private key {self.private_key}")
