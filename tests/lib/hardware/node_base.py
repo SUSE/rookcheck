@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, Any, List
 
 from tests.config import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class NodeRole(Enum):
@@ -33,6 +37,7 @@ class NodeBase(ABC):
         self.dnsname = self.name.replace('_', '-')
         self._role = role
         self.tags = tags
+        self._disks: Dict[str, Any] = {}
 
     @abstractmethod
     def boot(self):
@@ -53,9 +58,23 @@ class NodeBase(ABC):
     # disk_attach
     # disk_detach
     @abstractmethod
-    def add_data_disk(self, capacity):
+    def disk_create(self, capacity):
         """
-        Add a disk to the node
+        Create a disk volume
+        """
+        pass
+
+    @abstractmethod
+    def disk_attach(self, capacity):
+        """
+        Attach a disk volume
+        """
+        pass
+
+    @abstractmethod
+    def disk_detach(self, capacity):
+        """
+        Detach a disk volume
         """
         pass
 
