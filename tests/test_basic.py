@@ -20,12 +20,23 @@ import time
 logger = logging.getLogger(__name__)
 
 
+def test_deploy_filesystem(rook_cluster):
+    # rook_cluster checks the filesystem is deployed before continuing
+    rook_cluster.deploy_rbd()
+    time.sleep(10)
+    rook_cluster.deploy_filesystem()
+    # This test leaves the filesystem set up ready for the next tests in this
+    # module.
+
+
 def test_file_creation(rook_cluster):
     logger.debug("Create direct-mount deployment")
     rook_cluster.kubernetes.kubectl_apply(
         os.path.join(rook_cluster.ceph_dir, 'direct-mount.yaml'))
 
-    time.sleep(5)
+    # TODO(jhesketh): Create a helper function for checking if a container is
+    #                 ready instead of waiting.
+    time.sleep(10)
 
     logger.debug("Mount myfs in pod and put a test string into a file")
     rook_cluster.kubernetes.execute_in_pod_by_label("""
@@ -56,12 +67,12 @@ def test_file_creation(rook_cluster):
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=0 -n rook-ceph")
 
-    time.sleep(5)
+    time.sleep(10)
 
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=1 -n rook-ceph")
 
-    time.sleep(5)
+    time.sleep(10)
 
     logger.debug("Mount myfs again and output the contents")
     rc, stdout, stderr = rook_cluster.kubernetes.execute_in_pod_by_label("""
