@@ -51,8 +51,8 @@ class Vanilla(KubernetesBase):
         logger.info("******************** SLEEP DEBUG")
         time.sleep(60)
         logger.info("******************** Get nodes")
-        self.kubectl("get nodes")
-        self.kubectl("get all --all-namespaces")
+        self.kubectl("get nodes -o wide")
+        self.kubectl("get all --all-namespaces -o wide")
 
         #self._setup_flannel()
 
@@ -65,15 +65,15 @@ class Vanilla(KubernetesBase):
         logger.info("******************** SLEEP DEBUG")
         time.sleep(60)
         logger.info("******************** Get nodes")
-        self.kubectl("get nodes")
-        self.kubectl("get all --all-namespaces")
+        self.kubectl("get nodes -o wide")
+        self.kubectl("get all --all-namespaces -o wide")
         
         self.untaint_master()
         logger.info("******************** SLEEP DEBUG")
         time.sleep(60)
         logger.info("******************** Get nodes")
-        self.kubectl("get nodes")
-        self.kubectl("get all --all-namespaces")
+        self.kubectl("get nodes -o wide")
+        self.kubectl("get all --all-namespaces -o wide")
         
 
     def _setup_flannel(self):

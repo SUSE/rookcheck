@@ -17,6 +17,7 @@ import os
 import wget
 
 
+from tests.config import settings
 from tests.lib.common import execute
 from tests.lib.rook.base import RookBase
 
@@ -65,27 +66,28 @@ class RookCluster(RookBase):
             log_stderr=False
         )
 
-        logger.info("[build_rook] Make rook")
-        execute(
-            "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
-            "TMPDIR={tmpdir} "
-            "make --directory='{builddir}/src/github.com/rook/rook' "
-            "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
-            "build".format(builddir=self.builddir,
-                           tmpdir=self.go_tmpdir),
-            log_stderr=False,
-            logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
-        )
+        if settings.as_bool('BUILD_ROOK_FROM_GIT'):
+            logger.info("[build_rook] Make rook")
+            execute(
+                "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
+                "TMPDIR={tmpdir} "
+                "make --directory='{builddir}/src/github.com/rook/rook' "
+                "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
+                "build".format(builddir=self.builddir,
+                            tmpdir=self.go_tmpdir),
+                log_stderr=False,
+                logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
+            )
 
-        logger.info("[build_rook] Tag image")
-        execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
+            logger.info("[build_rook] Tag image")
+            execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
 
-        logger.info("[build_rook] Save image tar")
-        # TODO(jhesketh): build arch may differ
-        execute(
-            "docker save rook/ceph:master | gzip > %s"
-            % os.path.join(self.builddir, 'rook-ceph.tar.gz')
-        )
+            logger.info("[build_rook] Save image tar")
+            # TODO(jhesketh): build arch may differ
+            execute(
+                "docker save rook/ceph:master | gzip > %s"
+                % os.path.join(self.builddir, 'rook-ceph.tar.gz')
+            )
 
         self.ceph_dir = os.path.join(
             self.builddir,
@@ -96,6 +98,8 @@ class RookCluster(RookBase):
 
     def preinstall(self):
         super().preinstall()
+        if not settings.as_bool('BUILD_ROOK_FROM_GIT'):
+            return
         self.upload_rook_image()
 
     def upload_rook_image(self):

@@ -41,4 +41,4 @@ _use_free_strategy = false
 _remove_workspace = true
 
 # You will only need to edit the config relating to your hardware provider
-dynaconf_include = ["libvirt.toml", "openstack.toml"]
+dynaconf_include = ["libvirt.toml", "openstack.toml", "upstream.toml"]
