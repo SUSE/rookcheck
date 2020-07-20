@@ -19,16 +19,19 @@ pipeline {
         choice(name: 'OS_CLOUD', choices: ['ecp'], description: 'OpenStack Cloud to use')
         string(name: 'OS_EXTERNAL_NETWORK', defaultValue: 'floating', description: 'the OpenStack external network')
         string(name: 'OS_FLAVOR', defaultValue: 'm1.medium', description: 'the OpenStack image flavor')
-        string(name: 'OS_IMAGE', defaultValue: 'openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud', description: 'the OpenStack image name/id')
+        // string(name: 'OS_IMAGE', defaultValue: 'openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud', description: 'the OpenStack image name/id')
+        string(name: 'OS_IMAGE', defaultValue: 'b73a273d-6e63-43f2-8e73-defe0da54fd6', description: 'the OpenStack image name/id')
     }
 
     environment {
-        ROOKCHECK_CLUSTER_PREFIX = "${cluster_prefix}"
+        // ROOKCHECK_CLUSTER_PREFIX = "${cluster_prefix}"
+        ROOKCHECK_CLUSTER_PREFIX = "rookcheck-jen"
         OS_CLOUD = "${params.OS_CLOUD}"
         ROOKCHECK_OS_EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
         ROOKCHECK_OS_FLAVOR = "${params.OS_FLAVOR}"
         ROOKCHECK_OS_IMAGE = "${params.OS_IMAGE}"
         ROOKCHECK_BUILD_ROOK_FROM_GIT = "FALSE"
+        ROOKCHECK_BUILD_ROOK_FROM_GIT_D = "FALSE"
     }
     stages {
         stage('test basic') {
@@ -39,3 +42,5 @@ pipeline {
         }
     }
 }
+
+/// 123
