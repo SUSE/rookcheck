@@ -19,8 +19,7 @@ pipeline {
         choice(name: 'OS_CLOUD', choices: ['ecp'], description: 'OpenStack Cloud to use')
         string(name: 'OS_EXTERNAL_NETWORK', defaultValue: 'floating', description: 'the OpenStack external network')
         string(name: 'OS_FLAVOR', defaultValue: 'm1.medium', description: 'the OpenStack image flavor')
-        // string(name: 'OS_IMAGE', defaultValue: 'openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud', description: 'the OpenStack image name/id')
-        string(name: 'OS_IMAGE', defaultValue: 'b73a273d-6e63-43f2-8e73-defe0da54fd6', description: 'the OpenStack image name/id')
+        string(name: 'OS_IMAGE', defaultValue: 'openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud', description: 'the OpenStack image name/id')
     }
 
     environment {
@@ -42,5 +41,3 @@ pipeline {
         }
     }
 }
-
-/// 123

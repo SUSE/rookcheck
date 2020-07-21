@@ -35,18 +35,6 @@ class RookCluster(RookBase):
 
     def build(self):
         super().build()
-        logger.info("[build_rook] Download go")
-        wget.download(
-            "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
-            os.path.join(self.builddir, 'go-amd64.tar.gz'),
-            bar=None,
-        )
-
-        logger.info("[build_rook] Unpack go")
-        execute(
-            "tar -C %s -xzf %s"
-            % (self.builddir, os.path.join(self.builddir, 'go-amd64.tar.gz'))
-        )
 
         # TODO(jhesketh): Allow setting rook version
         logger.info("[build_rook] Checkout rook")
@@ -67,6 +55,20 @@ class RookCluster(RookBase):
         )
 
         if settings.as_bool('BUILD_ROOK_FROM_GIT'):
+            logger.info("[build_rook] Download go")
+            wget.download(
+                "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
+                os.path.join(self.builddir, 'go-amd64.tar.gz'),
+                bar=None,
+            )
+
+            logger.info("[build_rook] Unpack go")
+            execute(
+                "tar -C %s -xzf %s"
+                % (self.builddir,
+                   os.path.join(self.builddir, 'go-amd64.tar.gz'))
+            )
+
             logger.info("[build_rook] Make rook")
             execute(
                 "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
@@ -74,9 +76,10 @@ class RookCluster(RookBase):
                 "make --directory='{builddir}/src/github.com/rook/rook' "
                 "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
                 "build".format(builddir=self.builddir,
-                            tmpdir=self.go_tmpdir),
+                               tmpdir=self.go_tmpdir),
                 log_stderr=False,
-                logger_name="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
+                logger_name=(
+                    "make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'"),
             )
 
             logger.info("[build_rook] Tag image")
@@ -98,9 +101,8 @@ class RookCluster(RookBase):
 
     def preinstall(self):
         super().preinstall()
-        if not settings.as_bool('BUILD_ROOK_FROM_GIT'):
-            return
-        self.upload_rook_image()
+        if settings.as_bool('BUILD_ROOK_FROM_GIT'):
+            self.upload_rook_image()
 
     def upload_rook_image(self):
         self.kubernetes.hardware.ansible_run_playbook("playbook_rook.yaml")

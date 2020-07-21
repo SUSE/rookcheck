@@ -22,7 +22,6 @@
 import logging
 import os
 import stat
-import time
 import wget
 
 from tests.lib.kubernetes.kubernetes_base import KubernetesBase
@@ -47,40 +46,10 @@ class Vanilla(KubernetesBase):
     def install_kubernetes(self):
         super().install_kubernetes()
         self._download_kubectl()
-
-        logger.info("******************** SLEEP DEBUG")
-        time.sleep(60)
-        logger.info("******************** Get nodes")
-        self.kubectl("get nodes -o wide")
-        self.kubectl("describe nodes")
-        self.kubectl("get all --all-namespaces -o wide")
-
         self._setup_flannel()
-
-
-        #self.kubectl_apply(
-        #     "https://raw.githubusercontent.com/coreos/flannel/master/"
-        #     "Documentation/kube-flannel.yml")
-
-
-        logger.info("******************** SLEEP DEBUG")
-        time.sleep(60)
-        logger.info("******************** Get nodes")
-        self.kubectl("get nodes -o wide")
-        self.kubectl("describe nodes")
-        self.kubectl("get all --all-namespaces -o wide")
-        
         self.untaint_master()
-        logger.info("******************** SLEEP DEBUG")
-        time.sleep(60)
-        logger.info("******************** Get nodes")
-        self.kubectl("get nodes -o wide")
-        self.kubectl("describe nodes")
-        self.kubectl("get all --all-namespaces -o wide")
-        
 
     def _setup_flannel(self):
-
         for node in self.hardware.nodes.values():
             self.kubectl(
                 "annotate node %s "
@@ -90,22 +59,9 @@ class Vanilla(KubernetesBase):
                 )
             )
 
-
-        logger.info("******************** SLEEP DEBUG")
-        time.sleep(60)
-        logger.info("******************** Get nodes")
-        self.kubectl("get nodes -o wide")
-        self.kubectl("describe nodes")
-        self.kubectl("get all --all-namespaces -o wide")
-
         self.kubectl_apply(
             "https://raw.githubusercontent.com/coreos/flannel/master/"
             "Documentation/kube-flannel.yml")
-        time.sleep(5)
-
-        #rc, stdout, stdin = self.kubectl("get pods")
-
-        #kubectl get pod kube-flannel-ds-49shf -o yaml -n kube-system  | kubectl replace --force -f -
 
     def _download_kubectl(self):
         # Download specific kubectl version
