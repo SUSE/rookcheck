@@ -34,9 +34,9 @@ def regex_matcher(regex_pattern):
     return compare
 
 
-def regex_count_matcher(regex_pattern, matches):
+def regex_count_matcher(regex_pattern, min_matches):
     def compare(testee):
-        return len(regex_pattern.findall(testee)) == matches
+        return len(regex_pattern.findall(testee)) >= min_matches
     return compare
 
 
