@@ -1,0 +1,5 @@
+[default]
+
+# Whether or not to build rook from git. If not, the upstream dockerhub images
+# are used.
+build_rook_from_git = true
