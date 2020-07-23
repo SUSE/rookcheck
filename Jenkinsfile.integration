@@ -33,6 +33,7 @@ pipeline {
         ROOKCHECK_OS_EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
         ROOKCHECK_OS_FLAVOR = "${params.OS_FLAVOR}"
         ROOKCHECK_OS_IMAGE = "${params.OS_IMAGE}"
+        ROOKCHECK_BUILD_ROOK_FROM_GIT = "FALSE"
     }
     stages {
         stage('test basic') {
