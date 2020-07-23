@@ -1,0 +1,46 @@
+#!groovy
+
+
+def compute_node='storage-rookcheck'
+// the prefix we want to use for the rookcheck environment
+def cluster_prefix="${currentBuild.fullProjectName.replace('/', '_')}-${currentBuild.number}_"
+
+pipeline {
+    agent {
+        label "${compute_node}"
+    }
+
+    options {
+    parallelsAlwaysFailFast()
+    }
+
+    parameters {
+        /* first value in the list is the default */
+        choice(name: 'OS_CLOUD', choices: ['ecp'], description: 'OpenStack Cloud to use')
+        string(name: 'OS_EXTERNAL_NETWORK', defaultValue: 'floating', description: 'the OpenStack external network')
+        string(name: 'OS_FLAVOR', defaultValue: 'm1.medium', description: 'the OpenStack image flavor')
+        string(name: 'OS_IMAGE', defaultValue: 'openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud', description: 'the OpenStack image name/id')
+    }
+
+    environment {
+        // ROOKCHECK_CLUSTER_PREFIX = "${cluster_prefix}"
+        // FIXME(jhesketh): ${cluster_prefix} is too long for a node name.
+        //                  kubectl annotate fails when the network isn't set
+        //                  up and the name is long. This is possibly an
+        //                  upstream kubernetes bug that I need to investigate.
+        ROOKCHECK_CLUSTER_PREFIX = "rookcheck-jen"
+        OS_CLOUD = "${params.OS_CLOUD}"
+        ROOKCHECK_OS_EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
+        ROOKCHECK_OS_FLAVOR = "${params.OS_FLAVOR}"
+        ROOKCHECK_OS_IMAGE = "${params.OS_IMAGE}"
+        ROOKCHECK_BUILD_ROOK_FROM_GIT = "FALSE"
+    }
+    stages {
+        stage('test basic') {
+            steps {
+        sh "env"
+                sh "tox -epy3 tests/test_basic.py"
+            }
+        }
+    }
+}
