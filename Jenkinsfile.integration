@@ -23,7 +23,12 @@ pipeline {
     }
 
     environment {
-        ROOKCHECK_CLUSTER_PREFIX = "${cluster_prefix}"
+        // ROOKCHECK_CLUSTER_PREFIX = "${cluster_prefix}"
+        // FIXME(jhesketh): ${cluster_prefix} is too long for a node name.
+        //                  kubectl annotate fails when the network isn't set
+        //                  up and the name is long. This is possibly an
+        //                  upstream kubernetes bug that I need to investigate.
+        ROOKCHECK_CLUSTER_PREFIX = "rookcheck-jen"
         OS_CLOUD = "${params.OS_CLOUD}"
         ROOKCHECK_OS_EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
         ROOKCHECK_OS_FLAVOR = "${params.OS_FLAVOR}"
