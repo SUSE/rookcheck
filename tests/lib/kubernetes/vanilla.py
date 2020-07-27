@@ -41,7 +41,9 @@ class Vanilla(KubernetesBase):
 
     def join(self, nodes):
         super().join(nodes)
-        # FIXME(toabctl): Implement this
+
+        self.hardware.ansible_run_playbook('playbook_kubernetes_vanilla.yaml',
+                                           nodes)
 
     def install_kubernetes(self):
         super().install_kubernetes()
