@@ -23,6 +23,9 @@ worker_initial_data_disks = 1
 # Available options: openSUSE_k8s, SLES_CaaSP
 distro = "openSUSE_k8s"
 
+# SES version
+ses_version = 6
+
 # The user to SSH into (must be root or sudoer). The node image is configured
 # in the provider specific config file.
 node_image_user = "opensuse"

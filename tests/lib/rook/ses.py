@@ -19,6 +19,8 @@ import filecmp
 from tests.lib.common import execute
 from tests.lib.rook.base import RookBase
 
+from tests.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +52,8 @@ class RookSes(RookBase):
     def _fix_yaml(self):
         # 'suse.com': 'suse.de/devel/storage/7.0/containers',
         replacements = {
-            'suse.com': 'suse.de/suse/containers/ses/6/containers',
+            'suse.com': f'suse.de/suse/containers/ses/{settings.SES_VERSION}'
+                        f'/containers',
             '# ROOK_CSI_CEPH_IMAGE': 'ROOK_CSI_CEPH_IMAGE'
         }
         for root, dirs, files in os.walk(self.ceph_dir):

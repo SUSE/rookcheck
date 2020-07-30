@@ -4,7 +4,7 @@
     repositories:
       caasp: http://download.suse.de/ibs/SUSE/Products/SUSE-CAASP/4.0/x86_64/product/
       caasp_updates: http://download.suse.de/ibs/SUSE/Updates/SUSE-CAASP/4.0/x86_64/update/
-      suse_ca: http://download.suse.de/ibs/SUSE:/CA/SLE_15_SP1/
+      suse_ca: "http://download.suse.de/ibs/SUSE:/CA/SLE_{{ ansible_distribution_major_version }}_SP{{ ansible_distribution_release }}/"
   zypper_repository:
     name: '{{ repo.key }}'
     repo: '{{ repo.value }}'
