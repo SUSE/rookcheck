@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 import os
 import kubernetes
 import logging
+import time
 from typing import List
 
 from tests.lib.common import execute
@@ -157,3 +158,17 @@ class KubernetesBase(ABC):
     def configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
+
+    def wait_for_service(self, service, sleep=10, iteration=10,
+                         namespace="rook-ceph"):
+        found = False
+        for i in range(iteration):
+            output = self.kubectl(
+                            '-n ' + namespace + ' get service ' + service,
+                            check=False)
+            if output[0] == 0:
+                found = True
+                break
+            time.sleep(10)
+
+        return found
