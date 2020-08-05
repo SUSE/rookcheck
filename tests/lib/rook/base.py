@@ -121,6 +121,13 @@ class RookBase(ABC):
             attempts=20, interval=5)
         logger.info("Ceph FS successfully installed and ready!")
 
+    def get_number_of_osds(self):
+        # get number of osds
+        osds = self.kubernetes.get_pod_by_app_label("rook-ceph-osd")
+        osds = osds.count('\n') + 1
+        logger.info("cluster has %s osd pods running", osds)
+        return osds
+
     def __enter__(self):
         return self
 

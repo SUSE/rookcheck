@@ -21,27 +21,19 @@ from tests.lib.hardware.node_base import NodeRole
 logger = logging.getLogger(__name__)
 
 
-def get_number_of_osds(rook_cluster):
-    # get number of osds
-    osds = rook_cluster.kubernetes.get_pod_by_app_label("rook-ceph-osd")
-    osds = osds.count('\n') + 1
-    logger.debug("cluster has %s osd pods running", osds)
-    return osds
-
-
 def test_osd_number(rook_cluster):
     # get number of workers
     workers = len(rook_cluster.kubernetes.hardware.workers)
     logger.debug("cluster has %s worker nodes", workers)
 
-    osds = get_number_of_osds(rook_cluster)
+    osds = rook_cluster.get_number_of_osds()
     i = 0
     while osds != workers:
         if i == 20:
             pytest.fail("rook did not add an additional osd-node")
             break
         time.sleep(10)
-        osds = get_number_of_osds(rook_cluster)
+        osds = rook_cluster.get_number_of_osds()
         i += 1
 
 
@@ -71,7 +63,7 @@ def test_add_node(rook_cluster):
         i += 1
 
     # get number of new osds
-    osds = get_number_of_osds(rook_cluster)
+    osds = rook_cluster.get_number_of_osds()
 
     i = 0
     while osds != workers_new:
@@ -79,5 +71,5 @@ def test_add_node(rook_cluster):
             pytest.fail("rook did not add an additional osd-node")
             break
         time.sleep(10)
-        osds = get_number_of_osds(rook_cluster)
+        osds = rook_cluster.get_number_of_osds()
         i += 1
