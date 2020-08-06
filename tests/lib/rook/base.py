@@ -56,8 +56,9 @@ class RookBase(ABC):
 
     def execute_in_ceph_toolbox(self, command, log_stdout=False):
         if not self.toolbox_pod:
-            self.toolbox_pod = self.kubernetes.get_pod_by_app_label(
+            toolbox_pods = self.kubernetes.get_pods_by_app_label(
                 "rook-ceph-tools")
+            self.toolbox_pod = toolbox_pods[0]
 
         return self.kubernetes.execute_in_pod(
             command, self.toolbox_pod, log_stdout=False)
@@ -123,8 +124,8 @@ class RookBase(ABC):
 
     def get_number_of_osds(self):
         # get number of osds
-        osds = self.kubernetes.get_pod_by_app_label("rook-ceph-osd")
-        osds = osds.count('\n') + 1
+        osds = self.kubernetes.get_pods_by_app_label("rook-ceph-osd")
+        osds = len(osds)
         logger.info("cluster has %s osd pods running", osds)
         return osds
 

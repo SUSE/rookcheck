@@ -128,21 +128,30 @@ class KubernetesBase(ABC):
             log_stderr=log_stderr
         )
 
-    def get_pod_by_app_label(self, label, namespace="rook-ceph"):
-        return self.kubectl(
+    def get_pods_by_app_label(self, label, namespace="rook-ceph"):
+        pods_string = self.kubectl(
             '--namespace %s get pod -l app="%s"'
             ' --output custom-columns=name:metadata.name --no-headers'
             % (namespace, label)
         )[1].strip()
+        return pods_string.split('\n')
+
+    def get_services_by_app_label(self, label, namespace="rook-ceph"):
+        services_string = self.kubectl(
+            '--namespace %s get svc -l app="%s"'
+            ' --output custom-columns=name:metadata.name --no-headers'
+            % (namespace, label)
+        )[1].strip()
+        return services_string.split('\n')
 
     def execute_in_pod_by_label(self, command, label, namespace="rook-ceph",
                                 log_stdout=True, log_stderr=True):
         # Note(jhesketh): The pod isn't cached, so if running multiple commands
         #                 in the one pod consider calling the following
         #                 manually
-        pod = self.get_pod_by_app_label(label, namespace)
+        pods = self.get_pods_by_app_label(label, namespace)
         return self.execute_in_pod(
-            command, pod, namespace, log_stdout=log_stdout,
+            command, pods[0], namespace, log_stdout=log_stdout,
             log_stderr=log_stderr
         )
 
