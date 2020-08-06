@@ -219,3 +219,29 @@ def test_add_node(rook_cluster):
         time.sleep(10)
         osds = rook_cluster.get_number_of_osds()
         i += 1
+
+
+def test_add_storage(rook_cluster):
+    # get number of currently configured osds
+    osds = rook_cluster.get_number_of_osds()
+    # get a worker node
+    nodes = rook_cluster.kubernetes.hardware.workers
+
+    # add a disk of 10 G the node
+    disk_name = nodes[0].disk_create(10)
+    nodes[0].disk_attach(name=disk_name)
+
+    i = 0
+    # expecting an additional osd
+    osds_expected = osds + 1
+    osds_new = rook_cluster.get_number_of_osds()
+
+    # wait for the additional osd
+    # this may take a while
+    while osds_expected != osds_new:
+        if i == 20:
+            pytest.fail("rook did not add an additional osd-node")
+            break
+        time.sleep(20)
+        osds_new = rook_cluster.get_number_of_osds()
+        i += 1
