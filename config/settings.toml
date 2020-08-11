@@ -9,7 +9,7 @@ cluster_prefix = "@jinja rookcheck-{{env.USER}}-"
 # sub-folder will be created using each CLUSTER_PREFIX
 workspace_dir = "/tmp/rookcheck"
 
-# A hardware provider (OPENSTACK or LIBVIRT)
+# A hardware provider (OPENSTACK, LIBVIRT, or AWS_EC2)
 hardware_provider = "OPENSTACK"
 
 # Set the number of master and worker nodes used by default for the cluster
@@ -44,4 +44,4 @@ _use_free_strategy = false
 _remove_workspace = true
 
 # You will only need to edit the config relating to your hardware provider
-dynaconf_include = ["libvirt.toml", "openstack.toml", "rook_upstream.toml"]
+dynaconf_include = ["libvirt.toml", "openstack.toml", "aws_ec2.toml", "rook_upstream.toml"]

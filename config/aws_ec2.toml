@@ -1,0 +1,8 @@
+[default]
+
+# The node image by either ID or NAME (ami-image-id)
+# Must be available in the region you have configured with aws-cli
+aws_ami_image_id = "ami-0f0868d71d27b7c07"
+
+# The node size or flavour name as known by the provider
+aws_node_size = "t2.xlarge"
