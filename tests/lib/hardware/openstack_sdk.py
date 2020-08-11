@@ -224,9 +224,6 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def prepare_nodes(self):
-        super().prepare_nodes()
-
     def destroy(self):
         super().destroy()
         self._delete_network_private()
