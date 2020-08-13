@@ -67,7 +67,6 @@ class Node(NodeBase):
 
         logger.info(f"Created Node {self._instance}")
 
-        return #FIXME
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
                 disk_name = self.disk_create()
@@ -87,53 +86,70 @@ class Node(NodeBase):
         return self._instance.public_ip_address
 
     def _get_vol_name_by_vol(self, volume):
-        #TODO
         for k, v in self._disks.items():
             if v['volume'].id == volume.id:
                 return k
 
     def disk_create(self, capacity='10'):
-        #TODO
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
-        volume = self._conn.create_volume(capacity, name=name,
-                                          delete_on_termination=True)
+        volume = self._ec2.create_volume(
+            AvailabilityZone=self._instance.placement['AvailabilityZone'],
+            Size=int(capacity),
+        )
+        volume.create_tags(
+            Tags=[{"Key": "Name", "Value": name}])
         self._disks[name] = {'volume': volume, 'attached': False}
-        logger.info(f"Volume {name} created - ({volume.id}) / size={capacity}")
+        logger.info(f"Volume {name} created - ({volume}) / size={capacity}")
         return name
 
+    def _get_next_device_name(self):
+        self._instance.reload()
+        all_device_names = set(
+            ["/dev/xvd%s" % (x) for x in string.ascii_lowercase])
+        used_device_names = set()
+        for device in self._instance.block_device_mappings:
+            used_device_names.add(device['DeviceName'])
+
+        return list(all_device_names - used_device_names).pop()
+
     def disk_attach(self, name=None, volume=None):
-        #TODO
         if name is None and volume is None:
             raise Exception("Please specify either name or volume parameter")
         if name is not None:
             volume = self._disks[name]['volume']
         else:
             name = self._get_vol_name_by_vol(volume)
-        self._conn.attach_volume(self._instance, volume)
+
+        if not self._instance:
+            raise Exception("Unable to attach a disk before booting instance")
+        self._instance.wait_until_running()
+
+        volume.attach_to_instance(
+            Device=self._get_next_device_name(),
+            InstanceId=self._instance.id,
+        )
+
         self._disks[name]['attached'] = True
-        logger.info(f"Volume {name} attached")
-        # update instance data (so _instance.volumes is up-to-date)
-        self._instance = self._conn.get_server(self._instance)
+        logger.info(f"Volume {name} attached to {self._instance}")
+        self._instance.reload()
 
     def disk_detach(self, name):
-        #TODO
         volume = self._disks[name]['volume']
-        self._conn.detach_volume(self._instance, volume)
+        volume.detach_from_instance()
         self._disks[name]['attached'] = False
         logger.info(f"Volume {name} detached")
-        # update instance data (so _instance.volumes is up-to-date)
-        self._instance = self._conn.get_server(self._instance)
+        self._instance.reload()
 
     def destroy(self):
         super().destroy()
         if self._instance:
             self._instance.terminate()
-            return #FIXME
+            self._instance.wait_until_terminated()
             for k, v in self._disks.items():
                 _id = v['volume'].id
-                self._conn.delete_volume(v['volume'])
+                v['volume'].delete()
                 logger.info(f"Deleted volume {k} ({_id})")
 
 
@@ -287,15 +303,9 @@ class Hardware(HardwareBase):
         logger.info("Remove all nodes from Hardware")
         for n in list(self.nodes):
             node_instances.append(self.nodes[n]._instance)
+            # FIXME(jhesketh): This waits until the node is terminated and
+            #                  therefore is quite slow. We should thread this.
             self.node_remove(self.nodes[n])
-
-        # NOTE(jhesketh): Because the individual node.destroy happens in serial
-        #                 it is not practical to do wait_until_terminated in
-        #                 the node object. Instead do the wait here before
-        #                 removing the rest of the VPC resources.
-        logger.info("Waiting for instances to terminate")
-        for i in node_instances:
-            i.wait_until_terminated()
 
         self._keypair.delete()
         logger.info(f"Deleted keypair {self._keypair}")
