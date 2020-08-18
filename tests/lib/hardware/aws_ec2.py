@@ -73,6 +73,8 @@ class Node(NodeBase):
                 self.disk_attach(name=disk_name)
 
     def get_ssh_ip(self) -> str:
+        if not self._instance:
+            return ""
         # The IP address may not be ready immediately. If that's the case,
         # try reloading the instance information a reasonable number of times.
         attempts = 60
@@ -91,6 +93,8 @@ class Node(NodeBase):
                 return k
 
     def disk_create(self, capacity='10'):
+        if not self._instance:
+            raise Exception("Can not create a disk until a node is created")
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
@@ -105,6 +109,8 @@ class Node(NodeBase):
         return name
 
     def _get_next_device_name(self):
+        if not self._instance:
+            return None
         self._instance.reload()
         all_device_names = set(
             ["/dev/xvd%s" % (x) for x in string.ascii_lowercase])
@@ -140,7 +146,8 @@ class Node(NodeBase):
         volume.detach_from_instance()
         self._disks[name]['attached'] = False
         logger.info(f"Volume {name} detached")
-        self._instance.reload()
+        if self._instance:
+            self._instance.reload()
 
     def destroy(self):
         super().destroy()
