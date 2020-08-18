@@ -186,7 +186,7 @@ def test_osd_number(rook_cluster):
 def test_add_node(rook_cluster):
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
-    node_name = "%s_worker_%s" % (rook_cluster.workspace.name, "test-node")
+    node_name = "%s-worker-%s" % (rook_cluster.workspace.name, "test-node")
     node = rook_cluster.kubernetes.hardware.node_create(node_name,
                                                         NodeRole.WORKER,
                                                         ["worker"])
