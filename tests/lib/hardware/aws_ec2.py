@@ -49,8 +49,8 @@ class Node(NodeBase):
 
     def boot(self):
         instances = self._ec2.create_instances(
-            ImageId='ami-0a5b3ae0d9f2f7c9c', #FIXME!!
-            InstanceType='t2.xlarge', #FIXME!!
+            ImageId=settings.AWS_AMI_IMAGE_ID,
+            InstanceType=settings.AWS_NODE_SIZE,
             MinCount=1,
             MaxCount=1,
             SecurityGroupIds=[
