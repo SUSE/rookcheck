@@ -213,7 +213,7 @@ def test_add_node(rook_cluster):
 
     i = 0
     while osds != workers_new:
-        if i == 20:
+        if i == 60:
             pytest.fail("rook did not add an additional osd-node")
             break
         time.sleep(10)
