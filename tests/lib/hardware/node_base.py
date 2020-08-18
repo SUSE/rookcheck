@@ -80,7 +80,7 @@ class NodeBase(ABC):
 
     @property
     def name(self):
-        return self._name
+        return self._name.replace("_", "-")
 
     @property
     def role(self):
@@ -89,6 +89,7 @@ class NodeBase(ABC):
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         vars = {
             'ansible_host': self.get_ssh_ip(),
+            'rookcheck_hostname': self.name,
             # FIXME(jhesketh): Set username depending on OS
             'ansible_user': settings.NODE_IMAGE_USER,
         }
