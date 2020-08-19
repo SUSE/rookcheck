@@ -6,6 +6,7 @@
       copy:
         src: "{{ rookcheck_workspace_dir }}/rook_build/rook-ceph.tar.gz"
         dest: "/root/.images/"
+        mode: '0644'
 
     - name: load rook ceph image into docker  # noqa 301
       command: docker load --input /root/.images/rook-ceph.tar.gz
