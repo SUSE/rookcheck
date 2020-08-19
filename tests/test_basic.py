@@ -193,7 +193,7 @@ def test_add_node(rook_cluster):
     # add a disk of 10 G the node
     node.disk_create(10)
     rook_cluster.kubernetes.hardware.node_add(node)
-    rook_cluster.kubernetes.hardware.prepare_nodes()
+    rook_cluster.kubernetes.hardware.prepare_nodes(limit_to_nodes=[node])
     # add the node the k8s cluster
     rook_cluster.kubernetes.join([node])
 
