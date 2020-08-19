@@ -132,6 +132,15 @@ class Node(NodeBase):
             raise Exception("Unable to attach a disk before booting instance")
         self._instance.wait_until_running()
 
+        # wait until volume is available
+        attempts = 0
+        while volume.state != "available":
+            if attempts >= 10:
+                raise Exception(f"Volume {volume} did not become available")
+            time.sleep(5)
+            volume.reload()
+            attempts += 1
+
         volume.attach_to_instance(
             Device=self._get_next_device_name(),
             InstanceId=self._instance.id,
