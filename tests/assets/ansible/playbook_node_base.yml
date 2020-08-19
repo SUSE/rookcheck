@@ -10,4 +10,4 @@
   tasks:
     - name: common tasks for all nodes
       import_role:
-        name: node-base
+        name: node_base
