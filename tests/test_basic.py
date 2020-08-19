@@ -190,8 +190,7 @@ def test_add_node(rook_cluster):
     node = rook_cluster.kubernetes.hardware.node_create(node_name,
                                                         NodeRole.WORKER,
                                                         ["worker"])
-    # add a disk of 10 G the node
-    node.disk_create(10)
+    # NodeRole.WORKER adds the disk for us
     rook_cluster.kubernetes.hardware.node_add(node)
     rook_cluster.kubernetes.hardware.prepare_nodes(limit_to_nodes=[node])
     # add the node the k8s cluster
@@ -213,7 +212,7 @@ def test_add_node(rook_cluster):
 
     i = 0
     while osds != workers_new:
-        if i == 60:
+        if i == 90:
             pytest.fail("rook did not add an additional osd-node")
             break
         time.sleep(10)
@@ -239,9 +238,9 @@ def test_add_storage(rook_cluster):
     # wait for the additional osd
     # this may take a while
     while osds_expected != osds_new:
-        if i == 20:
+        if i == 60:
             pytest.fail("rook did not add an additional osd-node")
             break
-        time.sleep(20)
+        time.sleep(10)
         osds_new = rook_cluster.get_number_of_osds()
         i += 1
