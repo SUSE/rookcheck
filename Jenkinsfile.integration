@@ -10,10 +10,6 @@ pipeline {
         label "${compute_node}"
     }
 
-    options {
-    parallelsAlwaysFailFast()
-    }
-
     parameters {
         /* first value in the list is the default */
         choice(name: 'OS_CLOUD', choices: ['ecp'], description: 'OpenStack Cloud to use')
