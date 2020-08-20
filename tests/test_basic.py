@@ -183,6 +183,8 @@ def test_osd_number(rook_cluster):
         i += 1
 
 
+# FIXME
+@pytest.mark.skip(reason="This is currently unstable")
 def test_add_node(rook_cluster):
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
