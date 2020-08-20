@@ -1,0 +1,4 @@
+[default]
+
+# SES version (can be 6 or 7)
+ses_version = 7
