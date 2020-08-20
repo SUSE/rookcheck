@@ -21,6 +21,27 @@ Start by copying the example configuration.env:
     cp configuration.env .env
     vim .env # Make any changes needed
 
+Amazon Web Services (AWS) EC2 specifics
+---------------------------------------
+
+The AWS driver is implemented using the `boto3 library <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_.
+
+Tox will install the library for you, but you'll need to configure the
+credentials in `~/.aws/credentials`. The easiest way to do that is by running
+`aws configure` if you already have the `AWS CLI <http://aws.amazon.com/cli/>`_
+installed.
+
+See the `boto3 configuration <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration>`_
+documentation for full details.
+
+The driver will set up a VPC and create all of the necessary resources inside
+of that.
+
+Please note that the image id for the nodes differs depending on the AWS
+region that you are using. You may also need to accept any licenses for the
+images that you are using (as the same user as the configured credentials).
+For example, you can subscribe to the `openSUSE Leap image here <https://aws.amazon.com/marketplace/pp/B01N4R3GJI>`_.
+
 OpenStack provider specifics
 ----------------------------
 

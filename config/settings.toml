@@ -27,7 +27,8 @@ distro = "openSUSE_k8s"
 ses_version = 6
 
 # The user to SSH into (must be root or sudoer). The node image is configured
-# in the provider specific config file.
+# in the provider specific config file. Some providers may use a more specific
+# user such as ec2_user.
 node_image_user = "opensuse"
 
 # Whether or not to perform some options as a thread. Turning this off may help
