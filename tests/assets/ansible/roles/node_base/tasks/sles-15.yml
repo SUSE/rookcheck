@@ -56,5 +56,21 @@
     name: firewalld
     state: absent
 
+# TODO(jhesketh): Figure out if this is appropriate for all OpenStack
+#                 clouds.
+- name: IPADDR for eth0
+  lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    line: "IPADDR_0={{ ansible_host }}/32"
+    create: yes
+    mode: '0644'
+
+- name: LABEL for eth0
+  lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    line: "LABEL_0=Floating"
+    create: yes
+    mode: '0644'
+
 - name: reboot nodes
   reboot:
