@@ -24,6 +24,8 @@ if settings.HARDWARE_PROVIDER.upper() == 'OPENSTACK':
     from tests.lib.hardware.openstack_sdk import Hardware as Hardware  # type: ignore  # noqa: E501
 elif settings.HARDWARE_PROVIDER.upper() == 'LIBVIRT':
     from tests.lib.hardware.libvirt import Hardware as Hardware  # type: ignore
+elif settings.HARDWARE_PROVIDER.upper() == 'AWS_EC2':
+    from tests.lib.hardware.aws_ec2 import Hardware as Hardware  # type: ignore
 else:
     raise Exception("Hardware provider '{}' not yet supported by "
                     "rookcheck".format(settings.HARDWARE_PROVIDER))

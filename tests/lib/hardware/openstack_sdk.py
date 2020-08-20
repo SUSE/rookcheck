@@ -203,7 +203,7 @@ class Hardware(HardwareBase):
                 tags = ['master', 'first_master']
             else:
                 tags = ['master']
-            node_name = "%s_master_%d" % (self.workspace.name, m+offset)
+            node_name = "%s-master-%d" % (self.workspace.name, m+offset)
 
             thread = threading.Thread(
                 target=self._node_create_add, args=(node_name, NodeRole.MASTER,
@@ -213,7 +213,7 @@ class Hardware(HardwareBase):
 
         for m in range(0, workers):
             tags = ['worker']
-            node_name = "%s_worker_%d" % (self.workspace.name, m+offset)
+            node_name = "%s-worker-%d" % (self.workspace.name, m+offset)
             thread = threading.Thread(
                 target=self._node_create_add, args=(node_name, NodeRole.WORKER,
                                                     tags))
@@ -223,9 +223,6 @@ class Hardware(HardwareBase):
         # wait for all threads to finish
         for t in threads:
             t.join()
-
-    def prepare_nodes(self):
-        super().prepare_nodes()
 
     def destroy(self):
         super().destroy()

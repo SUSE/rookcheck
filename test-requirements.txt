@@ -1,5 +1,6 @@
 ansible
 ansible-lint
+boto3
 dynaconf<3.0.0
 flake8
 kubernetes

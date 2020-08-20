@@ -1,5 +1,9 @@
 ---
 # common for all nodes
+- name: Set hostname
+  hostname:
+    name: "{{ rookcheck_hostname }}"
+
 - name: raise max open files
   sysctl:
     name: fs.file-max

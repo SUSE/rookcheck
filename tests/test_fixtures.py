@@ -47,12 +47,14 @@ def _hardware_add_node(h, name, role) -> NodeBase:
     return new_node
 
 
-def test_hardware_node_add_remove(hardware):
+def test_hardware_node_add_remove(workspace, hardware):
     """
     test the hardware fixture. Especially the handing of nodes
     """
     nodes_length = len(hardware.nodes.keys())
-    new_node = _hardware_add_node(hardware, 'test1', NodeRole.WORKER)
+    new_node = _hardware_add_node(
+        hardware, f'{workspace.name}_test1', NodeRole.WORKER)
+    assert len(hardware.nodes.keys()) == nodes_length + 1
     # drop the node again
     hardware.node_remove(new_node)
     # we should have the old amount of nodes now

@@ -101,6 +101,9 @@ def main():
         return
 
     for node in nodes:
+        if node.status == 'ERROR':
+            print(f"Skipping {node.name} in error state")
+            continue
         print(f"Deleting {node.name}")
         conn.delete_server(node.id, delete_ips=True, wait=True)
 
