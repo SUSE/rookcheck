@@ -42,7 +42,7 @@ class KubernetesBase(ABC):
         self._kubeconfig = os.path.join(self.workspace.working_dir,
                                         'kubeconfig')
         self._kubectl_exec = os.path.join(
-            self.workspace.working_dir, 'kubectl')
+            self.workspace.working_dir, 'bin/kubectl')
         self.v1 = None
         logger.info(f"kube init on hardware {self.hardware}")
 

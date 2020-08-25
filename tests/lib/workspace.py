@@ -133,8 +133,9 @@ class Workspace():
         if not env:
             env = {
                 'PATH': os.environ.get(
-                    'PATH', '/usr/local/bin:/usr/bin/:/bin')
+                    'PATH', '/usr/local/bin:/usr/bin:/bin')
             }
+        env['PATH'] = f"{os.path.join(self.working_dir, 'bin')}:{env['PATH']}"
         with self.chdir(chdir):
             env['SSH_AUTH_SOCK'] = self.ssh_agent_auth_sock
             env['SSH_AGENT_PID'] = self.ssh_agent_pid
@@ -178,6 +179,7 @@ class Workspace():
             settings.WORKSPACE_DIR, self.name
         )
         os.makedirs(working_dir_path)
+        os.makedirs(os.path.join(working_dir_path, 'bin'))
         return working_dir_path
 
     def destroy(self):
