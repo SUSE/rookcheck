@@ -66,7 +66,7 @@ Then some environment variables are needed:
 
 .. code-block:: bash
 
-   export HARDWARE_PROVIDER='LIBVIRT'
+   export ROOKCHECK_HARDWARE_PROVIDER='LIBVIRT'
 
 .. automodule:: tests.config
    :members:

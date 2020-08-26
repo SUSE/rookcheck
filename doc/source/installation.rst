@@ -49,9 +49,10 @@ could alternatively be installed from your system packages.
     sudo pip install -U tox
 
 Next we run bindep from inside a tox environment to get the list of missing
-system packages. By specifying the HARDWARE_PROVIDER and DISTRO we are going
-to use we can ensure the requirements for our infrastructure are met (see
-:ref:`configuration` for more information):
+system packages.
+By specifying the ROOKCHECK_HARDWARE_PROVIDER and ROOKCHECK_DISTRO we are
+going to use we can ensure the requirements for our infrastructure are met
+(see :ref:`configuration` for more information):
 
 .. code-block:: bash
 
