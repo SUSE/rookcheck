@@ -41,6 +41,9 @@ Please note that the image id for the nodes differs depending on the AWS
 region that you are using. You may also need to accept any licenses for the
 images that you are using (as the same user as the configured credentials).
 For example, you can subscribe to the `openSUSE Leap image here <https://aws.amazon.com/marketplace/pp/B01N4R3GJI>`_.
+After you have subscribed to the image, you can follow the links to
+"continue to configuration", then after selecting your expected region, you
+should be able to see the AMI ID.
 
 OpenStack provider specifics
 ----------------------------
