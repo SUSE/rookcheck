@@ -8,11 +8,20 @@ Install requirements:
 
 .. code-block:: bash
 
-    sudo zypper in python-pip
-    sudo pip install -U tox
+    # For OpenSUSE:
+    sudo zypper in python3-pip python3-tox
     sudo zypper in $(tox -qq -e bindep -- -b)
     sudo systemctl start docker
     sudo usermod -aG docker $USER
+
+.. code-block:: bash
+
+    # For Ubuntu:
+    sudo apt install python3-pip tox
+    sudo apt install $(tox -qq -e bindep -- -b)
+    sudo systemctl start docker
+    sudo usermod -aG docker $USER
+
 
 Requiremnets
 ------------
@@ -28,7 +37,15 @@ could alternatively be installed from your system packages.
 
 .. code-block:: bash
 
-    sudo zypper in python-pip
+    # For OpenSUSE:
+    sudo zypper in python3-pip python3-tox
+
+    # For Ubuntu:
+    sudo apt install python3-pip tox
+
+    # If your distro does not have tox >= 3.15.2, then you can alternatively
+    # install or upgrade it from pypi:
+    sudo zypper in python3-pip # / or sudo apt install python3-pip
     sudo pip install -U tox
 
 Next we run bindep from inside a tox environment to get the list of missing
