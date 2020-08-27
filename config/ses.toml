@@ -1,4 +1,6 @@
 [default]
 
 # SES version (can be 6 or 7)
+# The configured node image must match the SES supported distro. For example,
+# SLES 15 SP1 for SES6, and SLES 15 SP2 for SES7.
 ses_version = 7

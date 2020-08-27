@@ -62,7 +62,7 @@ pipeline {
                     environment {
                         ROOKCHECK_DISTRO = "SLES_CaaSP"
                         ROOKCHECK_NODE_IMAGE_USER = "sles"
-                        ROOKCHECK_OS_NODE_IMAGE = "2ed6b226-8a92-4743-9625-5b8db4b0ce83"
+                        ROOKCHECK_OS_NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
                     }
                     steps{
                         sh "env"
