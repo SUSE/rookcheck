@@ -45,7 +45,8 @@ class RookSes(RookBase):
         # This is not optima. Need to retrieve RPM directly and extract files
         # out of it. RPM URL should be configurable
         execute(f"rsync -avr -e 'ssh -i {self.workspace.private_key}'"
-                f" sles@{self.kubernetes.hardware.masters[0].get_ssh_ip()}"
+                f" {settings.NODE_IMAGE_USER}"
+                f"@{self.kubernetes.hardware.masters[0].get_ssh_ip()}"
                 f":/usr/share/k8s-yaml/rook {self.workspace.working_dir}")
 
     # TODO: DISCUSS how to handle registry.suse.com vs registry.suse.de
