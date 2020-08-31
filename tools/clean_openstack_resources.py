@@ -108,6 +108,9 @@ def main():
         conn.delete_server(node.id, delete_ips=True, wait=True)
 
     for volume in volumes:
+        if volume.status == 'in-use':
+            print(f"Skipping {volume.name} because of in-use state")
+            continue
         print(f"Deleting {volume.name}")
         conn.delete_volume(volume.id, wait=True)
 
