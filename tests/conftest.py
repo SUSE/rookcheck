@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import logging
+import os
 import pytest
 import threading
 
 from tests.config import settings
+from tests.lib import common
 from tests.lib.workspace import Workspace
 
 
@@ -51,8 +53,88 @@ logger = logging.getLogger(__name__)
 #                 resources can still be cleaned up.
 
 
+def _print_config():
+    logger.info("#"*120)
+    logger.info("# Rookcheck Settings:")
+    logger.info("# ===================")
+    logger.info(f"# ROOKCHECK_CLUSTER_PREFIX={settings.CLUSTER_PREFIX}")
+    logger.info(f"# ROOKCHECK_WORKSPACE_DIR={settings.WORKSPACE_DIR}")
+    logger.info(f"# ROOKCHECK_NUMBER_MASTERS={settings.NUMBER_MASTERS}")
+    logger.info(f"# ROOKCHECK_NUMBER_WORKERS={settings.NUMBER_WORKERS}")
+    logger.info(
+        f"# ROOKCHECK_WORKER_INITIAL_DATA_DISKS="
+        f"{settings.WORKER_INITIAL_DATA_DISKS}")
+    logger.info(f"# ROOKCHECK_NODE_IMAGE_USER={settings.NODE_IMAGE_USER}")
+    logger.info(f"# ROOKCHECK__USE_THREADS={settings._USE_THREADS}")
+    logger.info(f"# ROOKCHECK__REMOVE_WORKSPACE={settings._REMOVE_WORKSPACE}")
+    logger.info(f"# ROOKCHECK_HARDWARE_PROVIDER={settings.HARDWARE_PROVIDER}")
+    logger.info("# Hardware provider specific config:")
+    logger.info("# ----------------------------------")
+    if settings.HARDWARE_PROVIDER.upper() == "OPENSTACK":
+        logger.info(
+            f"#    ROOKCHECK_OS_NODE_IMAGE={settings.OS_NODE_IMAGE}")
+        logger.info(
+            f"#    ROOKCHECK_OS_NODE_SIZE={settings.OS_NODE_SIZE}")
+        logger.info(
+            f"#    ROOKCHECK_OS_EXTERNAL_NETWORK="
+            f"{settings.OS_EXTERNAL_NETWORK}")
+    elif settings.HARDWARE_PROVIDER.upper() == "LIBVIRT":
+        logger.info(
+            f"#    ROOKCHECK_LIBVIRT_CONNECTION={settings.LIBVIRT_CONNECTION}")
+        logger.info(
+            f"#    ROOKCHECK_LIBVIRT_NETWORK_RANGE="
+            f"{settings.LIBVIRT_NETWORK_RANGE}")
+        logger.info(
+            f"#    ROOKCHECK_LIBVIRT_NETWORK_SUBNET="
+            f"{settings.LIBVIRT_NETWORK_SUBNET}")
+        logger.info(
+            f"#    ROOKCHECK_LIBVIRT_IMAGE={settings.LIBVIRT_IMAGE}")
+        logger.info(
+            f"#    ROOKCHECK_LIBVIRT_VM_MEMORY={settings.LIBVIRT_VM_MEMORY}")
+    elif settings.HARDWARE_PROVIDER.upper() == "AWS_EC2":
+        logger.info(
+            f"#    ROOKCHECK_AWS_AMI_IMAGE_ID={settings.AWS_AMI_IMAGE_ID}")
+        logger.info(
+            f"#    ROOKCHECK_AWS_NODE_SIZE={settings.AWS_NODE_SIZE}")
+    logger.info(f"# ROOKCHECK_DISTRO={settings.DISTRO}")
+    logger.info("# Distro specific config:")
+    logger.info("# -----------------------")
+    if settings.DISTRO == 'SLES_CaaSP':
+        logger.info(
+            f"#    ROOKCHECK_SES_VERSION={settings.SES_VERSION}")
+    elif settings.DISTRO == 'openSUSE_k8s':
+        logger.info(
+            f"#    ROOKCHECK_BUILD_ROOK_FROM_GIT="
+            f"{settings.BUILD_ROOK_FROM_GIT}")
+
+    logger.info("#")
+    logger.info("# Environment Variables:")
+    logger.info("# ======================")
+    for name, value in sorted(os.environ.items()):
+        logger.info(f"# {name}={value}")
+
+    logger.info("#"*120)
+
+
+def _check_docker_requirement():
+    logger.debug("Checking if docker is running...")
+    if settings.DISTRO == 'openSUSE_k8s' and \
+            settings.as_bool('BUILD_ROOK_FROM_GIT'):
+        rc, out, err = common.execute('docker ps', log_stdout=False)
+        if rc != 0:
+            raise Exception("Docker is not running - see manual.")
+        logger.debug("... Docker appears to be ready")
+
+
 @pytest.fixture(scope="module")
-def workspace():
+def preflight_checks():
+    # Do some checks before starting and print debug information
+    _print_config()
+    _check_docker_requirement()
+
+
+@pytest.fixture(scope="module")
+def workspace(preflight_checks):
     with Workspace() as workspace:
         yield workspace
 
