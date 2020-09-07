@@ -10,3 +10,6 @@ libvirt-devel [libvirt platform:rpm]
 libvirt-dev [libvirt platform:dpkg]
 
 openssh [sles-caasp]
+
+libselinux-python [platform:redhat-7 !platform:redhat-8]
+python3-libselinux [platform:redhat !platform:redhat-7]
