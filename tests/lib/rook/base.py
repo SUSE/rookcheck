@@ -85,14 +85,14 @@ class RookBase(ABC):
         common.wait_for_result(
             self.kubernetes.kubectl, "--namespace rook-ceph get pods",
             matcher=common.regex_count_matcher(pattern, 3),
-            attempts=90, interval=10)
+            attempts=120, interval=15)
 
         logger.info("Wait for Ceph HEALTH_OK")
         pattern = re.compile(r'.*HEALTH_OK')
         common.wait_for_result(
             self.execute_in_ceph_toolbox, "ceph status",
             matcher=common.regex_matcher(pattern),
-            attempts=20, interval=5)
+            attempts=30, interval=5)
 
         logger.info("Rook successfully installed and ready!")
 
