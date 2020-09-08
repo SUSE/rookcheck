@@ -33,6 +33,12 @@
     sle_major: "{{ ansible_distribution_version.split('.')[0] }}"
     sle_minor: "{{ ansible_distribution_version.split('.')[1] }}"
 
+- name: install dependencies
+  zypper:
+    name:
+      - lvm2
+    state: present
+
 # kernel-default-base is not enough (eg. skuba needs vxlan which is not in the base kernel currently (see bsc#1171903)
 - name: update kernel
   zypper:
