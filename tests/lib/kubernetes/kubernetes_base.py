@@ -169,7 +169,7 @@ class KubernetesBase(ABC):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
 
-    def wait_for_service(self, service, sleep=10, iteration=10,
+    def wait_for_service(self, service, sleep=10, iteration=60,
                          namespace="rook-ceph"):
         found = False
         for i in range(iteration):
