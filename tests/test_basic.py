@@ -133,13 +133,14 @@ def test_service_mons(rook_cluster):
 
 # check if all default services are available
 def test_services(rook_cluster):
-    services = ["csi-cephfsplugin-metrics",
-                "csi-rbdplugin-metrics",
-                "rook-ceph-mgr",
+    services = ["rook-ceph-mgr",
                 "rook-ceph-mgr-dashboard",
                 "rook-ceph-mon-a",
                 "rook-ceph-mon-b",
                 "rook-ceph-mon-c"]
+
+    # TODO(jhesketh): Check if csi-cephfsplugin-metrics or
+    #                 csi-rbdplugin-metrics should be here.
 
     for service in services:
         found = rook_cluster.kubernetes.wait_for_service(service)
