@@ -22,6 +22,15 @@ Install requirements:
     sudo systemctl start docker
     sudo usermod -aG docker $USER
 
+.. code-block:: bash
+
+    # For Fedora:
+    sudo dnf install python3-pip python3-tox
+    sudo dnf install $(tox -qq -e bindep -- -b)
+    sudo systemctl start docker
+    sudo groupadd docker && sudo gpasswd -a ${USER} docker && sudo systemctl restart docker
+    newgrp docker
+
 
 Requiremnets
 ------------
@@ -43,9 +52,17 @@ could alternatively be installed from your system packages.
     # For Ubuntu:
     sudo apt install python3-pip tox
 
+    # For Fedora
+    sudo dnf install python3-pip python3-tox
+
     # If your distro does not have tox >= 3.15.2, then you can alternatively
     # install or upgrade it from pypi:
-    sudo zypper in python3-pip # / or sudo apt install python3-pip
+    sudo zypper in python3-pip
+    # or
+    sudo apt install python3-pip
+    # or
+    sudo dnf install python3-pip
+
     sudo pip install -U tox
 
 Next we run bindep from inside a tox environment to get the list of missing
@@ -66,13 +83,27 @@ Then we can take the list and install them.
 
 .. code-block:: bash
 
+    # For OpenSUSE:
     sudo zypper in <output from bindep command>
+
+    # For Ubuntu:
+    sudo apt install <output from bindep command>
+
+    # For Fedora:
+    sudo dnf install <output from bindep command>
 
 Or as one command the above can be:
 
 .. code-block:: bash
 
+    # For OpenSUSE:
     sudo zypper in $(tox -qq -e bindep -- -b ${ROOKCHECK_HARDWARE_PROVIDER,,} ${ROOKCHECK_DISTRO,,})
+
+    # For Ubuntu:
+    sudo apt install $(tox -qq -e bindep -- -b ${ROOKCHECK_HARDWARE_PROVIDER,,} ${ROOKCHECK_DISTRO,,})
+
+    # For Fedora:
+    sudo dnf install $(tox -qq -e bindep -- -b ${ROOKCHECK_HARDWARE_PROVIDER,,} ${ROOKCHECK_DISTRO,,})
 
 One of the system requirements to build rook is docker. Make sure the docker
 daemon is running:
@@ -86,6 +117,10 @@ You may also need to make sure your user is in the docker group:
 .. code-block:: bash
 
     sudo usermod -aG docker $USER
+
+    # For fedora:
+    sudo groupadd docker && sudo gpasswd -a ${USER} docker && sudo systemctl restart docker
+    newgrp docker
 
 Verify that you can run docker::
 
