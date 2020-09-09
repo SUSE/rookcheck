@@ -37,7 +37,14 @@
   zypper:
     name:
       - lvm2
+      - chrony
     state: present
+
+- name: Ensure system is NTP time synced  # noqa 301
+  command: chronyc waitsync
+
+- name: Apply NTP update  # noqa 301
+  command: chronyc makestep
 
 # kernel-default-base is not enough (eg. skuba needs vxlan which is not in the base kernel currently (see bsc#1171903)
 - name: update kernel
