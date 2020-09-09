@@ -33,6 +33,19 @@
     sle_major: "{{ ansible_distribution_version.split('.')[0] }}"
     sle_minor: "{{ ansible_distribution_version.split('.')[1] }}"
 
+- name: install dependencies
+  zypper:
+    name:
+      - lvm2
+      - chrony
+    state: present
+
+- name: Ensure system is NTP time synced  # noqa 301
+  command: chronyc waitsync
+
+- name: Apply NTP update  # noqa 301
+  command: chronyc makestep
+
 # kernel-default-base is not enough (eg. skuba needs vxlan which is not in the base kernel currently (see bsc#1171903)
 - name: update kernel
   zypper:
@@ -55,6 +68,22 @@
   zypper:
     name: firewalld
     state: absent
+
+# TODO(jhesketh): Figure out if this is appropriate for all OpenStack
+#                 clouds.
+- name: IPADDR for eth0
+  lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    line: "IPADDR_0={{ ansible_host }}/32"
+    create: yes
+    mode: '0644'
+
+- name: LABEL for eth0
+  lineinfile:
+    path: /etc/sysconfig/network/ifcfg-eth0
+    line: "LABEL_0=Floating"
+    create: yes
+    mode: '0644'
 
 - name: reboot nodes
   reboot:

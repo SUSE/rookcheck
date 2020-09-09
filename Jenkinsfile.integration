@@ -10,16 +10,13 @@ pipeline {
         label "${compute_node}"
     }
 
-    options {
-    parallelsAlwaysFailFast()
-    }
-
     parameters {
         /* first value in the list is the default */
         choice(name: 'OS_CLOUD', choices: ['ecp'], description: 'OpenStack Cloud to use')
         string(name: 'OS_EXTERNAL_NETWORK', defaultValue: 'floating', description: 'the OpenStack external network')
         string(name: 'OS_FLAVOR', defaultValue: 'm1.medium', description: 'the OpenStack image flavor')
-        string(name: 'OS_IMAGE', defaultValue: 'openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud', description: 'the OpenStack image name/id')
+
+        choice(name: 'DISTRO', choices: ['all', 'openSUSE_k8s', 'SLES_CaaSP'], description: 'The OS/K8S distro tuple')
     }
 
     environment {
@@ -32,14 +29,46 @@ pipeline {
         OS_CLOUD = "${params.OS_CLOUD}"
         ROOKCHECK_OS_EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
         ROOKCHECK_OS_FLAVOR = "${params.OS_FLAVOR}"
-        ROOKCHECK_OS_IMAGE = "${params.OS_IMAGE}"
         ROOKCHECK_BUILD_ROOK_FROM_GIT = "FALSE"
     }
     stages {
-        stage('test basic') {
-            steps {
-        sh "env"
-                sh "tox -epy3 tests/test_basic.py"
+        stage('Test distros') {
+            failFast false
+            parallel {
+                stage('openSUSE_k8s') {
+                    when {
+                        anyOf {
+                            expression { params.DISTRO == 'all' }
+                            expression { params.DISTRO == 'openSUSE_k8s' }
+                        }
+                    }
+                    environment {
+                        ROOKCHECK_DISTRO = "openSUSE_k8s"
+                        ROOKCHECK_NODE_IMAGE_USER = "opensuse"
+                        ROOKCHECK_OS_NODE_IMAGE = "openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud"
+                    }
+                    steps{
+                        sh "env"
+                        sh "tox -epy3 --workdir opensuse_venv tests/test_basic.py"
+                    }
+                }
+                stage('SLES_CaaSP') {
+                    when {
+                        anyOf {
+                            expression { params.DISTRO == 'all' }
+                            expression { params.DISTRO == 'SLES_CaaSP' }
+                        }
+                    }
+                    environment {
+                        ROOKCHECK_DISTRO = "SLES_CaaSP"
+                        ROOKCHECK_NODE_IMAGE_USER = "sles"
+                        ROOKCHECK_OS_NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
+                    }
+                    steps{
+                        sh "env"
+                        sh "tox -epy3 --workdir sles_venv  tests/test_basic.py"
+                    }
+                }
             }
         }
     }

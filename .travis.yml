@@ -1,19 +1,13 @@
 dist: bionic
 language: python
-matrix:
-  include:
-    - python: 3.6
-      env: TOXENV=lint
-    - python: 3.8
-      env: TOXENV=lint
-    - python: 3.8
-      env: TOXENV=lint-docs
-      # NOTE(jhesketh): I could not find how to limit this to running only when
-      #                 there are docs changes.
-
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
 install:
-  - pip install tox
+  - pip install tox-travis
   - sudo apt-get -y install $(tox -qq -e bindep -- -b libvirt)
-
 script:
-  - tox
+  - tox -e lint
+  - tox -e lint-docs
+  - tox -e py -- tests/test_utils.py

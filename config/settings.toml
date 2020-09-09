@@ -23,9 +23,6 @@ worker_initial_data_disks = 1
 # Available options: openSUSE_k8s, SLES_CaaSP
 distro = "openSUSE_k8s"
 
-# SES version
-ses_version = 6
-
 # The user to SSH into (must be root or sudoer). The node image is configured
 # in the provider specific config file. Some providers may use a more specific
 # user such as ec2_user.
@@ -45,4 +42,4 @@ _use_free_strategy = false
 _remove_workspace = true
 
 # You will only need to edit the config relating to your hardware provider
-dynaconf_include = ["libvirt.toml", "openstack.toml", "aws_ec2.toml", "rook_upstream.toml"]
+dynaconf_include = ["libvirt.toml", "openstack.toml", "aws_ec2.toml", "rook_upstream.toml", "ses.toml"]

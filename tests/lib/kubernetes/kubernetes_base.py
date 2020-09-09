@@ -22,10 +22,11 @@ from abc import ABC, abstractmethod
 import os
 import kubernetes
 import logging
+import re
 import time
 from typing import List
 
-from tests.lib.common import execute
+from tests.lib import common
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase
 from tests.lib.workspace import Workspace
@@ -42,7 +43,7 @@ class KubernetesBase(ABC):
         self._kubeconfig = os.path.join(self.workspace.working_dir,
                                         'kubeconfig')
         self._kubectl_exec = os.path.join(
-            self.workspace.working_dir, 'kubectl')
+            self.workspace.working_dir, 'bin/kubectl')
         self.v1 = None
         logger.info(f"kube init on hardware {self.hardware}")
 
@@ -94,7 +95,7 @@ class KubernetesBase(ABC):
         """
         Run a kubectl command
         """
-        return execute(
+        return common.execute(
             f"{self.kubectl_exec} --kubeconfig {self.kubeconfig}"
             f" {command}",
             check=check,
@@ -168,7 +169,7 @@ class KubernetesBase(ABC):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
 
-    def wait_for_service(self, service, sleep=10, iteration=10,
+    def wait_for_service(self, service, sleep=10, iteration=60,
                          namespace="rook-ceph"):
         found = False
         for i in range(iteration):
@@ -181,3 +182,12 @@ class KubernetesBase(ABC):
             time.sleep(10)
 
         return found
+
+    def wait_for_pods_by_app_label(self, label, count=1, sleep=5, attempts=120,
+                                   namespace="rook-ceph"):
+        pattern = re.compile(r'.*Running')
+        common.wait_for_result(
+            self.kubectl,
+            f'--namespace {namespace} get pod -l app="{label}" --no-headers',
+            matcher=common.regex_count_matcher(pattern, count),
+            attempts=attempts, interval=sleep)

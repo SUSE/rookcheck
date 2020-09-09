@@ -41,12 +41,7 @@ class CaaSP(KubernetesBase):
         self._clusterpath = os.path.join(self.workspace.working_dir, 'cluster')
         self._kubeconfig = os.path.join(
             self.workspace.working_dir, 'cluster', 'admin.conf')
-        self._skuba = os.path.join(self.workspace.working_dir, 'skuba')
-        # FIXME(toabctl): The CaaSP implementation is not downloading the
-        # 'kubectl' executable so it's not available in the workspace dir.
-        # We currently just assume that on the local machine, 'kubectl'
-        # is available
-        self._kubectl_exec = 'kubectl'
+        self._skuba = os.path.join(self.workspace.working_dir, 'bin/skuba')
 
     def bootstrap(self):
         super().bootstrap()
@@ -60,7 +55,7 @@ class CaaSP(KubernetesBase):
         self.workspace.execute(
             f"{self._skuba} node bootstrap --user sles --sudo --target"
             f" {self.hardware.masters[0].get_ssh_ip()}"
-            f" {self.hardware.masters[0].dnsname}", capture=True,
+            f" {self.hardware.masters[0].name}", capture=True,
             check=True, chdir=self._clusterpath
         )
 
@@ -72,7 +67,7 @@ class CaaSP(KubernetesBase):
 
         self.workspace.execute(
             f"{self._skuba} node join --role {role} --user sles --sudo "
-            f"--target {node.get_ssh_ip()} {node.dnsname}",
+            f"--target {node.get_ssh_ip()} {node.name}",
             capture=True, check=True, chdir=self._clusterpath
         )
 

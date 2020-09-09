@@ -38,9 +38,7 @@ def test_file_creation(rook_cluster):
     rook_cluster.kubernetes.kubectl_apply(
         os.path.join(rook_cluster.ceph_dir, 'direct-mount.yaml'))
 
-    # TODO(jhesketh): Create a helper function for checking if a container is
-    #                 ready instead of waiting.
-    time.sleep(10)
+    rook_cluster.kubernetes.wait_for_pods_by_app_label("rook-direct-mount")
 
     logger.debug("Mount myfs in pod and put a test string into a file")
     rook_cluster.kubernetes.execute_in_pod_by_label("""
@@ -76,7 +74,7 @@ def test_file_creation(rook_cluster):
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=1 -n rook-ceph")
 
-    time.sleep(10)
+    rook_cluster.kubernetes.wait_for_pods_by_app_label("rook-direct-mount")
 
     logger.debug("Mount myfs again and output the contents")
     rc, stdout, stderr = rook_cluster.kubernetes.execute_in_pod_by_label("""
@@ -135,13 +133,14 @@ def test_service_mons(rook_cluster):
 
 # check if all default services are available
 def test_services(rook_cluster):
-    services = ["csi-cephfsplugin-metrics",
-                "csi-rbdplugin-metrics",
-                "rook-ceph-mgr",
+    services = ["rook-ceph-mgr",
                 "rook-ceph-mgr-dashboard",
                 "rook-ceph-mon-a",
                 "rook-ceph-mon-b",
                 "rook-ceph-mon-c"]
+
+    # TODO(jhesketh): Check if csi-cephfsplugin-metrics or
+    #                 csi-rbdplugin-metrics should be here.
 
     for service in services:
         found = rook_cluster.kubernetes.wait_for_service(service)
