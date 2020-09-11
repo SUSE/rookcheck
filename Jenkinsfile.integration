@@ -45,7 +45,7 @@ pipeline {
                     environment {
                         ROOKCHECK_DISTRO = "openSUSE_k8s"
                         ROOKCHECK_NODE_IMAGE_USER = "opensuse"
-                        ROOKCHECK_OS_NODE_IMAGE = "openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud"
+                        ROOKCHECK_OS_NODE_IMAGE = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
                     }
                     steps{
                         sh "env"
