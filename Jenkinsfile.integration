@@ -35,7 +35,24 @@ pipeline {
         stage('Test distros') {
             failFast false
             parallel {
-                stage('openSUSE_k8s') {
+                stage('openSUSE_15.1') {
+                    when {
+                        anyOf {
+                            expression { params.DISTRO == 'all' }
+                            expression { params.DISTRO == 'openSUSE_k8s' }
+                        }
+                    }
+                    environment {
+                        ROOKCHECK_DISTRO = "openSUSE_k8s"
+                        ROOKCHECK_NODE_IMAGE_USER = "opensuse"
+                        ROOKCHECK_OS_NODE_IMAGE = "openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud"
+                    }
+                    steps{
+                        sh "env"
+                        sh "tox -epy3 --workdir opensuse_venv tests/test_basic.py"
+                    }
+                }
+                stage('openSUSE_15.2') {
                     when {
                         anyOf {
                             expression { params.DISTRO == 'all' }
