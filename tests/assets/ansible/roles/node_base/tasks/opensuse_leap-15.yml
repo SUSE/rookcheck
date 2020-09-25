@@ -4,8 +4,8 @@
 
 # - name: add basic repositories
 #   zypper_repository:
-#     name: "{{ repo.name }}"
-#     repo: "{{ repo.url }}"
+#     name: "{{ _repo.name }}"
+#     repo: "{{ _repo.url }}"
 #     state: present
 #     auto_import_keys: yes
 #     overwrite_multiple: yes
@@ -14,7 +14,18 @@
 #     - { name: "pool", url: "http://download.opensuse.org/distribution/leap/{{ ansible_distribution_version }}/repo/oss/" }
 #     - { name: "update", url: "http://download.opensuse.org/update/leap/{{ ansible_distribution_version }}/oss/" }
 #   loop_control:
-#     loop_var: repo
+#     loop_var: _repo
+
+- name: add extra repositories
+  zypper_repository:
+    name: '{{ _repo.key }}'
+    repo: '{{ _repo.value }}'
+    priority: 50
+    state: present
+    auto_import_keys: yes
+  loop: "{{ lookup('dict', extra_repos, wantlist=True) }}"
+  loop_control:
+    loop_var: _repo
 
 - name: install dependencies
   zypper:

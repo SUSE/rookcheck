@@ -5,13 +5,13 @@
       storage: http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/
       storage_updates: http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/
   zypper_repository:
-    name: '{{ repo.key }}'
-    repo: '{{ repo.value }}'
+    name: '{{ _repo.key }}'
+    repo: '{{ _repo.value }}'
     state: present
     auto_import_keys: yes
   loop: "{{ lookup('dict', repositories) }}"
   loop_control:
-    loop_var: repo
+    loop_var: _repo
 
 - name: add packages
   vars:

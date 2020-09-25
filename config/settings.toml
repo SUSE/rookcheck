@@ -41,5 +41,9 @@ _use_free_strategy = false
 # removed from the disk.
 _remove_workspace = true
 
+# Allow passing extra variables to Ansible (below as JSON)
+# example: export ROOKCHECK_ANSIBLE_EXTRA_VARS='{"extra_repos":{"storage_latest": "http://myextra.repo/"}}'
+ansible_extra_vars = ""
+
 # You will only need to edit the config relating to your hardware provider
 dynaconf_include = ["libvirt.toml", "openstack.toml", "aws_ec2.toml", "rook_upstream.toml", "ses.toml"]

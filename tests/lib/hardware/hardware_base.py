@@ -28,8 +28,8 @@ from typing import Dict, List
 import threading
 
 from tests.lib.hardware.node_base import NodeBase, NodeRole
-
 from tests.lib.workspace import Workspace
+from tests.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,8 @@ class HardwareBase(ABC):
         self.ansible_run_playbook("playbook_node_base.yml", limit_to_nodes)
 
     def ansible_run_playbook(self, playbook: str,
-                             limit_to_nodes: List[NodeBase] = []):
+                             limit_to_nodes: List[NodeBase] = [],
+                             extra_vars=settings.ANSIBLE_EXTRA_VARS):
         path = os.path.abspath(os.path.join(
             os.path.dirname(__file__), '../../assets/ansible', playbook
         ))
@@ -134,11 +135,15 @@ class HardwareBase(ABC):
             limit = "--limit " + ":".join([n.name for n in limit_to_nodes])
         else:
             limit = ""
+        if extra_vars:
+            extra_vars = f"--extra-vars '{extra_vars}'"
+        else:
+            extra_vars = ""
 
         logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
             f"ansible-playbook -i {self._ansible_inventory_dir} "
-            f"{limit} {path}",
+            f"{limit} {extra_vars} {path}",
             logger_name=f"ansible {playbook}")
 
     def _ansible_create_inventory(self):
