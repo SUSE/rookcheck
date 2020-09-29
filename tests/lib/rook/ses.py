@@ -53,8 +53,8 @@ class RookSes(RookBase):
     def _fix_yaml(self):
         # 'suse.com': 'suse.de/devel/storage/7.0/containers',
         replacements = {
-            'suse.com': f'suse.de/suse/containers/ses/{settings.SES_VERSION}'
-                        f'/containers',
+            '.com': '.de/suse/sle-15-sp2/update/products/ses7/update/cr/'
+                    'containers',
             '# ROOK_CSI_CEPH_IMAGE': 'ROOK_CSI_CEPH_IMAGE'
         }
         for root, dirs, files in os.walk(self.ceph_dir):
