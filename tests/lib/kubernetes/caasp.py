@@ -86,6 +86,12 @@ class CaaSP(KubernetesBase):
         for t in threads:
             t.join()
 
+        # Mark the worker nodes for any role:
+        for node in nodes:
+            if node.role == NodeRole.WORKER:
+                self.kubectl(
+                    f"label node {node.name} node-role.rook-ceph/cluster=any")
+
     def install_kubernetes(self):
         super().install_kubernetes()
         self.join(self.hardware.workers)
