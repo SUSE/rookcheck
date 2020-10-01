@@ -187,7 +187,7 @@ class Node(NodeBase):
         block_device = self._get_next_disk_letter()
         disk = textwrap.dedent("""
             <disk type='file' device='disk'>
-                <driver name='qemu' type='qcow2' cache='none'/>
+                <driver name='qemu' type='qcow2' cache='writeback'/>
                 <source file='%(disk_path)s'/>
                 <target dev='%(block_device)s' bus='virtio'/>
             </disk>
@@ -262,7 +262,7 @@ class Node(NodeBase):
                 <devices>
                     <emulator>/usr/bin/qemu-system-x86_64</emulator>
                     <disk type='file' device='disk'>
-                        <driver name='qemu' type='qcow2' cache='none'/>
+                        <driver name='qemu' type='qcow2' cache='writeback'/>
                         <source file='%(image)s'/>
                         <target dev='vda' bus='virtio'/>
                     </disk>
