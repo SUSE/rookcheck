@@ -129,6 +129,13 @@ class RookBase(ABC):
         logger.info("cluster has %s osd pods running", osds)
         return osds
 
+    def get_number_of_mons(self):
+        # get number of mons
+        mons = self.kubernetes.get_pods_by_app_label("rook-ceph-mon")
+        mons = len(mons)
+        logger.info("cluster has %s mon pods running", mons)
+        return mons
+
     def __enter__(self):
         return self
 
