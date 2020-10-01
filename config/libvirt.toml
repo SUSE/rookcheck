@@ -15,7 +15,7 @@ libvirt_network_subnet = 26
 # The qcow2 image that will be used for libvirt. The image must
 # contain cloud-init. This can be an system path or a URL which rookcheck will
 # download.
-libvirt_image = "https://download.opensuse.org/distribution/leap/15.1/jeos/openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud.qcow2"
+libvirt_image = "https://download.opensuse.org/distribution/leap/15.2/appliances/openSUSE-Leap-15.2-JeOS.x86_64-OpenStack-Cloud.qcow2"
 
 # Memory use for libvirt VMs (in GB)
 libvirt_vm_memory = 8
