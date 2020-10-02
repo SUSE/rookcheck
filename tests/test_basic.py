@@ -14,6 +14,7 @@
 
 import logging
 import os
+import urllib.request
 import pytest
 import time
 import yaml
@@ -35,8 +36,17 @@ def test_deploy_filesystem(rook_cluster):
 
 def test_file_creation(rook_cluster):
     logger.debug("Create direct-mount deployment")
-    rook_cluster.kubernetes.kubectl_apply(
-        os.path.join(rook_cluster.ceph_dir, 'direct-mount.yaml'))
+    direct_mount_yaml_path = os.path.join(rook_cluster.ceph_dir, 'direct-mount.yaml')
+    # in the SES rook RPM package, the direct-mount.yaml example is not available
+    if not os.path.exists(direct_mount_yaml_path):
+        logger.debug("Trying to download direct-mount.yaml from github")
+        with urllib.request.urlopen('https://raw.githubusercontent.com/rook/rook/master/'
+                                    'cluster/examples/kubernetes/ceph/direct-mount.yaml') as f:
+            with open(direct_mount_yaml_path, 'w') as ff:
+                ff.write(f.read().decode('utf-8'))
+                logger.info(f"Wrote {direct_mount_yaml_path}")
+
+    rook_cluster.kubernetes.kubectl_apply(direct_mount_yaml_path)
 
     rook_cluster.kubernetes.wait_for_pods_by_app_label("rook-direct-mount")
 
