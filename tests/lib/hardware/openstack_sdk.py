@@ -157,19 +157,19 @@ class Hardware(HardwareBase):
         if not self._network_public:
             raise Exception(f"External network "
                             f"{settings.OPENSTACK.EXTERNAL_NETWORK} not found."
-                            " Check OS_EXTERNAL_NETWORK setting")
+                            " Check OPENSTACK.EXTERNAL_NETWORK setting")
 
         # check if image is available
         self._image = self._conn.get_image(settings.OPENSTACK.NODE_IMAGE)
         if not self._image:
             raise Exception(f"Node image {settings.OPENSTACK.NODE_IMAGE} not "
-                            "found. Check OS_NODE_IMAGE setting")
+                            "found. Check OPENSTACK.NODE_IMAGE setting")
 
         # check if flavor is available
         self._flavor = self._conn.get_flavor(settings.OPENSTACK.NODE_SIZE)
         if not self._flavor:
             raise Exception(f"Node flavor {settings.OPENSTACK.NODE_SIZE} not "
-                            "found. Check OS_NODE_SIZE setting")
+                            "found. Check OPENSTACK.NODE_SIZE setting")
 
         # basic setup needed for all nodes
         self._keypair = self._create_keypair()
