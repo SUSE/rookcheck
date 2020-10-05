@@ -20,6 +20,7 @@
 # expected state.
 
 from abc import ABC, abstractmethod
+import json
 import os
 import yaml
 import shutil
@@ -126,7 +127,7 @@ class HardwareBase(ABC):
 
     def ansible_run_playbook(self, playbook: str,
                              limit_to_nodes: List[NodeBase] = [],
-                             extra_vars=settings.ANSIBLE_EXTRA_VARS):
+                             extra_vars={}):
         path = os.path.abspath(os.path.join(
             os.path.dirname(__file__), '../../assets/ansible', playbook
         ))
@@ -135,15 +136,18 @@ class HardwareBase(ABC):
             limit = "--limit " + ":".join([n.name for n in limit_to_nodes])
         else:
             limit = ""
+
+        # Supplied extra_vars from settings always take precedence
+        extra_vars.update(settings.ANSIBLE_EXTRA_VARS)
         if extra_vars:
-            extra_vars = f"--extra-vars '{extra_vars}'"
+            extra_vars_param = f"--extra-vars '{json.dumps(extra_vars)}'"
         else:
-            extra_vars = ""
+            extra_vars_param = ""
 
         logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
             f"ansible-playbook -i {self._ansible_inventory_dir} "
-            f"{limit} {extra_vars} {path}",
+            f"{limit} {extra_vars_param} {path}",
             logger_name=f"ansible {playbook}")
 
     def _ansible_create_inventory(self):
