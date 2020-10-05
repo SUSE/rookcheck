@@ -17,7 +17,7 @@ import os
 import wget
 
 
-from tests.config import settings
+from tests.config import settings, converter
 from tests.lib.common import execute
 from tests.lib.rook.base import RookBase
 
@@ -101,7 +101,7 @@ class RookCluster(RookBase):
 
     def preinstall(self):
         super().preinstall()
-        if settings.as_bool('BUILD_ROOK_FROM_GIT'):
+        if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
             self.upload_rook_image()
 
     def upload_rook_image(self):

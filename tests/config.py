@@ -16,6 +16,7 @@ import os
 import pathlib
 
 from dynaconf import Dynaconf
+from dynaconf.utils.parse_conf import get_converter
 
 
 settings_dir = os.path.realpath(os.path.join(
@@ -31,3 +32,9 @@ settings = Dynaconf(
         os.path.join(settings_dir, 'ses.toml'),
     ],
 )
+
+
+# NOTE(jhesketh): Dynaconf's casting does not handle nested dicts properly.
+#                 Instead provide the converter to use directly.
+def converter(converter_key, value, box_settings=None):
+    return get_converter(converter_key, value, box_settings)

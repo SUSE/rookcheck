@@ -320,31 +320,31 @@ class Hardware(HardwareBase):
         self._network = self._create_network()
         if not self._network:
             raise Exception('Can not get libvirt network %s' %
-                            settings.LIBVIRT_NETWORK_RANGE)
+                            settings.LIBVIRT.NETWORK_RANGE)
         logger.info(f"Got libvirt network {self._network.name()}")
         self._image_path = self._get_image_path()
 
     def _get_image_path(self):
-        if (settings.LIBVIRT_IMAGE.startswith("http://") or
-                settings.LIBVIRT_IMAGE.startswith("https://")):
+        if (settings.LIBVIRT.IMAGE.startswith("http://") or
+                settings.LIBVIRT.IMAGE.startswith("https://")):
             logging.debug(
-                f"Downloading image from {settings.LIBVIRT_IMAGE}")
+                f"Downloading image from {settings.LIBVIRT.IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
-                os.path.basename(settings.LIBVIRT_IMAGE)
+                os.path.basename(settings.LIBVIRT.IMAGE)
             )
             wget.download(
-                settings.LIBVIRT_IMAGE,
+                settings.LIBVIRT.IMAGE,
                 download_location,
                 bar=None
             )
             return download_location
-        return settings.LIBVIRT_IMAGE
+        return settings.LIBVIRT.IMAGE
 
     def _create_network(self):
-        network_range = netaddr.IPNetwork(settings.LIBVIRT_NETWORK_RANGE)
+        network_range = netaddr.IPNetwork(settings.LIBVIRT.NETWORK_RANGE)
         subnets = network_range.subnet(
-            settings.as_int('LIBVIRT_NETWORK_SUBNET'))
+            int(settings.LIBVIRT.NETWORK_SUBNET))
         for network in subnets:
             host_ip = str(netaddr.IPAddress(network.first+1))
             netmask = str(network.netmask)
@@ -379,10 +379,10 @@ class Hardware(HardwareBase):
             return net
 
     def get_connection(self):
-        conn = libvirt.open(settings.LIBVIRT_CONNECTION)
+        conn = libvirt.open(settings.LIBVIRT.CONNECTION)
         if not conn:
             raise Exception('Can not open libvirt connection %s' %
-                            settings.LIBVIRT_CONNECTION)
+                            settings.LIBVIRT.CONNECTION)
         logger.debug(f"Got connection to libvirt: {conn}")
         return conn
 
@@ -392,7 +392,7 @@ class Hardware(HardwareBase):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._image_path, self._network,
-                    settings.LIBVIRT_VM_MEMORY, self.workspace)
+                    settings.LIBVIRT.VM_MEMORY, self.workspace)
         node.boot()
         return node
 
