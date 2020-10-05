@@ -12,9 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dynaconf import LazySettings
+import os
+import pathlib
+
+from dynaconf import Dynaconf
 
 
-settings = LazySettings(
+settings_dir = os.path.realpath(os.path.join(
+    pathlib.Path(__file__).parent.absolute(), '../config'))
+
+settings = Dynaconf(
     ENVVAR_PREFIX_FOR_DYNACONF='ROOKCHECK',
+    settings_files=[
+        os.path.join(settings_dir, 'settings.toml'),
+        os.path.join(settings_dir, 'openstack.toml'),
+        os.path.join(settings_dir, 'aws_ec2.toml'),
+        os.path.join(settings_dir, 'rook_upstream.toml'),
+        os.path.join(settings_dir, 'ses.toml'),
+    ],
 )

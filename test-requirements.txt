@@ -1,7 +1,7 @@
 ansible
 ansible-lint
 boto3
-dynaconf<3.0.0
+dynaconf
 flake8
 kubernetes
 mypy
