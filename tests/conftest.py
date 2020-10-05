@@ -104,7 +104,19 @@ def _print_config():
     logger.info("# -----------------------")
     if settings.DISTRO == 'SLES_CaaSP':
         logger.info(
-            f"#    ROOKCHECK_SES_VERSION={settings.SES_VERSION}")
+            f"#    ROOKCHECK_SES__SES_TARGET={settings.SES.SES_TARGET}")
+        logger.info(
+            '#    SES Repositories:')
+        for repo, url in settings(
+                f'SES.{settings.SES.SES_TARGET}.repositories').items():
+            logger.info(
+                f'#     - {repo} : {url}')
+        logger.info(
+            '#    YAML Replacements:')
+        for key, value in settings(
+                f'SES.{settings.SES.SES_TARGET}.yaml_substitutions').items():
+            logger.info(
+                f'#     - {key} = {value}')
     elif settings.DISTRO == 'openSUSE_k8s':
         logger.info(
             f"#    ROOKCHECK_UPSTREAM_ROOK__BUILD_ROOK_FROM_GIT="
