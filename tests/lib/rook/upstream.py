@@ -54,7 +54,7 @@ class RookCluster(RookBase):
             log_stderr=False
         )
 
-        if settings.as_bool('BUILD_ROOK_FROM_GIT'):
+        if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
             logger.info("[build_rook] Download go")
             wget.download(
                 "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
