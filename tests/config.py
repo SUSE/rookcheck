@@ -23,7 +23,7 @@ settings_dir = os.path.realpath(os.path.join(
     pathlib.Path(__file__).parent.absolute(), '../config'))
 
 settings = Dynaconf(
-    ENVVAR_PREFIX_FOR_DYNACONF='ROOKCHECK',
+    envvar_prefix='ROOKCHECK',
     settings_files=[
         os.path.join(settings_dir, 'settings.toml'),
         os.path.join(settings_dir, 'openstack.toml'),
