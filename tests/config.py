@@ -27,6 +27,7 @@ settings = Dynaconf(
     settings_files=[
         os.path.join(settings_dir, 'settings.toml'),
         os.path.join(settings_dir, 'openstack.toml'),
+        os.path.join(settings_dir, 'libvirt.toml'),
         os.path.join(settings_dir, 'aws_ec2.toml'),
         os.path.join(settings_dir, 'rook_upstream.toml'),
         os.path.join(settings_dir, 'ses.toml'),
