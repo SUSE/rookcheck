@@ -12,9 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dynaconf import LazySettings
+import os
+import pathlib
+
+from dynaconf import Dynaconf
+from dynaconf.utils.parse_conf import get_converter
 
 
-settings = LazySettings(
-    ENVVAR_PREFIX_FOR_DYNACONF='ROOKCHECK',
+settings_dir = os.path.realpath(os.path.join(
+    pathlib.Path(__file__).parent.absolute(), '../config'))
+
+settings = Dynaconf(
+    envvar_prefix='ROOKCHECK',
+    settings_files=[
+        os.path.join(settings_dir, 'settings.toml'),
+        os.path.join(settings_dir, 'openstack.toml'),
+        os.path.join(settings_dir, 'aws_ec2.toml'),
+        os.path.join(settings_dir, 'rook_upstream.toml'),
+        os.path.join(settings_dir, 'ses.toml'),
+    ],
 )
+
+
+# NOTE(jhesketh): Dynaconf's casting does not handle nested dicts properly.
+#                 Instead provide the converter to use directly.
+def converter(converter_key, value, box_settings=None):
+    return get_converter(converter_key, value, box_settings)

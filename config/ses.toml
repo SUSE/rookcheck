@@ -1,6 +1,25 @@
-[default]
+[ses]
 
-# SES version (can be 6 or 7)
-# The configured node image must match the SES supported distro. For example,
-# SLES 15 SP1 for SES6, and SLES 15 SP2 for SES7.
-ses_version = 7
+# The target version of SES to install. This must match a key below that
+# contains the repositories and yaml substitutions.
+
+ses_target = "devel"
+
+  [ses.ses7]
+    [ses.ses7.yaml_substitutions]
+      # "suse.com" = "suse.de/devel/storage/7.0/containers"
+
+    [ses.ses7.repositories]
+      # Each key/value under this sub-heading is a repository
+      storage = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
+      storage_updates = "http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/"
+
+  [ses.devel]
+    [ses.devel.yaml_substitutions]
+      "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
+
+    [ses.devel.repositories]
+      # Each key/value under this sub-heading is a repository
+      storage        = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
+      storage_devel  = "http://download.suse.de/ibs/Devel:/Storage:/7.0/SLE_15_SP2"
+      storage_update = "http://download.suse.de/ibs/SUSE:/SLE-15-SP2:/Update:/Products:/SES7/standard/"

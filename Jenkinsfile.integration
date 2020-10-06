@@ -27,9 +27,10 @@ pipeline {
         //                  upstream kubernetes bug that I need to investigate.
         ROOKCHECK_CLUSTER_PREFIX = "rookcheck-jen"
         OS_CLOUD = "${params.OS_CLOUD}"
-        ROOKCHECK_OS_EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
-        ROOKCHECK_OS_FLAVOR = "${params.OS_FLAVOR}"
-        ROOKCHECK_BUILD_ROOK_FROM_GIT = "FALSE"
+        ROOKCHECK_OPENSTACK__EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
+        ROOKCHECK_OPENSTACK__FLAVOR = "${params.OS_FLAVOR}"
+        ROOKCHECK_UPSTREAM_ROOK__BUILD_ROOK_FROM_GIT = "FALSE"
+
     }
     stages {
         stage('Test distros') {
@@ -45,7 +46,7 @@ pipeline {
                     environment {
                         ROOKCHECK_DISTRO = "openSUSE_k8s"
                         ROOKCHECK_NODE_IMAGE_USER = "opensuse"
-                        ROOKCHECK_OS_NODE_IMAGE = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
+                        ROOKCHECK_OPENSTACK__NODE_IMAGE = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
                     }
                     steps{
                         sh "env"
@@ -62,7 +63,7 @@ pipeline {
                     environment {
                         ROOKCHECK_DISTRO = "SLES_CaaSP"
                         ROOKCHECK_NODE_IMAGE_USER = "sles"
-                        ROOKCHECK_OS_NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
+                        ROOKCHECK_OPENSTACK__NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
                     }
                     steps{
                         sh "env"
