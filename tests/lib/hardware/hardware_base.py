@@ -138,7 +138,8 @@ class HardwareBase(ABC):
             limit = ""
 
         # Supplied extra_vars from settings always take precedence
-        extra_vars.update(settings.ANSIBLE_EXTRA_VARS)
+        if settings.ANSIBLE_EXTRA_VARS:
+            extra_vars.update(json.loads(settings.ANSIBLE_EXTRA_VARS))
         if extra_vars:
             extra_vars_param = f"--extra-vars '{json.dumps(extra_vars)}'"
         else:
