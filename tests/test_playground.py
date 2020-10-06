@@ -19,6 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 def test_playground(workspace, hardware, kubernetes):
-    #rook_cluster = linear_rook_cluster
+    # rook_cluster = linear_rook_cluster
     import code
     code.interact(local=locals())
