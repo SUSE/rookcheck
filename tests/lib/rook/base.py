@@ -89,9 +89,10 @@ class RookBase(ABC):
 
         logger.info("Wait for OSD prepare to complete "
                     "(this may take a while...)")
-        pattern = re.compile(r'.*rook-ceph-osd-prepare.*worker.*Completed')
+        pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
         common.wait_for_result(
-            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            self.kubernetes.kubectl, "--namespace rook-ceph get pods"
+            " -l app=rook-ceph-osd-prepare",
             matcher=common.regex_count_matcher(pattern, 3),
             attempts=120, interval=15)
 
