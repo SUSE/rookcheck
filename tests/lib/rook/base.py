@@ -14,7 +14,6 @@
 
 import logging
 import os
-import time
 import re
 
 from tests.lib import common
@@ -71,8 +70,17 @@ class RookBase(ABC):
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'operator.yaml'))
 
-        # TODO(jhesketh): Check if sleeping is necessary
-        time.sleep(10)
+        # set operator log level
+        self.kubernetes.kubectl(
+            "--namespace rook-ceph set env "
+            "deployment/rook-ceph-operator ROOK_LOG_LEVEL=DEBUG")
+
+        logger.info("Wait for rook-ceph-operator running")
+        pattern = re.compile(r'.*rook-ceph-operator.*Running')
+        common.wait_for_result(
+            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            matcher=common.regex_count_matcher(pattern, 1),
+            attempts=30, interval=10)
 
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'cluster.yaml'))
