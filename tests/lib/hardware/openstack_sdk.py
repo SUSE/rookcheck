@@ -73,7 +73,7 @@ class Node(NodeBase):
         logger.info(f"Node {self._name} has IP {self._floating_ip}")
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
-                disk_name = self.disk_create()
+                disk_name = self.disk_create(10)
                 self.disk_attach(name=disk_name)
 
     def get_ssh_ip(self) -> str:
@@ -84,14 +84,15 @@ class Node(NodeBase):
             if v['volume'].id == volume.id:
                 return k
 
-    def disk_create(self, capacity='10'):
+    def disk_create(self, capacity):
+        super().disk_create(capacity)
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
         volume = self._conn.create_volume(capacity, name=name,
                                           delete_on_termination=True)
         self._disks[name] = {'volume': volume, 'attached': False}
-        logger.info(f"Volume {name} created - ({volume.id}) / size={capacity}")
+        logger.info(f"disk {name} ({volume.id}) created")
         return name
 
     def disk_attach(self, name=None, volume=None):

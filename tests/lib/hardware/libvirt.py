@@ -76,7 +76,7 @@ class Node(NodeBase):
         self._dom.create()
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
-                disk_name = self.disk_create()
+                disk_name = self.disk_create(10)
                 self.disk_attach(name=disk_name)
         self._ips = self._get_ips()
         self._wait_for_ssh()
@@ -146,22 +146,24 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
-    def disk_create(self, capacity='10G'):
+    def disk_create(self, capacity):
         """
         Create a disk volume
         """
+        super().disk_create(capacity)
+        capacity_gb = f"{capacity}G"
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
         disk_path = os.path.join(self._workspace.working_dir,
                                  f"{name}.qcow2")
-        execute(f"qemu-img create -f qcow2 {disk_path} {capacity}")
+        execute(f"qemu-img create -f qcow2 {disk_path} {capacity_gb}")
         self._disks[name] = {
             'path': disk_path,
             'attached': False,
             'xml': None
         }
-        logger.info(f"Volume {name} / size={capacity} created")
+        logger.info(f"disk {name} created")
         return name
 
     def _get_next_disk_letter(self):

@@ -57,11 +57,11 @@ class NodeBase(ABC):
     # disk_attach
     # disk_detach
     @abstractmethod
-    def disk_create(self, capacity):
+    def disk_create(self, capacity: int):
         """
         Create a disk volume
         """
-        pass
+        logger.info(f"creating disk with capacity {capacity} GB ...")
 
     @abstractmethod
     def disk_attach(self, capacity):

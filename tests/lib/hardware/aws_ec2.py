@@ -69,7 +69,7 @@ class Node(NodeBase):
 
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
-                disk_name = self.disk_create()
+                disk_name = self.disk_create(10)
                 self.disk_attach(name=disk_name)
 
     def get_ssh_ip(self) -> str:
@@ -92,7 +92,8 @@ class Node(NodeBase):
             if v['volume'].id == volume.id:
                 return k
 
-    def disk_create(self, capacity='10'):
+    def disk_create(self, capacity):
+        super().disk_create(capacity)
         if not self._instance:
             raise Exception("Can not create a disk until a node is created")
         suffix = ''.join(random.choice(string.ascii_lowercase)
@@ -100,12 +101,12 @@ class Node(NodeBase):
         name = f"{self._name}-volume-{suffix}"
         volume = self._ec2.create_volume(
             AvailabilityZone=self._instance.placement['AvailabilityZone'],
-            Size=int(capacity),
+            Size=capacity,
         )
         volume.create_tags(
             Tags=[{"Key": "Name", "Value": name}])
         self._disks[name] = {'volume': volume, 'attached': False}
-        logger.info(f"Volume {name} created - ({volume}) / size={capacity}")
+        logger.info(f"disk {name} ({volume}) created")
         return name
 
     def _get_next_device_name(self):
