@@ -50,7 +50,7 @@ pipeline {
                     }
                     steps{
                         sh "env"
-                        sh "tox -epy3 --workdir opensuse_venv tests/test_basic.py"
+                        sh "tox -epy3 --workdir opensuse_venv -- --junitxml junit-results/openSUSE_k8s.xml tests/test_basic.py"
                     }
                 }
                 stage('SLES_CaaSP') {
@@ -67,10 +67,15 @@ pipeline {
                     }
                     steps{
                         sh "env"
-                        sh "tox -epy3 --workdir sles_venv  tests/test_basic.py"
+                        sh "tox -epy3 --workdir sles_venv -- --junitxml junit-results/SLES_CaaSP.xml tests/test_basic.py"
                     }
                 }
             }
+        }
+    }
+    post {
+        always {
+            junit 'junit-results/*.xml'
         }
     }
 }
