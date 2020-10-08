@@ -17,6 +17,7 @@ target = "devel7"
   [ses.devel7]
     [ses.devel7.yaml_substitutions]
       "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
+      "# ROOK_CSI_" = "ROOK_CSI_"
 
     [ses.devel7.repositories]
       # Each key/value under this sub-heading is a repository
