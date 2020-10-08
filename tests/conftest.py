@@ -17,7 +17,7 @@ import os
 import pytest
 import threading
 
-from tests.config import settings
+from tests.config import settings, converter
 from tests.lib import common
 from tests.lib.workspace import Workspace
 
@@ -134,7 +134,7 @@ def _print_config():
 def _check_docker_requirement():
     logger.debug("Checking if docker is running...")
     if settings.DISTRO == 'openSUSE_k8s' and \
-            settings.as_bool('BUILD_ROOK_FROM_GIT'):
+            converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
         rc, out, err = common.execute('docker ps', log_stdout=False)
         if rc != 0:
             raise Exception("Docker is not running - see manual.")
