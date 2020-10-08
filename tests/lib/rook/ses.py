@@ -38,7 +38,7 @@ class RookSes(RookBase):
         super().preinstall()
         repo_vars = {
             'ses_repositories':
-                settings(f'SES.{settings.SES.SES_TARGET}.repositories')
+                settings(f'SES.{settings.SES.TARGET}.repositories')
         }
         self.kubernetes.hardware.ansible_run_playbook(
             'playbook_ses.yaml', extra_vars=repo_vars)
@@ -58,7 +58,7 @@ class RookSes(RookBase):
         # Replacements are to point container paths and/or versions to the
         # expected ones to test.
         replacements = settings(
-            f'SES.{settings.SES.SES_TARGET}.yaml_substitutions')
+            f'SES.{settings.SES.TARGET}.yaml_substitutions')
         for root, dirs, files in os.walk(self.ceph_dir):
             for name in files:
                 src = os.path.join(root, name)

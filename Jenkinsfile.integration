@@ -17,6 +17,7 @@ pipeline {
         string(name: 'OS_FLAVOR', defaultValue: 'm1.medium', description: 'the OpenStack image flavor')
 
         choice(name: 'DISTRO', choices: ['all', 'openSUSE_k8s', 'SLES_CaaSP'], description: 'The OS/K8S distro tuple')
+        choice(name: 'SES_TARGET', choices: ['ses7', 'devel7'], description: 'The set of repositories to use when building SLES_CaaSP (see ses.toml).')
     }
 
     environment {
@@ -62,6 +63,7 @@ pipeline {
                     }
                     environment {
                         ROOKCHECK_DISTRO = "SLES_CaaSP"
+                        ROOKCHECK_SES__TARGET = "${params.SES_TARGET}"
                         ROOKCHECK_NODE_IMAGE_USER = "sles"
                         ROOKCHECK_OPENSTACK__NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
                     }
