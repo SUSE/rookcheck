@@ -291,7 +291,7 @@ def test_mons_up_down(rook_cluster):
     check = 1
     mon_pods = rook_cluster.get_number_of_mons()
 
-    while (check <= 60) and (mon_pods != mons):
+    while (check <= 180) and (mon_pods != mons):
         time.sleep(10)
         mon_pods = rook_cluster.get_number_of_mons()
         check += 1
