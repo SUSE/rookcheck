@@ -26,6 +26,7 @@ import re
 import time
 from typing import List
 
+from tests.config import settings
 from tests.lib import common
 from tests.lib.hardware.hardware_base import HardwareBase
 from tests.lib.hardware.node_base import NodeBase
@@ -85,7 +86,7 @@ class KubernetesBase(ABC):
         return self
 
     def __exit__(self, type, value, traceback):
-        self.destroy()
+        self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))
 
     def _configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)
@@ -157,12 +158,12 @@ class KubernetesBase(ABC):
         )
 
     def destroy(self, skip=True):
-        logger.info(f"kube destroy on hardware {self.hardware}")
         if skip:
             # We can skip in most cases since the nodes themselves will be
             # destroyed instead.
             return
         # TODO(jhesketh): Uninstall kubernetes
+        logger.info(f"kube destroy on hardware {self.hardware}")
         pass
 
     def configure_kubernetes_client(self):

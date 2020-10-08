@@ -429,7 +429,12 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def destroy(self):
-        super().destroy()
+    def destroy(self, skip=False):
+        super().destroy(skip=skip)
+
+        if skip:
+            logger.warning(f"Leaving network {self._network.name()}")
+            return
+
         self._network.destroy()
         logger.info(f"network {self._network.name()} destroyed")

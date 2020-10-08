@@ -67,6 +67,8 @@ def _print_config():
     logger.info(f"# ROOKCHECK_NODE_IMAGE_USER={settings.NODE_IMAGE_USER}")
     logger.info(f"# ROOKCHECK__USE_THREADS={settings._USE_THREADS}")
     logger.info(f"# ROOKCHECK__REMOVE_WORKSPACE={settings._REMOVE_WORKSPACE}")
+    logger.info(
+        f"# ROOKCHECK__TEAR_DOWN_CLUSTER={settings._TEAR_DOWN_CLUSTER}")
     logger.info(f"# ROOKCHECK_HARDWARE_PROVIDER={settings.HARDWARE_PROVIDER}")
     logger.info("# Hardware provider specific config:")
     logger.info("# ----------------------------------")

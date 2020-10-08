@@ -17,6 +17,7 @@ import os
 import time
 import re
 
+from tests.config import settings
 from tests.lib import common
 from abc import ABC, abstractmethod
 
@@ -46,12 +47,12 @@ class RookBase(ABC):
         pass
 
     def destroy(self, skip=True):
-        logger.info(f"rook destroy on {self.kubernetes.hardware}")
         if skip:
             # We can skip in most cases since the kubernetes cluster, if not
             # the nodes themselves will be destroyed instead.
             return
         # TODO(jhesketh): Uninstall rook
+        logger.info(f"rook destroy on {self.kubernetes.hardware}")
         pass
 
     def execute_in_ceph_toolbox(self, command, log_stdout=False):
@@ -147,4 +148,4 @@ class RookBase(ABC):
         return self
 
     def __exit__(self, type, value, traceback):
-        self.destroy()
+        self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))
