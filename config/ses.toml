@@ -3,7 +3,7 @@
 # The target version of SES to install. This must match a key below that
 # contains the repositories and yaml substitutions.
 
-ses_target = "devel"
+target = "devel7"
 
   [ses.ses7]
     [ses.ses7.yaml_substitutions]
@@ -14,11 +14,11 @@ ses_target = "devel"
       storage = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
       storage_updates = "http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/"
 
-  [ses.devel]
-    [ses.devel.yaml_substitutions]
+  [ses.devel7]
+    [ses.devel7.yaml_substitutions]
       "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
 
-    [ses.devel.repositories]
+    [ses.devel7.repositories]
       # Each key/value under this sub-heading is a repository
       storage        = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
       storage_devel  = "http://download.suse.de/ibs/Devel:/Storage:/7.0/SLE_15_SP2"
