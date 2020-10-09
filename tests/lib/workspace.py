@@ -183,6 +183,9 @@ class Workspace():
         return working_dir_path
 
     def destroy(self, skip=False):
+        if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
+            input("press any key to cleanup workspace")
+
         # This kills the SSH_AGENT_PID agent
         try:
             self.execute('ssh-agent -k', check=True)

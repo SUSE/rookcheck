@@ -162,6 +162,10 @@ class KubernetesBase(ABC):
             # We can skip in most cases since the nodes themselves will be
             # destroyed instead.
             return
+
+        if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
+            input("press any key to cleanup kubernetes")
+
         # TODO(jhesketh): Uninstall kubernetes
         logger.info(f"kube destroy on hardware {self.hardware}")
         pass

@@ -40,6 +40,19 @@ to False.
 
     export ROOKCHECK__TEAR_DOWN_CLUSTER="FALSE"
 
+In that case, you need to cleanup the resources (used hardware, eg. OpenStack
+or EC2 nodes) manually.
+
+Another option is to keep `setting _tear_down_cluster` to True and set instead
+`setting tear_down_cluster_confirm` to True. In that case, the tear down steps
+for the different layers (workspace, hardware, kubernetes, rook) must be
+manually confirmed.
+
+.. code-block:: bash
+
+   export ROOKCHECK__TEAR_DOWN_CLUSTER="TRUE" # This is anyway the default
+   export ROOKCHECK__TEAR_DOWN_CLUSTER_CONFIRM="TRUE"
+
 You can then access the kubeconfig and ansible inventory files among other
 resources in the workspace (defined by `workspace_dir`). This is usually
 something like `/tmp/rookcheck*`.

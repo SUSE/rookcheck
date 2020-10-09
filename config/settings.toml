@@ -30,16 +30,16 @@ node_image_user = "opensuse"
 # with debugging at the cost of performance.
 _use_threads = false
 
-# Whether or not to use the ansible "free" strategy. It is generally faster
-# but causes the output to be intertwined and more confusing.
-# TODO(jhesketh): This may not be used anymore.
-_use_free_strategy = false
-
 # Set _tear_down_cluster to False to keep the nodes and all the associated
 # resources available after rookcheck has finished. Keep in mind that the
 # created resources will need cleaning up manually afterwards.
 # NOTE: This option forces _remove_workspace to be False.
 _tear_down_cluster = true
+
+# Set _tear_down_cluster_confirm to True to stop the tear down process
+# and wait for user input (pressing enter).
+# NOTE: This option is only useful if _tear_down_cluster is set to True
+_tear_down_cluster_confirm = false
 
 # If set to True, the workspace and all created files from a test will be
 # removed from the disk.
