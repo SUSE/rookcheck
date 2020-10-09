@@ -96,6 +96,10 @@ class HardwareBase(ABC):
                 logger.warning(f".. with volumes {n._disks}")
                 # TODO(jhesketh): Neaten up how disks are handled
             return
+
+        if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
+            input("press any key to cleanup hardware")
+
         logger.info("Remove all nodes from Hardware")
         for n in list(self.nodes):
             self.node_remove(self.nodes[n])

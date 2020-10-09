@@ -50,6 +50,10 @@ class RookBase(ABC):
             # We can skip in most cases since the kubernetes cluster, if not
             # the nodes themselves will be destroyed instead.
             return
+
+        if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
+            input("press any key to cleanup rook")
+
         # TODO(jhesketh): Uninstall rook
         logger.info(f"rook destroy on {self.kubernetes.hardware}")
         pass

@@ -36,6 +36,11 @@ _use_threads = false
 # NOTE: This option forces _remove_workspace to be False.
 _tear_down_cluster = true
 
+# Set _tear_down_cluster_confirm to True to stop the tear down process
+# and wait for user input (pressing enter).
+# NOTE: This option is only useful if _tear_down_cluster is set to True
+_tear_down_cluster_confirm = false
+
 # If set to True, the workspace and all created files from a test will be
 # removed from the disk.
 _remove_workspace = true
