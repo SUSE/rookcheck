@@ -315,14 +315,24 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def destroy(self):
-        node_instances = []
-        logger.info("Remove all nodes from Hardware")
-        for n in list(self.nodes):
-            node_instances.append(self.nodes[n]._instance)
-            # FIXME(jhesketh): This waits until the node is terminated and
-            #                  therefore is quite slow. We should thread this.
-            self.node_remove(self.nodes[n])
+    def destroy(self, skip=False):
+        super().destroy(skip=skip)
+
+        if skip:
+            if self._keypair:
+                logger.warning(f"Leaving keypair {self._keypair}")
+            if self._security_group:
+                logger.warning(
+                    f"Leaving security group {self._security_group}")
+            if self._subnet:
+                logger.warning(f"Leaving subnet {self._subnet}")
+            if self._routetable:
+                logger.warning(f"Leaving routetable {self._routetable}")
+            if self._gateway:
+                logger.warning(f"Leaving gateway {self._gateway}")
+            if self._vpc:
+                logger.warning(f"Leaving VPC {self._vpc}")
+            return
 
         self._keypair.delete()
         logger.info(f"Deleted keypair {self._keypair}")
@@ -338,9 +348,3 @@ class Hardware(HardwareBase):
         logger.info(f"Deleted gateway {self._gateway}")
         self._vpc.delete()
         logger.info(f"Deleted vpc {self._vpc}")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.destroy()

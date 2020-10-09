@@ -28,9 +28,9 @@ import logging
 from typing import Dict, List
 import threading
 
+from tests.config import settings
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
-from tests.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,16 @@ class HardwareBase(ABC):
             f"ssh-keygen -R {node.get_ssh_ip()}", check=False,
             log_stderr=False)
 
-    def destroy(self):
+    def destroy(self, skip=False):
+        if skip:
+            logger.warning("Hardware will not be removed!")
+            logger.warning("The following nodes and their associated resources"
+                           " (such as IP's and volumes) will remain:")
+            for n in self.nodes.values():
+                logger.warning(f"Leaving node {n.name} at ip {n.get_ssh_ip()}")
+                logger.warning(f".. with volumes {n._disks}")
+                # TODO(jhesketh): Neaten up how disks are handled
+            return
         logger.info("Remove all nodes from Hardware")
         for n in list(self.nodes):
             self.node_remove(self.nodes[n])
@@ -209,4 +218,4 @@ class HardwareBase(ABC):
         return self
 
     def __exit__(self, type, value, traceback):
-        self.destroy()
+        self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))

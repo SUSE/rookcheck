@@ -226,8 +226,23 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def destroy(self):
-        super().destroy()
+    def destroy(self, skip=False):
+        super().destroy(skip=skip)
+
+        if skip:
+            if self._router_private:
+                logger.warning(f"Leaving router {self._router_private.name}")
+            if self._subnet_private:
+                logger.warning(f"Leaving subnet {self._subnet_private.name}")
+            if self._network_private:
+                logger.warning(f"Leaving network {self._network_private.name}")
+            if self._security_group:
+                logger.warning(
+                    f"Leaving security group {self._security_group.name}")
+            if self._keypair:
+                logger.warning(f"Leaving keypair {self._keypair.name}")
+            return
+
         self._delete_network_private()
         self._delete_security_group()
         self._delete_keypair()

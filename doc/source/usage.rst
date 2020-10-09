@@ -33,6 +33,29 @@ Running an individual test or set of tests:
 Debugging
 ---------
 
+You can leave the built environment available by `setting _tear_down_cluster`
+to False.
+
+.. code-block:: bash
+
+    export ROOKCHECK__TEAR_DOWN_CLUSTER="FALSE"
+
+You can then access the kubeconfig and ansible inventory files among other
+resources in the workspace (defined by `workspace_dir`). This is usually
+something like `/tmp/rookcheck*`.
+
+If Kubernetes was set up, you can access the binaries used from there too.
+For example:
+
+.. code-block:: bash
+
+    cd /tmp/rookcheck/rookcheck-josh-75f5 # (substitute with your build name)
+    ./bin/kubectl --kubeconfig kubeconfig get all --all-namespaces
+
+    # Or if you're building SES, use
+    ./bin/kubectl --kubeconfig cluster/admin.conf get all --all-namespaces
+
+
 Dropping to `PDB (Python Debugger) <http://docs.python.org/library/pdb.html>`_
 on failure:
 
