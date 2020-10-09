@@ -185,6 +185,20 @@ def test_osd_number(rook_cluster):
 @pytest.mark.xfail(reason="This is currently failing due to "
                           "https://github.com/rook/rook/issues/6214")
 def test_add_node(rook_cluster):
+    # patch deployment to reduce ROOK_DISCOVER_DEVICES_INTERVAL from 60m to 2m
+    logger.info("Patching deployment to reduce ROOK_DISCOVER_DEVICES_INTERVAL")
+    patch = {'spec':
+             {'template':
+              {'spec':
+               {'containers':
+                [{'name':
+                  'rook-ceph-operator',
+                  'env': [
+                      {'name': 'ROOK_DISCOVER_DEVICES_INTERVAL', 'value': '2m'}
+                  ]}]}}}}
+    rook_cluster.kubernetes.kubectl(
+        f'-n rook-ceph patch deployment rook-ceph-operator'
+        f' --patch "{ yaml.dump(patch) }"')
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
     node_name = "%s-worker-%s" % (rook_cluster.workspace.name, "test-node")
