@@ -182,13 +182,18 @@ class Workspace():
         os.makedirs(os.path.join(working_dir_path, 'bin'))
         return working_dir_path
 
-    def destroy(self):
+    def destroy(self, skip=False):
         # This kills the SSH_AGENT_PID agent
         try:
             self.execute('ssh-agent -k', check=True)
         except subprocess.CalledProcessError:
             logger.warning(f'Killing ssh-agent with PID'
                            f' {self._ssh_agent_pid} failed')
+
+        if skip:
+            logger.warning("The workspace directory will not be removed!")
+            logger.warning(f"Workspace left behind at {self.working_dir}")
+            return
 
         if settings.as_bool('_REMOVE_WORKSPACE'):
             logger.info(f"Removing workspace {self.working_dir} from disk")
@@ -225,4 +230,4 @@ class Workspace():
         return self
 
     def __exit__(self, type, value, traceback):
-        self.destroy()
+        self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))

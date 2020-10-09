@@ -76,7 +76,7 @@ class Node(NodeBase):
         self._dom.create()
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
-                disk_name = self.disk_create()
+                disk_name = self.disk_create(10)
                 self.disk_attach(name=disk_name)
         self._ips = self._get_ips()
         self._wait_for_ssh()
@@ -146,22 +146,24 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: created qcow2 backing file under"
                     f"{self._snap_img_path}")
 
-    def disk_create(self, capacity='10G'):
+    def disk_create(self, capacity):
         """
         Create a disk volume
         """
+        super().disk_create(capacity)
+        capacity_gb = f"{capacity}G"
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
         disk_path = os.path.join(self._workspace.working_dir,
                                  f"{name}.qcow2")
-        execute(f"qemu-img create -f qcow2 {disk_path} {capacity}")
+        execute(f"qemu-img create -f qcow2 {disk_path} {capacity_gb}")
         self._disks[name] = {
             'path': disk_path,
             'attached': False,
             'xml': None
         }
-        logger.info(f"Volume {name} / size={capacity} created")
+        logger.info(f"disk {name} created")
         return name
 
     def _get_next_disk_letter(self):
@@ -187,7 +189,7 @@ class Node(NodeBase):
         block_device = self._get_next_disk_letter()
         disk = textwrap.dedent("""
             <disk type='file' device='disk'>
-                <driver name='qemu' type='qcow2' cache='none'/>
+                <driver name='qemu' type='qcow2' cache='writeback'/>
                 <source file='%(disk_path)s'/>
                 <target dev='%(block_device)s' bus='virtio'/>
             </disk>
@@ -262,7 +264,7 @@ class Node(NodeBase):
                 <devices>
                     <emulator>/usr/bin/qemu-system-x86_64</emulator>
                     <disk type='file' device='disk'>
-                        <driver name='qemu' type='qcow2' cache='none'/>
+                        <driver name='qemu' type='qcow2' cache='writeback'/>
                         <source file='%(image)s'/>
                         <target dev='vda' bus='virtio'/>
                     </disk>
@@ -320,31 +322,31 @@ class Hardware(HardwareBase):
         self._network = self._create_network()
         if not self._network:
             raise Exception('Can not get libvirt network %s' %
-                            settings.LIBVIRT_NETWORK_RANGE)
+                            settings.LIBVIRT.NETWORK_RANGE)
         logger.info(f"Got libvirt network {self._network.name()}")
         self._image_path = self._get_image_path()
 
     def _get_image_path(self):
-        if (settings.LIBVIRT_IMAGE.startswith("http://") or
-                settings.LIBVIRT_IMAGE.startswith("https://")):
+        if (settings.LIBVIRT.IMAGE.startswith("http://") or
+                settings.LIBVIRT.IMAGE.startswith("https://")):
             logging.debug(
-                f"Downloading image from {settings.LIBVIRT_IMAGE}")
+                f"Downloading image from {settings.LIBVIRT.IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
-                os.path.basename(settings.LIBVIRT_IMAGE)
+                os.path.basename(settings.LIBVIRT.IMAGE)
             )
             wget.download(
-                settings.LIBVIRT_IMAGE,
+                settings.LIBVIRT.IMAGE,
                 download_location,
                 bar=None
             )
             return download_location
-        return settings.LIBVIRT_IMAGE
+        return settings.LIBVIRT.IMAGE
 
     def _create_network(self):
-        network_range = netaddr.IPNetwork(settings.LIBVIRT_NETWORK_RANGE)
+        network_range = netaddr.IPNetwork(settings.LIBVIRT.NETWORK_RANGE)
         subnets = network_range.subnet(
-            settings.as_int('LIBVIRT_NETWORK_SUBNET'))
+            int(settings.LIBVIRT.NETWORK_SUBNET))
         for network in subnets:
             host_ip = str(netaddr.IPAddress(network.first+1))
             netmask = str(network.netmask)
@@ -379,10 +381,10 @@ class Hardware(HardwareBase):
             return net
 
     def get_connection(self):
-        conn = libvirt.open(settings.LIBVIRT_CONNECTION)
+        conn = libvirt.open(settings.LIBVIRT.CONNECTION)
         if not conn:
             raise Exception('Can not open libvirt connection %s' %
-                            settings.LIBVIRT_CONNECTION)
+                            settings.LIBVIRT.CONNECTION)
         logger.debug(f"Got connection to libvirt: {conn}")
         return conn
 
@@ -392,7 +394,7 @@ class Hardware(HardwareBase):
         # get a fresh connection to avoid threading problems
         conn = self.get_connection()
         node = Node(name, role, tags, conn, self._image_path, self._network,
-                    settings.LIBVIRT_VM_MEMORY, self.workspace)
+                    settings.LIBVIRT.VM_MEMORY, self.workspace)
         node.boot()
         return node
 
@@ -427,7 +429,12 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def destroy(self):
-        super().destroy()
+    def destroy(self, skip=False):
+        super().destroy(skip=skip)
+
+        if skip:
+            logger.warning(f"Leaving network {self._network.name()}")
+            return
+
         self._network.destroy()
         logger.info(f"network {self._network.name()} destroyed")

@@ -1,21 +1,21 @@
-[default]
+[libvirt]
 
-libvirt_connection = "qemu:///system"
+connection = "qemu:///system"
 
 # The range of networks to use across builds. Each instance of hardware will
 # get a subnet inside this range given by libvirt_network_subnet. If multiple
 # tests are being ran in parallel ensure there are enough subnets.
 # (/20 with subnets of 26 will give 64 networks)
-libvirt_network_range = "192.168.128.0/20"
+network_range = "192.168.128.0/20"
 
-# Break libvirt_network_range into subnets of the following size.
+# Break network_range into subnets of the following size.
 # (26 gives 64 hosts per hardware build/network)
-libvirt_network_subnet = 26
+network_subnet = 26
 
 # The qcow2 image that will be used for libvirt. The image must
 # contain cloud-init. This can be an system path or a URL which rookcheck will
 # download.
-libvirt_image = "https://download.opensuse.org/distribution/leap/15.1/jeos/openSUSE-Leap-15.1-JeOS.x86_64-OpenStack-Cloud.qcow2"
+image = "https://download.opensuse.org/distribution/leap/15.2/appliances/openSUSE-Leap-15.2-JeOS.x86_64-OpenStack-Cloud.qcow2"
 
 # Memory use for libvirt VMs (in GB)
-libvirt_vm_memory = 8
+vm_memory = 8

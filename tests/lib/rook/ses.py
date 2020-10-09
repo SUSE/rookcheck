@@ -36,7 +36,12 @@ class RookSes(RookBase):
 
     def preinstall(self):
         super().preinstall()
-        self.kubernetes.hardware.ansible_run_playbook('playbook_ses.yaml')
+        repo_vars = {
+            'ses_repositories':
+                settings(f'SES.{settings.SES.TARGET}.repositories')
+        }
+        self.kubernetes.hardware.ansible_run_playbook(
+            'playbook_ses.yaml', extra_vars=repo_vars)
         self._get_rook_files()
         self._fix_yaml()
 
@@ -49,14 +54,11 @@ class RookSes(RookBase):
                 f"@{self.kubernetes.hardware.masters[0].get_ssh_ip()}"
                 f":/usr/share/k8s-yaml/rook {self.workspace.working_dir}")
 
-    # TODO: DISCUSS how to handle registry.suse.com vs registry.suse.de
     def _fix_yaml(self):
-        # 'suse.com': 'suse.de/devel/storage/7.0/containers',
-        replacements = {
-            '.com': '.de/suse/sle-15-sp2/update/products/ses7/update/cr/'
-                    'containers',
-            '# ROOK_CSI_CEPH_IMAGE': 'ROOK_CSI_CEPH_IMAGE'
-        }
+        # Replacements are to point container paths and/or versions to the
+        # expected ones to test.
+        replacements = settings(
+            f'SES.{settings.SES.TARGET}.yaml_substitutions')
         for root, dirs, files in os.walk(self.ceph_dir):
             for name in files:
                 src = os.path.join(root, name)

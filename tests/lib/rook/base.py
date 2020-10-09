@@ -14,9 +14,9 @@
 
 import logging
 import os
-import time
 import re
 
+from tests.config import settings
 from tests.lib import common
 from abc import ABC, abstractmethod
 
@@ -46,12 +46,12 @@ class RookBase(ABC):
         pass
 
     def destroy(self, skip=True):
-        logger.info(f"rook destroy on {self.kubernetes.hardware}")
         if skip:
             # We can skip in most cases since the kubernetes cluster, if not
             # the nodes themselves will be destroyed instead.
             return
         # TODO(jhesketh): Uninstall rook
+        logger.info(f"rook destroy on {self.kubernetes.hardware}")
         pass
 
     def execute_in_ceph_toolbox(self, command, log_stdout=False):
@@ -71,8 +71,17 @@ class RookBase(ABC):
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'operator.yaml'))
 
-        # TODO(jhesketh): Check if sleeping is necessary
-        time.sleep(10)
+        # set operator log level
+        self.kubernetes.kubectl(
+            "--namespace rook-ceph set env "
+            "deployment/rook-ceph-operator ROOK_LOG_LEVEL=DEBUG")
+
+        logger.info("Wait for rook-ceph-operator running")
+        pattern = re.compile(r'.*rook-ceph-operator.*Running')
+        common.wait_for_result(
+            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            matcher=common.regex_count_matcher(pattern, 1),
+            attempts=30, interval=10)
 
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'cluster.yaml'))
@@ -81,11 +90,19 @@ class RookBase(ABC):
 
         logger.info("Wait for OSD prepare to complete "
                     "(this may take a while...)")
-        pattern = re.compile(r'.*rook-ceph-osd-prepare.*worker.*Completed')
+        pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
         common.wait_for_result(
-            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            self.kubernetes.kubectl, "--namespace rook-ceph get pods"
+            " -l app=rook-ceph-osd-prepare",
             matcher=common.regex_count_matcher(pattern, 3),
             attempts=120, interval=15)
+
+        logger.info("Wait for rook-ceph-tools running")
+        pattern = re.compile(r'.*rook-ceph-tools.*Running')
+        common.wait_for_result(
+            self.kubernetes.kubectl, "--namespace rook-ceph get pods",
+            matcher=common.regex_count_matcher(pattern, 1),
+            attempts=30, interval=10)
 
         logger.info("Wait for Ceph HEALTH_OK")
         pattern = re.compile(r'.*HEALTH_OK')
@@ -129,8 +146,15 @@ class RookBase(ABC):
         logger.info("cluster has %s osd pods running", osds)
         return osds
 
+    def get_number_of_mons(self):
+        # get number of mons
+        mons = self.kubernetes.get_pods_by_app_label("rook-ceph-mon")
+        mons = len(mons)
+        logger.info("cluster has %s mon pods running", mons)
+        return mons
+
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
-        self.destroy()
+        self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))

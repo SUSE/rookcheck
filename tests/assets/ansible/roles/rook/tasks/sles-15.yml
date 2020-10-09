@@ -1,15 +1,11 @@
 ---
 - name: add repositories
-  vars:
-    repositories:
-      storage: http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/
-      storage_updates: http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/
   zypper_repository:
     name: '{{ _repo.key }}'
     repo: '{{ _repo.value }}'
     state: present
     auto_import_keys: yes
-  loop: "{{ lookup('dict', repositories) }}"
+  loop: "{{ lookup('dict', ses_repositories) }}"
   loop_control:
     loop_var: _repo
 

@@ -73,7 +73,7 @@ class Node(NodeBase):
         logger.info(f"Node {self._name} has IP {self._floating_ip}")
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
-                disk_name = self.disk_create()
+                disk_name = self.disk_create(10)
                 self.disk_attach(name=disk_name)
 
     def get_ssh_ip(self) -> str:
@@ -84,14 +84,15 @@ class Node(NodeBase):
             if v['volume'].id == volume.id:
                 return k
 
-    def disk_create(self, capacity='10'):
+    def disk_create(self, capacity):
+        super().disk_create(capacity)
         suffix = ''.join(random.choice(string.ascii_lowercase)
                          for i in range(5))
         name = f"{self._name}-volume-{suffix}"
         volume = self._conn.create_volume(capacity, name=name,
                                           delete_on_termination=True)
         self._disks[name] = {'volume': volume, 'attached': False}
-        logger.info(f"Volume {name} created - ({volume.id}) / size={capacity}")
+        logger.info(f"disk {name} ({volume.id}) created")
         return name
 
     def disk_attach(self, name=None, volume=None):
@@ -153,22 +154,23 @@ class Hardware(HardwareBase):
 
         # check if the external network is there
         self._network_public = self._conn.get_network(
-            settings.OS_EXTERNAL_NETWORK)
+            settings.OPENSTACK.EXTERNAL_NETWORK)
         if not self._network_public:
-            raise Exception(f"External network {settings.OS_EXTERNAL_NETWORK} "
-                            "not found. Check OS_EXTERNAL_NETWORK setting")
+            raise Exception(f"External network "
+                            f"{settings.OPENSTACK.EXTERNAL_NETWORK} not found."
+                            " Check OPENSTACK.EXTERNAL_NETWORK setting")
 
         # check if image is available
-        self._image = self._conn.get_image(settings.OS_NODE_IMAGE)
+        self._image = self._conn.get_image(settings.OPENSTACK.NODE_IMAGE)
         if not self._image:
-            raise Exception(f"Node image {settings.OS_NODE_IMAGE} not found. "
-                            "Check OS_NODE_IMAGE setting")
+            raise Exception(f"Node image {settings.OPENSTACK.NODE_IMAGE} not "
+                            "found. Check OPENSTACK.NODE_IMAGE setting")
 
         # check if flavor is available
-        self._flavor = self._conn.get_flavor(settings.OS_NODE_SIZE)
+        self._flavor = self._conn.get_flavor(settings.OPENSTACK.NODE_SIZE)
         if not self._flavor:
-            raise Exception(f"Node flavor {settings.OS_NODE_SIZE} not found. "
-                            "Check OS_NODE_SIZE setting")
+            raise Exception(f"Node flavor {settings.OPENSTACK.NODE_SIZE} not "
+                            "found. Check OPENSTACK.NODE_SIZE setting")
 
         # basic setup needed for all nodes
         self._keypair = self._create_keypair()
@@ -224,8 +226,23 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def destroy(self):
-        super().destroy()
+    def destroy(self, skip=False):
+        super().destroy(skip=skip)
+
+        if skip:
+            if self._router_private:
+                logger.warning(f"Leaving router {self._router_private.name}")
+            if self._subnet_private:
+                logger.warning(f"Leaving subnet {self._subnet_private.name}")
+            if self._network_private:
+                logger.warning(f"Leaving network {self._network_private.name}")
+            if self._security_group:
+                logger.warning(
+                    f"Leaving security group {self._security_group.name}")
+            if self._keypair:
+                logger.warning(f"Leaving keypair {self._keypair.name}")
+            return
+
         self._delete_network_private()
         self._delete_security_group()
         self._delete_keypair()

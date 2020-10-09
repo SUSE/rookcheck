@@ -17,7 +17,7 @@ import os
 import pytest
 import threading
 
-from tests.config import settings
+from tests.config import settings, converter
 from tests.lib import common
 from tests.lib.workspace import Workspace
 
@@ -67,45 +67,62 @@ def _print_config():
     logger.info(f"# ROOKCHECK_NODE_IMAGE_USER={settings.NODE_IMAGE_USER}")
     logger.info(f"# ROOKCHECK__USE_THREADS={settings._USE_THREADS}")
     logger.info(f"# ROOKCHECK__REMOVE_WORKSPACE={settings._REMOVE_WORKSPACE}")
+    logger.info(
+        f"# ROOKCHECK__TEAR_DOWN_CLUSTER={settings._TEAR_DOWN_CLUSTER}")
     logger.info(f"# ROOKCHECK_HARDWARE_PROVIDER={settings.HARDWARE_PROVIDER}")
     logger.info("# Hardware provider specific config:")
     logger.info("# ----------------------------------")
     if settings.HARDWARE_PROVIDER.upper() == "OPENSTACK":
         logger.info(
-            f"#    ROOKCHECK_OS_NODE_IMAGE={settings.OS_NODE_IMAGE}")
+            f"#    ROOKCHECK_OPENSTACK__NODE_IMAGE="
+            f"{settings.OPENSTACK.NODE_IMAGE}")
         logger.info(
-            f"#    ROOKCHECK_OS_NODE_SIZE={settings.OS_NODE_SIZE}")
+            f"#    ROOKCHECK_OPENSTACK__NODE_SIZE="
+            f"{settings.OPENSTACK.NODE_SIZE}")
         logger.info(
-            f"#    ROOKCHECK_OS_EXTERNAL_NETWORK="
-            f"{settings.OS_EXTERNAL_NETWORK}")
+            f"#    ROOKCHECK_OPENSTACK__EXTERNAL_NETWORK="
+            f"{settings.OPENSTACK.EXTERNAL_NETWORK}")
     elif settings.HARDWARE_PROVIDER.upper() == "LIBVIRT":
         logger.info(
-            f"#    ROOKCHECK_LIBVIRT_CONNECTION={settings.LIBVIRT_CONNECTION}")
+            f"#    ROOKCHECK_LIBVIRT__CONNECTION="
+            f"{settings.LIBVIRT.CONNECTION}")
         logger.info(
-            f"#    ROOKCHECK_LIBVIRT_NETWORK_RANGE="
-            f"{settings.LIBVIRT_NETWORK_RANGE}")
+            f"#    ROOKCHECK_LIBVIRT__NETWORK_RANGE="
+            f"{settings.LIBVIRT.NETWORK_RANGE}")
         logger.info(
-            f"#    ROOKCHECK_LIBVIRT_NETWORK_SUBNET="
-            f"{settings.LIBVIRT_NETWORK_SUBNET}")
+            f"#    ROOKCHECK_LIBVIRT__NETWORK_SUBNET="
+            f"{settings.LIBVIRT.NETWORK_SUBNET}")
         logger.info(
-            f"#    ROOKCHECK_LIBVIRT_IMAGE={settings.LIBVIRT_IMAGE}")
+            f"#    ROOKCHECK_LIBVIRT__IMAGE={settings.LIBVIRT.IMAGE}")
         logger.info(
-            f"#    ROOKCHECK_LIBVIRT_VM_MEMORY={settings.LIBVIRT_VM_MEMORY}")
+            f"#    ROOKCHECK_LIBVIRT__VM_MEMORY={settings.LIBVIRT.VM_MEMORY}")
     elif settings.HARDWARE_PROVIDER.upper() == "AWS_EC2":
         logger.info(
-            f"#    ROOKCHECK_AWS_AMI_IMAGE_ID={settings.AWS_AMI_IMAGE_ID}")
+            f"#    ROOKCHECK_AWS.AMI_IMAGE_ID={settings.AWS.AMI_IMAGE_ID}")
         logger.info(
-            f"#    ROOKCHECK_AWS_NODE_SIZE={settings.AWS_NODE_SIZE}")
+            f"#    ROOKCHECK_AWS.NODE_SIZE={settings.AWS.NODE_SIZE}")
     logger.info(f"# ROOKCHECK_DISTRO={settings.DISTRO}")
     logger.info("# Distro specific config:")
     logger.info("# -----------------------")
     if settings.DISTRO == 'SLES_CaaSP':
         logger.info(
-            f"#    ROOKCHECK_SES_VERSION={settings.SES_VERSION}")
+            f"#    ROOKCHECK_SES__TARGET={settings.SES.TARGET}")
+        logger.info(
+            '#    SES Repositories:')
+        for repo, url in settings(
+                f'SES.{settings.SES.TARGET}.repositories').items():
+            logger.info(
+                f'#     - {repo} : {url}')
+        logger.info(
+            '#    YAML Replacements:')
+        for key, value in settings(
+                f'SES.{settings.SES.TARGET}.yaml_substitutions').items():
+            logger.info(
+                f'#     - {key} = {value}')
     elif settings.DISTRO == 'openSUSE_k8s':
         logger.info(
-            f"#    ROOKCHECK_BUILD_ROOK_FROM_GIT="
-            f"{settings.BUILD_ROOK_FROM_GIT}")
+            f"#    ROOKCHECK_UPSTREAM_ROOK__BUILD_ROOK_FROM_GIT="
+            f"{settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT}")
 
     logger.info("#")
     logger.info("# Environment Variables:")
@@ -119,7 +136,7 @@ def _print_config():
 def _check_docker_requirement():
     logger.debug("Checking if docker is running...")
     if settings.DISTRO == 'openSUSE_k8s' and \
-            settings.as_bool('BUILD_ROOK_FROM_GIT'):
+            converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
         rc, out, err = common.execute('docker ps', log_stdout=False)
         if rc != 0:
             raise Exception("Docker is not running - see manual.")

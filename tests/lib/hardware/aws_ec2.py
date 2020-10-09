@@ -49,8 +49,8 @@ class Node(NodeBase):
 
     def boot(self):
         instances = self._ec2.create_instances(
-            ImageId=settings.AWS_AMI_IMAGE_ID,
-            InstanceType=settings.AWS_NODE_SIZE,
+            ImageId=settings.AWS.AMI_IMAGE_ID,
+            InstanceType=settings.AWS.NODE_SIZE,
             MinCount=1,
             MaxCount=1,
             SecurityGroupIds=[
@@ -69,7 +69,7 @@ class Node(NodeBase):
 
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
-                disk_name = self.disk_create()
+                disk_name = self.disk_create(10)
                 self.disk_attach(name=disk_name)
 
     def get_ssh_ip(self) -> str:
@@ -92,7 +92,8 @@ class Node(NodeBase):
             if v['volume'].id == volume.id:
                 return k
 
-    def disk_create(self, capacity='10'):
+    def disk_create(self, capacity):
+        super().disk_create(capacity)
         if not self._instance:
             raise Exception("Can not create a disk until a node is created")
         suffix = ''.join(random.choice(string.ascii_lowercase)
@@ -100,12 +101,12 @@ class Node(NodeBase):
         name = f"{self._name}-volume-{suffix}"
         volume = self._ec2.create_volume(
             AvailabilityZone=self._instance.placement['AvailabilityZone'],
-            Size=int(capacity),
+            Size=capacity,
         )
         volume.create_tags(
             Tags=[{"Key": "Name", "Value": name}])
         self._disks[name] = {'volume': volume, 'attached': False}
-        logger.info(f"Volume {name} created - ({volume}) / size={capacity}")
+        logger.info(f"disk {name} ({volume}) created")
         return name
 
     def _get_next_device_name(self):
@@ -314,14 +315,24 @@ class Hardware(HardwareBase):
         for t in threads:
             t.join()
 
-    def destroy(self):
-        node_instances = []
-        logger.info("Remove all nodes from Hardware")
-        for n in list(self.nodes):
-            node_instances.append(self.nodes[n]._instance)
-            # FIXME(jhesketh): This waits until the node is terminated and
-            #                  therefore is quite slow. We should thread this.
-            self.node_remove(self.nodes[n])
+    def destroy(self, skip=False):
+        super().destroy(skip=skip)
+
+        if skip:
+            if self._keypair:
+                logger.warning(f"Leaving keypair {self._keypair}")
+            if self._security_group:
+                logger.warning(
+                    f"Leaving security group {self._security_group}")
+            if self._subnet:
+                logger.warning(f"Leaving subnet {self._subnet}")
+            if self._routetable:
+                logger.warning(f"Leaving routetable {self._routetable}")
+            if self._gateway:
+                logger.warning(f"Leaving gateway {self._gateway}")
+            if self._vpc:
+                logger.warning(f"Leaving VPC {self._vpc}")
+            return
 
         self._keypair.delete()
         logger.info(f"Deleted keypair {self._keypair}")
@@ -337,9 +348,3 @@ class Hardware(HardwareBase):
         logger.info(f"Deleted gateway {self._gateway}")
         self._vpc.delete()
         logger.info(f"Deleted vpc {self._vpc}")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.destroy()

@@ -182,8 +182,8 @@ def test_osd_number(rook_cluster):
         i += 1
 
 
-# FIXME
-@pytest.mark.skip(reason="This is currently unstable")
+@pytest.mark.xfail(reason="This is currently failing due to "
+                          "https://github.com/rook/rook/issues/6214")
 def test_add_node(rook_cluster):
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
@@ -245,3 +245,55 @@ def test_add_storage(rook_cluster):
         time.sleep(10)
         osds_new = rook_cluster.get_number_of_osds()
         i += 1
+
+
+def test_mons_up_down(rook_cluster):
+    cluster_yaml = os.path.join(rook_cluster.ceph_dir, 'cluster.yaml')
+
+    with open(cluster_yaml, 'r') as f:
+        content = yaml.full_load(f)
+        mons = int(content['spec']['mon']['count'])
+
+    mon_pods = rook_cluster.get_number_of_mons()
+
+    logger.info("Monitors to deploy by default: %d", mons)
+    logger.info("Monitor pods actually running now: %d", mon_pods)
+
+    assert mon_pods == mons
+
+    deltamon = 2
+
+    content['spec']['mon']['count'] = mons + deltamon
+    content['spec']['mon']['allowMultiplePerNode'] = True
+
+    cluster_yaml_modded = os.path.join(
+        rook_cluster.ceph_dir, 'cluster_modded.yaml')
+
+    with open(cluster_yaml_modded, 'w') as f:
+        yaml.dump(content, f)
+
+    logger.info("About to increase the number of monitors by %d", deltamon)
+
+    rook_cluster.kubernetes.kubectl_apply(cluster_yaml_modded)
+    rook_cluster.kubernetes.wait_for_pods_by_app_label(
+        "rook-ceph-mon", count=mons+deltamon)
+
+    mon_pods = rook_cluster.get_number_of_mons()
+
+    logger.info("Monitor pods actually running now: %d", mon_pods)
+
+    assert mon_pods == mons + deltamon
+
+    logger.info("Attempting to restore the number of monitors to %d", mons)
+
+    rook_cluster.kubernetes.kubectl_apply(cluster_yaml)
+
+    check = 1
+    mon_pods = rook_cluster.get_number_of_mons()
+
+    while (check <= 180) and (mon_pods != mons):
+        time.sleep(10)
+        mon_pods = rook_cluster.get_number_of_mons()
+        check += 1
+
+    assert mon_pods == mons

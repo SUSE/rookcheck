@@ -1,5 +1,3 @@
-[default]
-
 # Prevent workspace/cluster collisions in shared environments with a resource
 # name prefix.
 # TODO(jhesketh): Add the datetime back into cluster_prefix
@@ -37,13 +35,16 @@ _use_threads = false
 # TODO(jhesketh): This may not be used anymore.
 _use_free_strategy = false
 
-# If set to True, the workspacing and all created files from a test will be
+# Set _tear_down_cluster to False to keep the nodes and all the associated
+# resources available after rookcheck has finished. Keep in mind that the
+# created resources will need cleaning up manually afterwards.
+# NOTE: This option forces _remove_workspace to be False.
+_tear_down_cluster = true
+
+# If set to True, the workspace and all created files from a test will be
 # removed from the disk.
 _remove_workspace = true
 
 # Allow passing extra variables to Ansible (below as JSON)
 # example: export ROOKCHECK_ANSIBLE_EXTRA_VARS='{"extra_repos":{"storage_latest": "http://myextra.repo/"}}'
 ansible_extra_vars = ""
-
-# You will only need to edit the config relating to your hardware provider
-dynaconf_include = ["libvirt.toml", "openstack.toml", "aws_ec2.toml", "rook_upstream.toml", "ses.toml"]
