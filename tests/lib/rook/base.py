@@ -80,6 +80,11 @@ class RookBase(ABC):
             "--namespace rook-ceph set env "
             "deployment/rook-ceph-operator ROOK_LOG_LEVEL=DEBUG")
 
+        # reduce wait time to discover devices
+        self.kubernetes.kubectl(
+            "--namespace rook-ceph set env "
+            "deployment/rook-ceph-operator ROOK_DISCOVER_DEVICES_INTERVAL=2m")
+
         logger.info("Wait for rook-ceph-operator running")
         pattern = re.compile(r'.*rook-ceph-operator.*Running')
         common.wait_for_result(
