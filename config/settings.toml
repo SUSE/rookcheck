@@ -30,11 +30,6 @@ node_image_user = "opensuse"
 # with debugging at the cost of performance.
 _use_threads = false
 
-# Whether or not to use the ansible "free" strategy. It is generally faster
-# but causes the output to be intertwined and more confusing.
-# TODO(jhesketh): This may not be used anymore.
-_use_free_strategy = false
-
 # Set _tear_down_cluster to False to keep the nodes and all the associated
 # resources available after rookcheck has finished. Keep in mind that the
 # created resources will need cleaning up manually afterwards.
