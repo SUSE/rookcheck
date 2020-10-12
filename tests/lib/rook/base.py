@@ -52,7 +52,7 @@ class RookBase(ABC):
             return
 
         if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
-            input("press any key to cleanup rook")
+            common.handle_cleanup_input("pause before cleanup rook")
 
         # TODO(jhesketh): Uninstall rook
         logger.info(f"rook destroy on {self.kubernetes.hardware}")
