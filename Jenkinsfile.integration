@@ -48,6 +48,7 @@ pipeline {
                         ROOKCHECK_DISTRO = "openSUSE_k8s"
                         ROOKCHECK_NODE_IMAGE_USER = "opensuse"
                         ROOKCHECK_OPENSTACK__NODE_IMAGE = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
+                        ROOKCHECK__GATHER_LOGS_DIR = "run_logs/openSUSE_k8s"
                     }
                     steps{
                         sh "env"
@@ -66,6 +67,7 @@ pipeline {
                         ROOKCHECK_SES__TARGET = "${params.SES_TARGET}"
                         ROOKCHECK_NODE_IMAGE_USER = "sles"
                         ROOKCHECK_OPENSTACK__NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
+                        ROOKCHECK__GATHER_LOGS_DIR = "run_logs/SLES_CaaSP"
                     }
                     steps{
                         sh "env"
@@ -78,6 +80,7 @@ pipeline {
     post {
         always {
             junit 'junit-results/*.xml'
+            archiveArtifacts 'run_logs'
         }
     }
 }
