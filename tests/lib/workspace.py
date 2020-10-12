@@ -24,7 +24,7 @@ import uuid
 import paramiko.rsakey
 
 from tests.config import settings
-from tests.lib.common import execute
+from tests.lib.common import execute, handle_cleanup_input
 
 
 logger = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class Workspace():
 
     def destroy(self, skip=False):
         if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
-            input("press any key to cleanup workspace")
+            handle_cleanup_input("pause before cleanup workspace")
 
         # This kills the SSH_AGENT_PID agent
         try:

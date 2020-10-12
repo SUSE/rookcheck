@@ -29,6 +29,7 @@ from typing import Dict, List
 import threading
 
 from tests.config import settings
+from tests.lib.common import handle_cleanup_input
 from tests.lib.hardware.node_base import NodeBase, NodeRole
 from tests.lib.workspace import Workspace
 
@@ -98,7 +99,7 @@ class HardwareBase(ABC):
             return
 
         if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
-            input("press any key to cleanup hardware")
+            handle_cleanup_input("pause before cleanup hardware")
 
         logger.info("Remove all nodes from Hardware")
         for n in list(self.nodes):

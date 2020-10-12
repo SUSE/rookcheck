@@ -164,7 +164,7 @@ class KubernetesBase(ABC):
             return
 
         if settings.as_bool('_TEAR_DOWN_CLUSTER_CONFIRM'):
-            input("press any key to cleanup kubernetes")
+            common.handle_cleanup_input("pause before cleanup kubernetes")
 
         # TODO(jhesketh): Uninstall kubernetes
         logger.info(f"kube destroy on hardware {self.hardware}")

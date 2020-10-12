@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import pdb
 import subprocess
 import threading
 import time
@@ -173,3 +174,15 @@ def execute(command: str, capture: bool = False, check: bool = True,
             raise subprocess.CalledProcessError(rc, command)
 
     return (rc, output['stdout'], output['stderr'])
+
+
+def handle_cleanup_input(msg):
+    msg = f"\n{msg} (c=continue, d=debugger)\n"
+    # TODO: you need to press enter after the letter
+    while True:
+        i = input(msg).lower()
+        if i == "c":
+            break
+        elif i == "d":
+            pdb.set_trace()
+            break
