@@ -17,8 +17,10 @@ import os
 import pytest
 import time
 import yaml
+import re
 
 from tests.lib.hardware.node_base import NodeRole
+from tests.lib import common
 
 
 logger = logging.getLogger(__name__)
@@ -297,3 +299,48 @@ def test_mons_up_down(rook_cluster):
         check += 1
 
     assert mon_pods == mons
+
+
+def test_rbd_pvc(rook_cluster):
+    # create a CephBlockPool
+    output = rook_cluster.kubernetes.kubectl_apply(
+                os.path.join(
+                    rook_cluster.ceph_dir, 'csi/rbd/storageclass.yaml'))
+
+    if output[0] != 0:
+        pytest.fail("Could not create a CephBlockPool StorageClass")
+
+    # check if StorageClass is up and available
+    pattern = re.compile(r'.*rook-ceph-block*')
+    common.wait_for_result(rook_cluster.kubernetes.kubectl, "get sc",
+                           matcher=common.regex_matcher(pattern),
+                           attempts=10, interval=6)
+
+    # create an rbd based PVC
+    output = rook_cluster.kubernetes.kubectl_apply(
+                os.path.join(rook_cluster.ceph_dir, 'csi/rbd/pvc.yaml'))
+
+    if output[0] != 0:
+        pytest.fail("Could not create a rbd-PVC")
+
+    pattern = re.compile(r'.*Bound*')
+    common.wait_for_result(rook_cluster.kubernetes.kubectl, "get pvc rbd-pvc",
+                           matcher=common.regex_matcher(pattern),
+                           attempts=10, interval=6)
+
+    # create a pod using the PVC
+    output = rook_cluster.kubernetes.kubectl_apply(
+                os.path.join(rook_cluster.ceph_dir, 'csi/rbd/pod.yaml'))
+
+    if output[0] != 0:
+        pytest.fail("Could not create a rbd-pod")
+
+    pattern = re.compile(r'.*Running*')
+    common.wait_for_result(rook_cluster.kubernetes.kubectl,
+                           "get pod csirbd-demo-pod",
+                           matcher=common.regex_matcher(pattern),
+                           attempts=10, interval=10)
+
+    rook_cluster.kubernetes.kubectl('delete pod csirbd-demo-pod')
+    rook_cluster.kubernetes.kubectl('delete pvc rbd-pvc')
+    rook_cluster.kubernetes.kubectl('delete sc rook-ceph-block')
