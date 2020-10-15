@@ -88,6 +88,14 @@ class KubernetesBase(ABC):
         os.makedirs(dest_dir, exist_ok=True)
         logging.info(f"Gathering kubernetes logs to {dest_dir}")
 
+        try:
+            with open(os.path.join(dest_dir, 'get_all.txt'), 'w') as f:
+                rc, stdout, stderr = self.kubectl("get all --all-namespaces",
+                                                  log_stdout=False)
+                f.write(stdout)
+        except Exception:
+            logger.warning("Unable to `kubectl get all`")
+
         methods = {
             'config_maps.txt': 'list_config_map_for_all_namespaces',
             'endpoints.txt': 'list_endpoints_for_all_namespaces',
@@ -133,6 +141,15 @@ class KubernetesBase(ABC):
                     )
             except Exception:
                 logger.warning(f"Unable to get logs for pod {pod_name}")
+            try:
+                with open(os.path.join(pod_logs_dest_dir,
+                                       f'describe_{pod_name}.txt'), 'w') as f:
+                    rc, stdout, stderr = self.kubectl(
+                        f"--namespace {namespace} describe pod {pod_name}",
+                        log_stdout=False)
+                    f.write(stdout)
+            except Exception:
+                logger.warning(f"Unable to describe pod {pod_name}")
 
     def __enter__(self):
         return self
