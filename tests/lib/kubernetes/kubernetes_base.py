@@ -97,23 +97,23 @@ class KubernetesBase(ABC):
             logger.warning("Unable to `kubectl get all`")
 
         methods = {
-            'config_maps.txt': 'list_config_map_for_all_namespaces',
-            'endpoints.txt': 'list_endpoints_for_all_namespaces',
-            'events.txt': 'list_event_for_all_namespaces',
-            'limit_ranges.txt': 'list_limit_range_for_all_namespaces',
-            'namespaces.txt': 'list_namespace',
-            'nodes.txt': 'list_node',
-            'persistent_volumes.txt': 'list_persistent_volume',
-            'persistent_volume_claims.txt':
+            'config_maps.json': 'list_config_map_for_all_namespaces',
+            'endpoints.json': 'list_endpoints_for_all_namespaces',
+            'events.json': 'list_event_for_all_namespaces',
+            'limit_ranges.json': 'list_limit_range_for_all_namespaces',
+            'namespaces.json': 'list_namespace',
+            'nodes.json': 'list_node',
+            'persistent_volumes.json': 'list_persistent_volume',
+            'persistent_volume_claims.json':
                 'list_persistent_volume_claim_for_all_namespaces',
-            'pods.txt': 'list_pod_for_all_namespaces',
-            'pod_templates.txt': 'list_pod_template_for_all_namespaces',
-            'replication_controllers.txt':
+            'pods.json': 'list_pod_for_all_namespaces',
+            'pod_templates.json': 'list_pod_template_for_all_namespaces',
+            'replication_controllers.json':
                 'list_replication_controller_for_all_namespaces',
-            'resource_quotas.txt': 'list_resource_quota_for_all_namespaces',
-            'secrets.txt': 'list_secret_for_all_namespaces',
-            'services.txt': 'list_service_for_all_namespaces',
-            'service_accounts.txt': 'list_service_account_for_all_namespaces'
+            'resource_quotas.json': 'list_resource_quota_for_all_namespaces',
+            'secrets.json': 'list_secret_for_all_namespaces',
+            'services.json': 'list_service_for_all_namespaces',
+            'service_accounts.json': 'list_service_account_for_all_namespaces'
 
         }
 
