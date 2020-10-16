@@ -1,4 +1,19 @@
 ---
+- name: Load a variable file based on the OS type, or a default if not found. Using free-form to specify the file.
+  include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        # eg. "opensuse_leap-15.1" or "sles-15.1"
+        - "{{ ansible_distribution | replace(' ', '_') | lower }}-{{ ansible_distribution_version }}.yaml"
+        # eg. "opensuse_leap-15" or "sles-15"
+        - "{{ ansible_distribution | replace(' ', '_') |lower }}-{{ ansible_distribution_major_version }}.yaml"
+        # eg. "opensuse_leap" or "sles"
+        - "{{ ansible_distribution | replace(' ', '_') | lower }}.yaml"
+        - default.yaml
+      paths:
+        - 'vars'
+
 # common for all nodes
 - name: Set hostname
   hostname:

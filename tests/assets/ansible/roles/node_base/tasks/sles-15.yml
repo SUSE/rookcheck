@@ -1,45 +1,21 @@
 ---
-# FIXME(toabctl): Allow usage of SCC and official channels for repos
-- name: add basic sle15 repositories
-  block:
-    - name: add basic repositories
-      zypper_repository:
-        name: "{{ _repo.name }}"
-        repo: "{{ _repo.url }}"
-        state: present
-        auto_import_keys: yes
-        overwrite_multiple: yes
-        runrefresh: yes
-      loop:
-        - name: "basesystem_pool"
-          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Basesystem/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
-        - name: "basesystem_updates"
-          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Basesystem/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
-        - name: "containers_pool"
-          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Containers/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
-        - name: "containers_updates"
-          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Containers/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
-        - name: "serverapps_pool"
-          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Server-Applications/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
-        - name: "serverapps_updates"
-          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Server-Applications/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
-        - name: "sle_server_pool"
-          url: "http://download.suse.de/ibs/SUSE/Products/SLE-Product-SLES/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/"
-        - name: "sle_server_updates"
-          url: "http://download.suse.de/ibs/SUSE/Updates/SLE-Product-SLES/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/"
-      loop_control:
-        loop_var: _repo
-  vars:
-    sle_major: "{{ ansible_distribution_version.split('.')[0] }}"
-    sle_minor: "{{ ansible_distribution_version.split('.')[1] }}"
+- name: add repositories
+  zypper_repository:
+    name: '{{ _repo.key }}'
+    repo: '{{ _repo.value }}'
+    state: present
+    auto_import_keys: yes
+  loop: "{{ lookup('dict', node_base_repositories, wantlist=True) }}"
+  loop_control:
+    loop_var: _repo
 
 - name: add extra repositories
   zypper_repository:
     name: '{{ _repo.key }}'
     repo: '{{ _repo.value }}'
-    priority: 50
     state: present
     auto_import_keys: yes
+    priority: 50
   loop: "{{ lookup('dict', extra_repos, wantlist=True) }}"
   loop_control:
     loop_var: _repo

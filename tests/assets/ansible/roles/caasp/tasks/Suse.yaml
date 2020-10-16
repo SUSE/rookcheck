@@ -6,18 +6,12 @@
     line: 'autoAgreeWithLicenses = yes'
 
 - name: add repositories
-  vars:
-    repositories:
-      suse_ca: "http://download.suse.de/ibs/SUSE:/CA/SLE_{{ ansible_distribution_major_version }}_SP{{ ansible_distribution_release }}/"
-      caasp: http://download.suse.de/ibs/SUSE/Products/SUSE-CAASP/4.5/x86_64/product/
-      caasp_updates: http://download.suse.de/ibs/SUSE/Updates/SUSE-CAASP/4.5/x86_64/update/
-      public_cloud: "http://download.suse.de/ibs/SUSE/Products/SLE-Module-Public-Cloud/{{ ansible_distribution_major_version }}-SP{{ ansible_distribution_release }}/x86_64/product/" # noqa 204
   zypper_repository:
     name: '{{ _repo.key }}'
     repo: '{{ _repo.value }}'
     state: present
     auto_import_keys: yes
-  loop: "{{ lookup('dict', repositories) }}"
+  loop: "{{ lookup('dict', caasp_repositories, wantlist=True) }}"
   loop_control:
     loop_var: _repo
 

@@ -1,0 +1,13 @@
+---
+sle_major: "{{ ansible_distribution_version.split('.')[0] }}"
+sle_minor: "{{ ansible_distribution_version.split('.')[1] }}"
+
+node_base_repositories:
+  basesystem_product: http://download.suse.de/ibs/SUSE/Products/SLE-Module-Basesystem/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/
+  basesystem_updates: http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Basesystem/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/
+  containers_product: http://download.suse.de/ibs/SUSE/Products/SLE-Module-Containers/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/
+  containers_update: http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Containers/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/
+  serverapps_product: http://download.suse.de/ibs/SUSE/Products/SLE-Module-Server-Applications/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/
+  serverapps_update: http://download.suse.de/ibs/SUSE/Updates/SLE-Module-Server-Applications/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/
+  sle_server_product: http://download.suse.de/ibs/SUSE/Products/SLE-Product-SLES/{{ sle_major }}-SP{{ sle_minor }}/x86_64/product/
+  sle_server_update: http://download.suse.de/ibs/SUSE/Updates/SLE-Product-SLES/{{ sle_major }}-SP{{ sle_minor }}/x86_64/update/
