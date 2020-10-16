@@ -46,6 +46,8 @@ class KubernetesBase(ABC):
                                         'kubeconfig')
         self._kubectl_exec = os.path.join(
             self.workspace.working_dir, 'bin/kubectl')
+        self._helm_exec = os.path.join(
+            self.workspace.working_dir, 'bin/helm3')
         self.v1 = None
         logger.info(f"kube init on hardware {self.hardware}")
 
@@ -82,6 +84,10 @@ class KubernetesBase(ABC):
     @property
     def kubectl_exec(self):
         return self._kubectl_exec
+
+    @property
+    def helm_exec(self):
+        return self._helm_exec
 
     def gather_logs(self, dest_dir):
         dest_dir = os.path.join(dest_dir, 'kubernetes')
@@ -162,6 +168,21 @@ class KubernetesBase(ABC):
     def _configure_kubernetes_client(self):
         kubernetes.config.load_kube_config(self.kubeconfig)
         self.v1 = kubernetes.client.CoreV1Api()
+
+    def helm(self, command, check=True, log_stdout=True, log_stderr=True):
+        """
+        Run a helm command
+        """
+        return common.execute(
+            f"{self.helm_exec} --kubeconfig {self.kubeconfig}"
+            f" {command}",
+            check=check,
+            capture=True,
+            log_stdout=log_stdout,
+            log_stderr=log_stderr,
+            logger_name=f"helm {command}",
+            env={'HELM_EXPERIMENTAL_OCI': '1'},
+        )
 
     def kubectl(self, command, check=True, log_stdout=True, log_stderr=True):
         """

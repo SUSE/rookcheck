@@ -38,6 +38,7 @@ class Workspace():
         self._build_dir: str = os.path.join(self.working_dir, 'build')
         self._bin_dir: str = os.path.join(self.working_dir, 'bin')
         self._tmp_dir: str = os.path.join(self.working_dir, 'tmp')
+        self._helm_dir: str = os.path.join(self.working_dir, 'helm')
 
         self._sshkey_name: Optional[str] = None
         self._public_key: Optional[str] = None
@@ -74,6 +75,10 @@ class Workspace():
     @property
     def tmp_dir(self) -> str:
         return self._tmp_dir
+
+    @property
+    def helm_dir(self) -> str:
+        return self._helm_dir
 
     @property
     def sshkey_name(self):

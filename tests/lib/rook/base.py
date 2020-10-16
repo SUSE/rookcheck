@@ -43,7 +43,9 @@ class RookBase(ABC):
 
     @abstractmethod
     def preinstall(self):
-        pass
+        if settings.OPERATOR_INSTALLER == "helm":
+            self._get_helm()
+            self._get_charts()
 
     def destroy(self, skip=True):
         if skip:
@@ -67,18 +69,22 @@ class RookBase(ABC):
         return self.kubernetes.execute_in_pod(
             command, self.toolbox_pod, log_stdout=False)
 
-    def install(self):
-        # TODO(jhesketh): We may want to provide ways for tests to override
-        #                 these
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'common.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'operator.yaml'))
+    @abstractmethod
+    def _get_charts(self):
+        pass
 
-        # set operator log level
-        self.kubernetes.kubectl(
-            "-n rook-ceph set env "
-            "deployment/rook-ceph-operator ROOK_LOG_LEVEL=DEBUG")
+    @abstractmethod
+    def _get_helm(self):
+        pass
+
+    def install(self):
+        self.kubernetes.kubectl("create namespace rook-ceph")
+        self._install_operator()
+
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'cluster.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'toolbox.yaml'))
 
         # reduce wait time to discover devices
         self.kubernetes.kubectl(
@@ -91,11 +97,6 @@ class RookBase(ABC):
             self.kubernetes.kubectl, "-n rook-ceph get pods",
             matcher=common.regex_count_matcher(pattern, 1),
             attempts=30, interval=10)
-
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'cluster.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'toolbox.yaml'))
 
         logger.info("Wait for OSD prepare to complete "
                     "(this may take a while...)")
@@ -121,6 +122,29 @@ class RookBase(ABC):
             attempts=60, interval=10)
 
         logger.info("Rook successfully installed and ready!")
+
+    def _install_operator(self):
+        """
+        Install operator using either kubectl of helm
+        """
+        if settings.OPERATOR_INSTALLER == "helm":
+            logger.info('Deploying rook operator - using Helm')
+            self._install_operator_helm()
+        else:
+            logger.info('Deploying rook operator - using kubectl apply ...')
+            self._install_operator_kubectl()
+
+        # set operator log level
+        self.kubernetes.kubectl(
+            "--namespace rook-ceph set env "
+            "deployment/rook-ceph-operator ROOK_LOG_LEVEL=DEBUG")
+
+    def _install_operator_kubectl(self):
+        logger.info('Deploying rook operator - using kubectl apply ...')
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'common.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'operator.yaml'))
 
     # TODO: need to check this in details
     # but Ceph features methods should belong to rook base class
