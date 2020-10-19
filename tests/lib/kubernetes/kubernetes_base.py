@@ -19,9 +19,10 @@
 # would require SLE and can raise an exception if that isn't provided.
 
 from abc import ABC, abstractmethod
-import os
+import json
 import kubernetes
 import logging
+import os
 import re
 import time
 from typing import List
@@ -82,10 +83,80 @@ class KubernetesBase(ABC):
     def kubectl_exec(self):
         return self._kubectl_exec
 
+    def gather_logs(self, dest_dir):
+        dest_dir = os.path.join(dest_dir, 'kubernetes')
+        os.makedirs(dest_dir, exist_ok=True)
+        logging.info(f"Gathering kubernetes logs to {dest_dir}")
+
+        try:
+            with open(os.path.join(dest_dir, 'get_all.txt'), 'w') as f:
+                rc, stdout, stderr = self.kubectl("get all --all-namespaces",
+                                                  log_stdout=False)
+                f.write(stdout)
+        except Exception:
+            logger.warning("Unable to `kubectl get all`")
+
+        methods = {
+            'config_maps.json': 'list_config_map_for_all_namespaces',
+            'endpoints.json': 'list_endpoints_for_all_namespaces',
+            'events.json': 'list_event_for_all_namespaces',
+            'limit_ranges.json': 'list_limit_range_for_all_namespaces',
+            'namespaces.json': 'list_namespace',
+            'nodes.json': 'list_node',
+            'persistent_volumes.json': 'list_persistent_volume',
+            'persistent_volume_claims.json':
+                'list_persistent_volume_claim_for_all_namespaces',
+            'pods.json': 'list_pod_for_all_namespaces',
+            'pod_templates.json': 'list_pod_template_for_all_namespaces',
+            'replication_controllers.json':
+                'list_replication_controller_for_all_namespaces',
+            'resource_quotas.json': 'list_resource_quota_for_all_namespaces',
+            'secrets.json': 'list_secret_for_all_namespaces',
+            'services.json': 'list_service_for_all_namespaces',
+            'service_accounts.json': 'list_service_account_for_all_namespaces'
+
+        }
+
+        for file_name, method in methods.items():
+            try:
+                with open(os.path.join(dest_dir, file_name), 'w') as f:
+                    json.dump(
+                        getattr(self.v1, method)().to_dict(),
+                        f, default=str, sort_keys=True, indent=2
+                    )
+            except Exception:
+                logger.warning(f"Unable to log {method}")
+
+        pod_logs_dest_dir = os.path.join(dest_dir, 'pod_logs')
+        os.makedirs(pod_logs_dest_dir, exist_ok=True)
+        pods = self.v1.list_pod_for_all_namespaces()
+        for pod in pods.items:
+            pod_name = pod.metadata.name
+            namespace = pod.metadata.namespace
+            try:
+                with open(os.path.join(pod_logs_dest_dir, f'{pod_name}.txt'),
+                          'w') as f:
+                    f.write(
+                        self.v1.read_namespaced_pod_log(pod_name, namespace)
+                    )
+            except Exception:
+                logger.warning(f"Unable to get logs for pod {pod_name}")
+            try:
+                with open(os.path.join(pod_logs_dest_dir,
+                                       f'describe_{pod_name}.txt'), 'w') as f:
+                    rc, stdout, stderr = self.kubectl(
+                        f"--namespace {namespace} describe pod {pod_name}",
+                        log_stdout=False)
+                    f.write(stdout)
+            except Exception:
+                logger.warning(f"Unable to describe pod {pod_name}")
+
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
+        if settings._GATHER_LOGS_DIR:
+            self.gather_logs(settings._GATHER_LOGS_DIR)
         self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))
 
     def _configure_kubernetes_client(self):

@@ -229,8 +229,33 @@ class Workspace():
         else:
             logger.info(f"Keeping workspace on disk at {self.working_dir}")
 
+    def gather_logs(self, dest_dir):
+        dest_dir = os.path.join(dest_dir, 'workspace')
+        logging.info(f"Copying the workspace to {dest_dir}")
+        os.makedirs(dest_dir, exist_ok=True)
+
+        try:
+            shutil.copytree(
+                self.working_dir, dest_dir,
+                ignore=shutil.ignore_patterns(
+                    "bin",
+                    "ssh-agent.sock",
+                    "rook_build",
+                    "tmp",
+                    "go*",
+                    "src",
+                    "*.tar*"
+                ),
+                dirs_exist_ok=True
+            )
+        except Exception:
+            logging.warning(
+                f"Unable to copy {self.working_dir} to gather logs dir")
+
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
+        if settings._GATHER_LOGS_DIR:
+            self.gather_logs(settings._GATHER_LOGS_DIR)
         self.destroy(skip=not settings.as_bool('_TEAR_DOWN_CLUSTER'))

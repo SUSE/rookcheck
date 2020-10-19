@@ -41,6 +41,12 @@ _tear_down_cluster = true
 # NOTE: This option is only useful if _tear_down_cluster is set to True
 _tear_down_cluster_confirm = false
 
+# If _gather_logs_dir is not empty, then after a run (successful or not) each
+# abstraction (such as hardware, kubernetes, rook etc) will gather relevant
+# logs and place them into this supplied relative or absolute path. This is
+# useful for grabbing all of `kubectl describe` etc into build artifacts.
+_gather_logs_dir = ""
+
 # If set to True, the workspace and all created files from a test will be
 # removed from the disk.
 _remove_workspace = true
