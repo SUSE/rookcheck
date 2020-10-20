@@ -86,7 +86,7 @@ pipeline {
         always {
             junit 'junit-results/*.xml'
             dir('artifacts') {
-                archiveArtifacts artifacts: '**'
+                archiveArtifacts artifacts: '**', allowEmptyArchive: true
             }
         }
     }
