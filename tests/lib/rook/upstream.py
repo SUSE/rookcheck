@@ -14,11 +14,12 @@
 
 import logging
 import os
-import wget
+import requests
+import yaml
 
 
 from tests.config import settings, converter
-from tests.lib.common import execute
+from tests.lib.common import execute, recursive_replace
 from tests.lib.rook.base import RookBase
 
 logger = logging.getLogger(__name__)
@@ -28,81 +29,88 @@ class RookCluster(RookBase):
     def __init__(self, workspace, kubernetes):
         super().__init__(workspace, kubernetes)
         self._rook_built = False
-        self.builddir = os.path.join(self.workspace.working_dir, 'rook_build')
-        os.mkdir(self.builddir)
-        self.go_tmpdir = os.path.join(self.workspace.working_dir, 'tmp')
-        os.mkdir(self.go_tmpdir)
-
-    def build(self):
-        super().build()
-
-        # TODO(jhesketh): Allow setting rook version
-        logger.info("[build_rook] Checkout rook")
-        execute(
-            "mkdir -p %s"
-            % os.path.join(self.builddir, 'src/github.com/rook/rook')
-        )
-        execute(
-            "git clone https://github.com/rook/rook.git %s"
-            % os.path.join(self.builddir, 'src/github.com/rook/rook'),
-            log_stderr=False
-        )
-        # TODO(jhesketh): Allow testing various versions of rook
-        execute(
-            "cd %s && git checkout v1.3.1"
-            % os.path.join(self.builddir, 'src/github.com/rook/rook'),
-            log_stderr=False
-        )
-
-        if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
-            logger.info("[build_rook] Download go")
-            wget.download(
-                "https://dl.google.com/go/go1.13.9.linux-amd64.tar.gz",
-                os.path.join(self.builddir, 'go-amd64.tar.gz'),
-                bar=None,
-            )
-
-            logger.info("[build_rook] Unpack go")
-            execute(
-                "tar -C %s -xzf %s"
-                % (self.builddir,
-                   os.path.join(self.builddir, 'go-amd64.tar.gz'))
-            )
-
-            logger.info("[build_rook] Make rook")
-            execute(
-                "PATH={builddir}/go/bin:$PATH GOPATH={builddir} "
-                "TMPDIR={tmpdir} "
-                "make --directory='{builddir}/src/github.com/rook/rook' "
-                "-j BUILD_REGISTRY='rook-build' IMAGES='ceph' "
-                "build".format(builddir=self.builddir,
-                               tmpdir=self.go_tmpdir),
-                log_stderr=False,
-                logger_name=(
-                    "make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'"),
-            )
-
-            logger.info("[build_rook] Tag image")
-            execute('docker tag "rook-build/ceph-amd64" rook/ceph:master')
-
-            logger.info("[build_rook] Save image tar")
-            # TODO(jhesketh): build arch may differ
-            execute(
-                "docker save rook/ceph:master | gzip > %s"
-                % os.path.join(self.builddir, 'rook-ceph.tar.gz')
-            )
-
+        self.build_dir = os.path.join(self.workspace.build_dir, 'rook')
         self.ceph_dir = os.path.join(
-            self.builddir,
-            'src/github.com/rook/rook/cluster/examples/kubernetes/ceph'
-        )
-
-        self._rook_built = True
+            self.build_dir, 'cluster/examples/kubernetes/ceph')
 
     def preinstall(self):
         super().preinstall()
         if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
             self.upload_rook_image()
+            self._fix_yaml()
+
+    def build(self):
+        super().build()
+        self.get_rook()
+        if not converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
+            return
+
+        self.get_golang()
+        logger.info("Compiling rook...")
+        execute(command="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
+                env={"PATH": f"{self.workspace.bin_dir}/go/bin:"
+                             f"{os.environ['PATH']}",
+                     "TMPDIR": self.workspace.tmp_dir,
+                     "GOCACHE": self.workspace.tmp_dir,
+                     "GOPATH": self.workspace.build_dir},
+                log_stderr=False,
+                logger_name=(
+                    "make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'"))
+
+        image = 'rook/ceph'
+        tag = f"{settings.UPSTREAM_ROOK.VERSION}-rookcheck"
+        self.rook_image = f"{image}:{tag}"
+        logger.info(f"Tag image as {image}:{tag}")
+        execute(f'docker tag "rook-build/ceph-amd64" {image}:{tag}')
+
+        logger.info("Save image tar")
+        # TODO(jhesketh): build arch may differ
+        execute(f"docker save {image}:{tag} | gzip > %s"
+                % os.path.join(self.build_dir, 'rook-ceph.tar.gz'))
+        self._rook_built = True
 
     def upload_rook_image(self):
-        self.kubernetes.hardware.ansible_run_playbook("playbook_rook.yaml")
+        self.kubernetes.hardware.ansible_run_playbook(
+            "playbook_rook_upstream.yaml")
+
+    def get_rook(self):
+        logger.info("Clone rook version %s from repo %s" % (
+            settings.UPSTREAM_ROOK.VERSION,
+            settings.UPSTREAM_ROOK.REPO))
+        execute(
+            "git clone -b %s %s %s" % (
+                settings.UPSTREAM_ROOK.VERSION,
+                settings.UPSTREAM_ROOK.REPO,
+                self.build_dir),
+            log_stderr=False
+        )
+
+    def get_golang(self):
+        url = 'https://golang.org/VERSION?m=text'
+        version = requests.get(url).content.decode("utf-8")
+        self.workspace.get_unpack(
+            "https://dl.google.com/go/%s.linux-amd64.tar.gz" % version,
+            unpack_folder=self.workspace.bin_dir
+        )
+
+    def get_helm(self):
+        url = "https://api.github.com/repos/helm/helm/releases/latest"
+        version = requests.get(url).json()["tag_name"]
+        self.workspace.get_unpack(
+            "https://get.helm.sh/helm-%s-linux-amd64.tar.gz" % version)
+        os.rename(os.path.join(self.workspace.tmp_dir, 'linux-amd64', 'helm'),
+                  os.path.join(self.workspace.bin_dir, 'helm'))
+
+    def _fix_yaml(self):
+        # Replace image reference if we built it in this run
+        with open(os.path.join(self.ceph_dir, 'operator.yaml')) as file:
+            docs = yaml.load_all(file, Loader=yaml.FullLoader)
+            for doc in docs:
+                try:
+                    image = doc['spec']['template']['spec'][
+                            'containers'][0]['image']
+                    break
+                except KeyError:
+                    pass
+        replacements = {image: self.rook_image}
+        recursive_replace(dir=self.ceph_dir, replacements=replacements)

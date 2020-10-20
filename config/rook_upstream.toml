@@ -3,3 +3,10 @@
 # Whether or not to build rook from git. If not, the upstream dockerhub images
 # are used.
 build_rook_from_git = true
+
+# Rook repo url
+repo = "https://github.com/rook/rook.git"
+
+# The rook version you want to test. This is the tag to be checked out so it must
+# exist for real within rook repo
+version = "master"

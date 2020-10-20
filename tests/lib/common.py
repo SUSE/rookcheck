@@ -17,6 +17,9 @@ import pdb
 import subprocess
 import threading
 import time
+import wget
+import os
+import filecmp
 from typing import Dict, Optional, Tuple
 
 
@@ -186,3 +189,30 @@ def handle_cleanup_input(msg):
         elif i == "d":
             pdb.set_trace()
             break
+
+
+def get_unpack(url, dst_file, unpack_folder):
+    """
+    Download a file and unpack it in given folder
+    """
+    wget.download(url, dst_file, bar=None)
+    execute("tar -C %s -xzf %s" % (unpack_folder, dst_file))
+
+
+def recursive_replace(dir: str, replacements: Dict[str, str]):
+    for root, dirs, files in os.walk(dir):
+        for name in files:
+            src = os.path.join(root, name)
+            tmp = os.path.join(root, f'{name}_tmp')
+            with open(src, 'r') as f:
+                lines = f.readlines()
+            with open(tmp, 'w') as f:
+                for line in lines:
+                    for k, v in replacements.items():
+                        line = line.replace(k, v)
+                    f.write(line)
+            if filecmp.cmp(src, tmp):
+                os.remove(tmp)
+            else:
+                os.rename(src, f'{src}.back')
+                os.rename(tmp, src)

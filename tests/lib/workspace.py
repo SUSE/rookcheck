@@ -24,7 +24,7 @@ import uuid
 import paramiko.rsakey
 
 from tests.config import settings
-from tests.lib.common import execute, handle_cleanup_input
+from tests.lib.common import execute, handle_cleanup_input, get_unpack
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,9 @@ class Workspace():
         # Set up a common workspace that most modules will expect
         self._workspace_uuid: str = str(uuid.uuid4())[:4]
         self._working_dir: str = self._get_working_dir()
+        self._build_dir: str = os.path.join(self.working_dir, 'build')
+        self._bin_dir: str = os.path.join(self.working_dir, 'bin')
+        self._tmp_dir: str = os.path.join(self.working_dir, 'tmp')
 
         self._sshkey_name: Optional[str] = None
         self._public_key: Optional[str] = None
@@ -59,6 +62,18 @@ class Workspace():
     @property
     def working_dir(self) -> str:
         return self._working_dir
+
+    @property
+    def build_dir(self) -> str:
+        return self._build_dir
+
+    @property
+    def bin_dir(self) -> str:
+        return self._bin_dir
+
+    @property
+    def tmp_dir(self) -> str:
+        return self._tmp_dir
 
     @property
     def sshkey_name(self):
@@ -143,6 +158,17 @@ class Workspace():
                            log_stdout=log_stdout, log_stderr=log_stderr,
                            env=env, logger_name=logger_name)
 
+    def get_unpack(self, url, unpack_folder=None):
+        """
+        Download a file an unpack it in the workspace context
+        """
+        if not unpack_folder:
+            unpack_folder = self.tmp_dir
+        dst = os.path.join(self.tmp_dir, url.split('/')[-1])
+        logger.info(f"Downloading {url} to {dst}")
+        logger.info(f"Unpack in {unpack_folder}")
+        get_unpack(url, dst, unpack_folder)
+
     def ansible_inventory_vars(self) -> Dict[str, Any]:
         """
         Some basic ansible inventory variables that are common for this
@@ -179,7 +205,9 @@ class Workspace():
             settings.WORKSPACE_DIR, self.name
         )
         os.makedirs(working_dir_path)
+        os.makedirs(os.path.join(working_dir_path, 'build'))
         os.makedirs(os.path.join(working_dir_path, 'bin'))
+        os.makedirs(os.path.join(working_dir_path, 'tmp'))
         return working_dir_path
 
     def destroy(self, skip=False):
