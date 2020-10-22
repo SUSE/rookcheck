@@ -4,7 +4,7 @@
   tasks:
     - name: copy rook ceph image to cluster nodes
       copy:
-        src: "{{ rookcheck_workspace_dir }}/rook_build/rook-ceph.tar.gz"
+        src: "{{ rookcheck_workspace_dir }}/build/rook/rook-ceph.tar.gz"
         dest: "/root/.images/"
         mode: '0644'
 

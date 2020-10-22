@@ -14,9 +14,8 @@
 
 import logging
 import os
-import filecmp
 
-from tests.lib.common import execute
+from tests.lib.common import execute, recursive_replace
 from tests.lib.rook.base import RookBase
 
 from tests.config import settings
@@ -41,7 +40,7 @@ class RookSes(RookBase):
                 settings(f'SES.{settings.SES.TARGET}.repositories')
         }
         self.kubernetes.hardware.ansible_run_playbook(
-            'playbook_ses.yaml', extra_vars=repo_vars)
+            'playbook_rook_ses.yaml', extra_vars=repo_vars)
         self._get_rook_files()
         self._fix_yaml()
 
@@ -59,19 +58,4 @@ class RookSes(RookBase):
         # expected ones to test.
         replacements = settings(
             f'SES.{settings.SES.TARGET}.yaml_substitutions')
-        for root, dirs, files in os.walk(self.ceph_dir):
-            for name in files:
-                src = os.path.join(root, name)
-                tmp = os.path.join(root, f'{name}_tmp')
-                with open(src, 'r') as f:
-                    lines = f.readlines()
-                with open(tmp, 'w') as f:
-                    for line in lines:
-                        for k, v in replacements.items():
-                            line = line.replace(k, v)
-                        f.write(line)
-                if filecmp.cmp(src, tmp):
-                    os.remove(tmp)
-                else:
-                    os.rename(src, f'{src}.back')
-                    os.rename(tmp, src)
+        recursive_replace(self.ceph_dir, replacements)
