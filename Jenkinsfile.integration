@@ -18,6 +18,9 @@ pipeline {
 
         choice(name: 'DISTRO', choices: ['all', 'openSUSE_k8s', 'SLES_CaaSP'], description: 'The OS/K8S distro tuple')
         choice(name: 'SES_TARGET', choices: ['ses7', 'devel7'], description: 'The set of repositories to use when building SLES_CaaSP (see ses.toml).')
+
+        booleanParam(name: 'NOTIFY_ROCKETCHAT', defaultValue: false, description: "Whether or not to send notifications to SUSE's rocketchat")
+        string(name: 'ROCKETCHAT_CHANNEL', defaultValue: 'ses-ci', description: 'the channel to post results in')
     }
 
     environment {
@@ -87,6 +90,20 @@ pipeline {
             junit 'junit-results/*.xml'
             dir('artifacts') {
                 archiveArtifacts artifacts: '**', allowEmptyArchive: true
+            }
+        }
+        failure {
+            script {
+                if (params.NOTIFY_ROCKETCHAT) {
+                    rocketSend channel: params.ROCKETCHAT_CHANNEL, message: "${env.JOB_BASE_NAME} failed"
+                }
+            }
+        }
+        fixed {
+            script {
+                if (params.NOTIFY_ROCKETCHAT) {
+                    rocketSend channel: params.ROCKETCHAT_CHANNEL, message: "${env.JOB_BASE_NAME} returned to normal"
+                }
             }
         }
     }
