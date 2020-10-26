@@ -1,0 +1,11 @@
+#!/bin/bash
+
+for i in $(sudo virsh list --all --name | grep ^rookcheck); do
+	sudo virsh destroy $i
+	sudo virsh undefine $i
+done
+
+for i in $(sudo virsh net-list --all --name | grep ^rookcheck) ; do
+	sudo virsh net-destroy $i
+done
+
