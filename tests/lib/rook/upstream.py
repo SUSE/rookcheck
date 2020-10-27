@@ -47,15 +47,15 @@ class RookCluster(RookBase):
 
         self.get_golang()
         logger.info("Compiling rook...")
-        execute(command="make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
-                env={"PATH": f"{self.workspace.bin_dir}/go/bin:"
-                             f"{os.environ['PATH']}",
-                     "TMPDIR": self.workspace.tmp_dir,
-                     "GOCACHE": self.workspace.tmp_dir,
-                     "GOPATH": self.workspace.build_dir},
-                log_stderr=False,
-                logger_name=(
-                    "make -j BUILD_REGISTRY='rook-build' IMAGES='ceph'"))
+        execute(
+            command=f"make --directory {self.build_dir} "
+                    f"-j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
+            env={"PATH": f"{self.workspace.bin_dir}/go/bin:"
+                         f"{os.environ['PATH']}",
+                 "TMPDIR": self.workspace.tmp_dir,
+                 "GOCACHE": self.workspace.tmp_dir,
+                 "GOPATH": self.workspace.build_dir},
+            log_stderr=False)
 
         image = 'rook/ceph'
         tag = f"{settings.UPSTREAM_ROOK.VERSION}-rookcheck"
