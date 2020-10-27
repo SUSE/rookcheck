@@ -145,7 +145,7 @@ class KubernetesBase(ABC):
                 with open(os.path.join(pod_logs_dest_dir,
                                        f'describe_{pod_name}.txt'), 'w') as f:
                     rc, stdout, stderr = self.kubectl(
-                        f"--namespace {namespace} describe pod {pod_name}",
+                        f"-n {namespace} describe pod {pod_name}",
                         log_stdout=False)
                     f.write(stdout)
             except Exception:
@@ -193,7 +193,7 @@ class KubernetesBase(ABC):
     def execute_in_pod(self, command, pod, namespace="rook-ceph",
                        log_stdout=True, log_stderr=True):
         return self.kubectl(
-            '--namespace %s exec -t "%s" -- bash -c "$(cat <<\'EOF\'\n'
+            '-n %s exec -t "%s" -- bash -c "$(cat <<\'EOF\'\n'
             '%s'
             '\nEOF\n)"'
             % (namespace, pod, command),
@@ -203,7 +203,7 @@ class KubernetesBase(ABC):
 
     def get_pods_by_app_label(self, label, namespace="rook-ceph"):
         pods_string = self.kubectl(
-            '--namespace %s get pod -l app="%s"'
+            '-n %s get pod -l app="%s"'
             ' --output custom-columns=name:metadata.name --no-headers'
             % (namespace, label)
         )[1].strip()
@@ -211,7 +211,7 @@ class KubernetesBase(ABC):
 
     def get_services_by_app_label(self, label, namespace="rook-ceph"):
         services_string = self.kubectl(
-            '--namespace %s get svc -l app="%s"'
+            '-n %s get svc -l app="%s"'
             ' --output custom-columns=name:metadata.name --no-headers'
             % (namespace, label)
         )[1].strip()
@@ -264,6 +264,6 @@ class KubernetesBase(ABC):
         pattern = re.compile(r'.*Running')
         common.wait_for_result(
             self.kubectl,
-            f'--namespace {namespace} get pod -l app="{label}" --no-headers',
+            f'-n {namespace} get pod -l app="{label}" --no-headers',
             matcher=common.regex_count_matcher(pattern, count),
             attempts=attempts, interval=sleep)
