@@ -229,24 +229,28 @@ def test_add_storage(rook_cluster):
     # get a worker node
     nodes = rook_cluster.kubernetes.hardware.workers
 
+    new_osds = 0
     # add a disk of 10 G the node
     disk_name = nodes[0].disk_create(10)
     nodes[0].disk_attach(name=disk_name)
+    new_osds += 1
 
-    i = 0
     # expecting an additional osd
-    osds_expected = osds + 1
-    osds_new = rook_cluster.get_number_of_osds()
+    osds_expected = osds + new_osds
 
     # wait for the additional osd
     # this may take a while
-    while osds_expected != osds_new:
+    i = 0
+    while osds < osds_expected:
         if i == 60:
-            pytest.fail("rook did not add an additional osd-node")
+            pytest.fail("rook was not able to add {new_osds} of required osds")
             break
         time.sleep(10)
-        osds_new = rook_cluster.get_number_of_osds()
+        osds = rook_cluster.get_number_of_osds()
         i += 1
+    # here we also detect if there are added more osds than required
+    if osds != osds_expected:
+        pytest.fail(f"we expect {osds_expected} osds, but have got {osds}")
 
 
 def test_mons_up_down(rook_cluster):
