@@ -54,3 +54,7 @@ _remove_workspace = true
 # Allow passing extra variables to Ansible (below as JSON)
 # example: export ROOKCHECK_ANSIBLE_EXTRA_VARS='{"extra_repos":{"storage_latest": "http://myextra.repo/"}}'
 ansible_extra_vars = ""
+
+# Pass extra arguments to ansible-playbook, for example:
+# ROOKCHECK_ANSIBLE_PLAYBOOK_EXTRA_ARGS='-e @somefile.yaml -f 1 -vvv'
+ansible_playbook_extra_args = ""

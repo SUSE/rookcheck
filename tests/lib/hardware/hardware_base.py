@@ -159,10 +159,12 @@ class HardwareBase(ABC):
         else:
             extra_vars_param = ""
 
+        extra_args = settings.get('ANSIBLE_PLAYBOOK_EXTRA_ARGS', '')
+
         logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
             f"ansible-playbook -i {self._ansible_inventory_dir} "
-            f"{limit} {extra_vars_param} {path}",
+            f"{limit} {extra_vars_param} {extra_args} {path}",
             logger_name=f"ansible {playbook}")
 
     def _ansible_create_inventory(self):
