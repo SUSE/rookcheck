@@ -329,7 +329,7 @@ class Hardware(HardwareBase):
     def _get_image_path(self):
         if (settings.LIBVIRT.IMAGE.startswith("http://") or
                 settings.LIBVIRT.IMAGE.startswith("https://")):
-            logging.debug(
+            logging.info(
                 f"Downloading image from {settings.LIBVIRT.IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
