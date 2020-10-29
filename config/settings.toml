@@ -51,6 +51,7 @@ _gather_logs_dir = ""
 # removed from the disk.
 _remove_workspace = true
 
-# Allow passing extra variables to Ansible (below as JSON)
-# example: export ROOKCHECK_ANSIBLE_EXTRA_VARS='{"extra_repos":{"storage_latest": "http://myextra.repo/"}}'
+# Allow passing extra variables to Ansible. This can be in any format
+# that ansible-playbook accepts for the --extra-vars parameter
+# See https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#defining-variables-at-runtime  # noqa
 ansible_extra_vars = ""
