@@ -46,6 +46,9 @@ from tests.lib.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
+# this lock needs to resolve race condition issue while defining a node
+libvirt_define_node_lock = threading.Lock()
+
 
 class Node(NodeBase):
     def __init__(self, name, role, tags, conn, image_path,
@@ -72,7 +75,16 @@ class Node(NodeBase):
         logger.info(f"node {self.name}: booting with "
                     f"image {self._snap_img_path}")
         logger.debug(f"node {self.name}: libvirt xml: {xml}")
-        self._dom = self._conn.defineXML(xml)
+        try:
+            libvirt_define_node_lock.acquire()
+            self._dom = self._conn.defineXML(xml)
+        except libvirt.libvirtError as e:
+            logger.error(
+                f"unable to define node '{self.name}' using xml: {xml}")
+            raise e
+        finally:
+            libvirt_define_node_lock.release()
+
         self._dom.create()
         if self._role == NodeRole.WORKER:
             for i in range(0, settings.WORKER_INITIAL_DATA_DISKS):
@@ -329,7 +341,7 @@ class Hardware(HardwareBase):
     def _get_image_path(self):
         if (settings.LIBVIRT.IMAGE.startswith("http://") or
                 settings.LIBVIRT.IMAGE.startswith("https://")):
-            logging.debug(
+            logging.info(
                 f"Downloading image from {settings.LIBVIRT.IMAGE}")
             download_location = os.path.join(
                 self.workspace.working_dir,
