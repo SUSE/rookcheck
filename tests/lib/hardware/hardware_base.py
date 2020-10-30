@@ -151,13 +151,12 @@ class HardwareBase(ABC):
         else:
             limit = ""
 
-        # Supplied extra_vars from settings always take precedence
-        if settings.ANSIBLE_EXTRA_VARS:
-            extra_vars.update(json.loads(settings.ANSIBLE_EXTRA_VARS))
+        extra_vars_param = ""
         if extra_vars:
-            extra_vars_param = f"--extra-vars '{json.dumps(extra_vars)}'"
-        else:
-            extra_vars_param = ""
+            extra_vars_param += f" --extra-vars '{json.dumps(extra_vars)}'"
+        if settings.ANSIBLE_EXTRA_VARS:
+            extra_vars_param += " --extra-vars "
+            f"'{settings.ANSIBLE_EXTRA_VARS}'"
 
         logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
