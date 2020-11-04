@@ -24,6 +24,7 @@ settings_dir = os.path.realpath(os.path.join(
 
 settings = Dynaconf(
     envvar_prefix='ROOKCHECK',
+    load_dotenv=True,
     settings_files=[
         os.path.join(settings_dir, 'settings.toml'),
         os.path.join(settings_dir, 'openstack.toml'),
