@@ -15,6 +15,13 @@
   loop_control:
     loop_var: _repo
 
+- name: Add custom certificates
+  synchronize:
+    src: "{{ playbook_dir }}/../../../localassets/certificates/"
+    dest: /etc/pki/trust/anchors
+  notify:
+    - update-ca-certificates
+
 - name: add packages
   vars:
     pkg:
@@ -74,3 +81,14 @@
       state: absent
       update_cache: no
   when: inventory_hostname in groups['first_master']
+
+- name: create registries config folder
+  file:
+    path: /etc/containers
+    state: directory
+    mode: '0755'
+
+- name: copy custom registries
+  synchronize:
+    src: "{{ playbook_dir }}/../../../localassets/containers/"
+    dest: /etc/containers

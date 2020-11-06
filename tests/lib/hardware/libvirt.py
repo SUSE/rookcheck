@@ -365,21 +365,26 @@ class Hardware(HardwareBase):
             dhcp_start = str(netaddr.IPAddress(network.first+2))
             dhcp_end = str(netaddr.IPAddress(network.last-1))
             xml = textwrap.dedent("""
-                <network>
-                <name>%(network_name)s</name>
-                <forward mode="nat"/>
-                <ip address="%(host_ip)s" netmask="%(netmask)s">
-                    <dhcp>
-                        <range start="%(dhcp_start)s" end="%(dhcp_end)s" />
-                    </dhcp>
-                </ip>
-                </network>
-            """ % {
+    <network xmlns:dnsmasq='http://libvirt.org/schemas/network/dnsmasq/1.0'>
+    <name>%(network_name)s</name>
+    <forward mode="nat"/>
+    <ip address="%(host_ip)s" netmask="%(netmask)s">
+        <dhcp>
+            <range start="%(dhcp_start)s" end="%(dhcp_end)s" />
+        </dhcp>
+    </ip>
+    <dnsmasq:options>
+        <dnsmasq:option value="address=/.local/%(registry_mirror)s"/>
+    </dnsmasq:options>
+    </network>
+    """ % {
                 "network_name": self.workspace.name,
                 "host_ip": host_ip,
                 "netmask": netmask,
                 "dhcp_start": dhcp_start,
                 "dhcp_end": dhcp_end,
+                "registry_mirror": settings.REGISTRY_MIRROR_ADDRESS.split(
+                    ':')[0],
             })
             try:
                 net = self._conn.networkCreateXML(xml)

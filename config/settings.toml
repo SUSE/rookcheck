@@ -55,3 +55,9 @@ _remove_workspace = true
 # that ansible-playbook accepts for the --extra-vars parameter
 # See https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#defining-variables-at-runtime  # noqa
 ansible_extra_vars = ""
+
+# container registry cache IP - This can be any IP as long as it is reachable by you cluster nodes.
+# The default setup assumes your registry is listening on 192.168.122.1 which is libvirt default bridge IP
+# Any DNS name ending in .local will resolve to this IP
+# If not using local registry cache feature, lease the default value as is
+registry_mirror_address = "192.168.122.1"

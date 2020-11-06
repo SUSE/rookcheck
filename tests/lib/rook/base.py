@@ -65,7 +65,7 @@ class RookBase(ABC):
             self.toolbox_pod = toolbox_pods[0]
 
         return self.kubernetes.execute_in_pod(
-            command, self.toolbox_pod, log_stdout=False)
+            command, self.toolbox_pod, log_stdout=True)
 
     def install(self):
         # TODO(jhesketh): We may want to provide ways for tests to override
