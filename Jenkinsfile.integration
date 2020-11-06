@@ -1,9 +1,6 @@
 #!groovy
 
-
 def compute_node='storage-rookcheck'
-// the prefix we want to use for the rookcheck environment
-def cluster_prefix="${currentBuild.fullProjectName.replace('/', '_')}-${currentBuild.number}_"
 
 pipeline {
     agent {
@@ -24,17 +21,23 @@ pipeline {
     }
 
     environment {
-        // ROOKCHECK_CLUSTER_PREFIX = "${cluster_prefix}"
-        // FIXME(jhesketh): ${cluster_prefix} is too long for a node name.
-        //                  kubectl annotate fails when the network isn't set
-        //                  up and the name is long. This is possibly an
-        //                  upstream kubernetes bug that I need to investigate.
-        ROOKCHECK_CLUSTER_PREFIX = "rookcheck-jen"
+        // Ideally the cluster_prefix we want to use for the rookcheck environment is:
+        // def cluster_prefix="${currentBuild.fullProjectName.replace('/', '_')}-${currentBuild.number}_"
+        //
+        // However, we need to set cluster_prefix as short as possible, there are two
+        // reasons for this:
+        // 1) too long node names constructed from cluster_prefix make kubectl annotate
+        //    fails when the network isn't set up and the name is long. This is possibly
+        //    an upstream kubernetes bug that we need to investigate.
+        // 2) it is not super usable to operate with long names. For example, when using
+        //    openstack client to list any kind of resources in terminal like servers,
+        //    volumes, etc. the output tables turn into barely readable ascii soup.
+
+        ROOKCHECK_CLUSTER_PREFIX = "rkck-${currentBuild.number}-"
         OS_CLOUD = "${params.OS_CLOUD}"
         ROOKCHECK_OPENSTACK__EXTERNAL_NETWORK = "${params.OS_EXTERNAL_NETWORK}"
         ROOKCHECK_OPENSTACK__FLAVOR = "${params.OS_FLAVOR}"
         ROOKCHECK_UPSTREAM_ROOK__BUILD_ROOK_FROM_GIT = "FALSE"
-
     }
     stages {
         stage('Prep env') {
