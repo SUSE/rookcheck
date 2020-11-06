@@ -155,8 +155,8 @@ class HardwareBase(ABC):
         if extra_vars:
             extra_vars_param += f" --extra-vars '{json.dumps(extra_vars)}'"
         if settings.ANSIBLE_EXTRA_VARS:
-            extra_vars_param += " --extra-vars "
-            f"'{settings.ANSIBLE_EXTRA_VARS}'"
+            extra_vars_param += f" --extra-vars "\
+                                f" '{settings.ANSIBLE_EXTRA_VARS}'"
 
         logger.info(f'Running playbook {path} ({limit})')
         self.workspace.execute(
