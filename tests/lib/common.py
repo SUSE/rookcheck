@@ -49,18 +49,30 @@ def decode_wrapper(i):
 
 
 def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
-                    interval=5, decode=decode_wrapper, **kwargs):
+                    interval=5, decode=decode_wrapper, ignore_exceptions=True,
+                    **kwargs):
     """Runs `func` with `args` until `matcher(out)` returns true or timesout
 
     Returns the matching result, or raises an exception.
     """
 
-    for i in range(attempts):
-        out = func(*args, **kwargs)
-        if decode:
-            out = decode(out)
-        if matcher(out):
-            return out
+    i = 1
+    while i < (attempts + 1):
+        logger.info(f"Attempt {i}/ {attempts}")
+        try:
+            out = func(*args, **kwargs)
+            if decode:
+                out = decode(out)
+            if matcher(out):
+                return out
+        except Exception as e:
+            if ignore_exceptions:
+                if i == attempts:
+                    logger.error(e.output)
+            else:
+                logger.error(e.output)
+                raise
+            i = i+1
         time.sleep(interval)
 
     logger.error("Timed out waiting for result %s in %s(%s)" %
