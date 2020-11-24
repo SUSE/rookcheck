@@ -32,45 +32,38 @@
     group: root
     mode: 0644
 
-- name: install skuba & kubectl
+- name: install skuba / kubectl / helm
   zypper:
-      name:
-        - patterns-caasp-Management
+      name: ['patterns-caasp-Management', 'helm3']
       state: present
       update_cache: no
   when: inventory_hostname in groups['first_master']
 
-- name: retrieve skuba binary into workspace
+- name: retrieve skuba / kubectl / helm binaries into workspace
   fetch:
-    src: /usr/bin/skuba
+    src: /usr/bin/{{ item }}
     dest: '{{ rookcheck_workspace_dir }}/bin/'
     flat: yes
+  loop:
+    - skuba
+    - kubectl
+    - helm3
   when: inventory_hostname in groups['first_master']
 
-- name: retrieve kubectl binary into workspace
-  fetch:
-    src: /usr/bin/kubectl
-    dest: '{{ rookcheck_workspace_dir }}/bin/'
-    flat: yes
-  when: inventory_hostname in groups['first_master']
-
-- name: make skuba binary executable
+- name: make skuba / kubectl / helm binaries executable
   file:
-    path: '{{ rookcheck_workspace_dir }}/bin/skuba'
+    path: '{{ rookcheck_workspace_dir }}/bin/{{ item }}'
     mode: 0755
   delegate_to: 127.0.0.1
+  loop:
+    - skuba
+    - kubectl
+    - helm3
   when: inventory_hostname in groups['first_master']
 
-- name: make kubectl binary executable
-  file:
-    path: '{{ rookcheck_workspace_dir }}/bin/kubectl'
-    mode: 0755
-  delegate_to: 127.0.0.1
-  when: inventory_hostname in groups['first_master']
-
-- name: remove skuba
+- name: remove unecessary packages
   zypper:
-      name: skuba
+      name: ['patterns-caasp-Management', 'helm3']
       state: absent
       update_cache: no
   when: inventory_hostname in groups['first_master']

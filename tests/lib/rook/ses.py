@@ -28,6 +28,8 @@ class RookSes(RookBase):
         super().__init__(workspace, kubernetes)
         self.ceph_dir = os.path.join(
             self.workspace.working_dir, 'rook', 'ceph')
+        self.rook_chart = settings(
+            f"SES.{settings.SES.TARGET}.rook_ceph_chart")
 
     def build(self):
         super().build()
@@ -41,10 +43,10 @@ class RookSes(RookBase):
         }
         self.kubernetes.hardware.ansible_run_playbook(
             'playbook_rook_ses.yaml', extra_vars=repo_vars)
-        self._get_rook_files()
+        self._get_rook()
         self._fix_yaml()
 
-    def _get_rook_files(self):
+    def _get_rook(self):
         # TODO (bleon)
         # This is not optima. Need to retrieve RPM directly and extract files
         # out of it. RPM URL should be configurable
@@ -59,3 +61,19 @@ class RookSes(RookBase):
         replacements = settings(
             f'SES.{settings.SES.TARGET}.yaml_substitutions')
         recursive_replace(self.ceph_dir, replacements)
+
+    def _get_charts(self):
+        super()._get_charts()
+        self.kubernetes.helm(f"chart pull {self.rook_chart}")
+        self.kubernetes.helm(f"chart export {self.rook_chart}"
+                             f" -d {self.workspace.helm_dir}")
+
+    def _get_helm(self):
+        super()._get_helm()
+        logger.info('Helm binary is installed via package on ses')
+
+    def _install_operator_helm(self):
+        self.kubernetes.helm(
+            f"install -n rook-ceph rook-ceph "
+            f"{self.workspace.helm_dir}/rook-ceph"
+            f" -f {self.workspace.helm_dir}/rook-ceph/values.yaml")
