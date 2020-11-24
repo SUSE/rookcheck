@@ -32,12 +32,7 @@ class RookCluster(RookBase):
         self.build_dir = os.path.join(self.workspace.build_dir, 'rook')
         self.ceph_dir = os.path.join(
             self.build_dir, 'cluster/examples/kubernetes/ceph')
-
-    def preinstall(self):
-        super().preinstall()
-        if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
-            self.upload_rook_image()
-            self._fix_yaml()
+        self.rook_chart = settings.UPSTREAM_ROOK.ROOK_CEPH_CHART
 
     def build(self):
         super().build()
@@ -69,9 +64,15 @@ class RookCluster(RookBase):
                 % os.path.join(self.build_dir, 'rook-ceph.tar.gz'))
         self._rook_built = True
 
-    def upload_rook_image(self):
-        self.kubernetes.hardware.ansible_run_playbook(
-            "playbook_rook_upstream.yaml")
+    def preinstall(self):
+        super().preinstall()
+        if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
+            self.upload_rook_image()
+            self._fix_yaml()
+
+    def _get_charts(self):
+        super()._get_charts()
+        self.kubernetes.helm(f"repo add rook-upstream {self.rook_chart}")
 
     def get_rook(self):
         logger.info("Clone rook version %s from repo %s" % (
@@ -93,13 +94,14 @@ class RookCluster(RookBase):
             unpack_folder=self.workspace.bin_dir
         )
 
-    def get_helm(self):
+    def _get_helm(self):
+        super()._get_helm()
         url = "https://api.github.com/repos/helm/helm/releases/latest"
         version = requests.get(url).json()["tag_name"]
         self.workspace.get_unpack(
             "https://get.helm.sh/helm-%s-linux-amd64.tar.gz" % version)
         os.rename(os.path.join(self.workspace.tmp_dir, 'linux-amd64', 'helm'),
-                  os.path.join(self.workspace.bin_dir, 'helm'))
+                  os.path.join(self.workspace.bin_dir, 'helm3'))
 
     def _fix_yaml(self):
         # Replace image reference if we built it in this run
@@ -114,3 +116,15 @@ class RookCluster(RookBase):
                     pass
         replacements = {image: self.rook_image}
         recursive_replace(dir=self.ceph_dir, replacements=replacements)
+
+    def upload_rook_image(self):
+        self.kubernetes.hardware.ansible_run_playbook(
+            "playbook_rook_upstream.yaml")
+
+    def _install_operator_helm(self):
+        version = ""
+        if settings.UPSTREAM_ROOK.VERSION != "master":
+            version = f"--version {settings.UPSTREAM_ROOK.VERSION}"
+        self.kubernetes.helm(
+            f"install -n rook-ceph rook-ceph rook-upstream/rook-ceph"
+            f" {version}")

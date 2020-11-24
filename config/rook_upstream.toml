@@ -10,3 +10,5 @@ repo = "https://github.com/rook/rook.git"
 # The rook version you want to test. This is the tag to be checked out so it must
 # exist for real within rook repo
 version = "master"
+
+rook_ceph_chart = "https://charts.rook.io/release"

@@ -6,15 +6,18 @@
 target = "devel7"
 
   [ses.ses7]
+    rook_ceph_chart = "registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph:latest"
     [ses.ses7.yaml_substitutions]
       # "suse.com" = "suse.de/devel/storage/7.0/containers"
 
     [ses.ses7.repositories]
       # Each key/value under this sub-heading is a repository
-      storage = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
+      storage         = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
       storage_updates = "http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/"
 
   [ses.devel7]
+    rook_ceph_chart = "registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph:latest"
+
     [ses.devel7.yaml_substitutions]
       "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
       "# ROOK_CSI_" = "ROOK_CSI_"
