@@ -56,9 +56,8 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
     Returns the matching result, or raises an exception.
     """
 
-    i = 1
-    while i < (attempts + 1):
-        logger.info(f"Attempt {i}/ {attempts}")
+    for i in range(attempts):
+        logger.info(f"Attempt {i+1} / {attempts}")
         try:
             out = func(*args, **kwargs)
             if decode:
@@ -72,7 +71,7 @@ def wait_for_result(func, *args, matcher=simple_matcher(True), attempts=20,
             else:
                 logger.error(e.output)
                 raise
-            i = i+1
+        i = i+1
         time.sleep(interval)
 
     logger.error("Timed out waiting for result %s in %s(%s)" %
