@@ -100,7 +100,7 @@ class KubernetesBase(ABC):
                                                   log_stdout=False)
                 f.write(stdout)
         except Exception:
-            logger.warning("Unable to `kubectl get all`")
+            logger.exception("Unable to `kubectl get all`")
 
         methods = {
             'config_maps.json': 'list_config_map_for_all_namespaces',
@@ -131,7 +131,7 @@ class KubernetesBase(ABC):
                         f, default=str, sort_keys=True, indent=2
                     )
             except Exception:
-                logger.warning(f"Unable to log {method}")
+                logger.exception(f"Unable to log {method}")
 
         pod_logs_dest_dir = os.path.join(dest_dir, 'pod_logs')
         os.makedirs(pod_logs_dest_dir, exist_ok=True)
@@ -146,7 +146,7 @@ class KubernetesBase(ABC):
                         self.v1.read_namespaced_pod_log(pod_name, namespace)
                     )
             except Exception:
-                logger.warning(f"Unable to get logs for pod {pod_name}")
+                logger.exception(f"Unable to get logs for pod {pod_name}")
             try:
                 with open(os.path.join(pod_logs_dest_dir,
                                        f'describe_{pod_name}.txt'), 'w') as f:
@@ -155,7 +155,7 @@ class KubernetesBase(ABC):
                         log_stdout=False)
                     f.write(stdout)
             except Exception:
-                logger.warning(f"Unable to describe pod {pod_name}")
+                logger.exception(f"Unable to describe pod {pod_name}")
 
     def __enter__(self):
         return self
