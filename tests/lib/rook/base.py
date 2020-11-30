@@ -100,7 +100,7 @@ class RookBase(ABC):
             matcher=common.regex_count_matcher(pattern, 1),
             attempts=30, interval=10)
         logger.info("Rook successfully installed and ready!")
-        
+
         logger.info("Wait for OSD prepare to complete "
                     "(this may take a while...)")
         pattern = re.compile(r'.*rook-ceph-osd-prepare.*Completed')
