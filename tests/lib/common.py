@@ -44,6 +44,12 @@ def regex_count_matcher(regex_pattern, min_matches):
     return compare
 
 
+def regex_exact_matcher(regex_pattern, exact_matches):
+    def compare(testee):
+        return len(regex_pattern.findall(testee)) == exact_matches
+    return compare
+
+
 def decode_wrapper(i):
     return i[1]
 

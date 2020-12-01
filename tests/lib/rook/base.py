@@ -80,9 +80,11 @@ class RookBase(ABC):
     def install(self):
         self.kubernetes.kubectl("create namespace rook-ceph")
         self._install_operator()
+        self.install_ceph()
 
+    def install_ceph(self, cluster_yaml='cluster.yaml', health_test=True):
         self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'cluster.yaml'))
+            os.path.join(self.ceph_dir, cluster_yaml))
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'toolbox.yaml'))
 
@@ -97,6 +99,7 @@ class RookBase(ABC):
             self.kubernetes.kubectl, "-n rook-ceph get pods",
             matcher=common.regex_count_matcher(pattern, 1),
             attempts=30, interval=10)
+        logger.info("Rook successfully installed and ready!")
 
         logger.info("Wait for OSD prepare to complete "
                     "(this may take a while...)")
@@ -114,12 +117,13 @@ class RookBase(ABC):
             matcher=common.regex_count_matcher(pattern, 1),
             attempts=30, interval=10)
 
-        logger.info("Wait for Ceph HEALTH_OK")
-        pattern = re.compile(r'.*HEALTH_OK')
-        common.wait_for_result(
-            self.execute_in_ceph_toolbox, "ceph status",
-            matcher=common.regex_matcher(pattern),
-            attempts=60, interval=10)
+        if health_test:
+            logger.info("Wait for Ceph HEALTH_OK")
+            pattern = re.compile(r'.*HEALTH_OK')
+            common.wait_for_result(
+                self.execute_in_ceph_toolbox, "ceph status",
+                matcher=common.regex_matcher(pattern),
+                attempts=60, interval=10)
 
         logger.info("Rook successfully installed and ready!")
 
@@ -175,16 +179,27 @@ class RookBase(ABC):
     def get_number_of_osds(self):
         # get number of osds
         osds = self.kubernetes.get_pods_by_app_label("rook-ceph-osd")
-        osds = len(osds)
+        if osds[0] == '':
+            osds = 0
+        else:
+            osds = len(osds)
         logger.info("cluster has %s osd pods running", osds)
         return osds
 
     def get_number_of_mons(self):
         # get number of mons
         mons = self.kubernetes.get_pods_by_app_label("rook-ceph-mon")
-        mons = len(mons)
+        if mons[0] == '':
+            mons = 0
+        else:
+            mons = len(mons)
         logger.info("cluster has %s mon pods running", mons)
         return mons
+
+    def get_operator_pod(self):
+        operator = self.kubernetes.get_pods_by_app_label("rook-ceph-operator")
+        logger.info("found %s operator pod", operator)
+        return operator[0]
 
     def __enter__(self):
         return self

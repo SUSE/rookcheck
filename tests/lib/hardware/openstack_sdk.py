@@ -116,6 +116,12 @@ class Node(NodeBase):
         # update instance data (so _instance.volumes is up-to-date)
         self._instance = self._conn.get_server(self._instance)
 
+    def get_device_name(self, disk_name):
+        volume_name = self._conn.get_volume(
+            disk_name)['attachments'][0]['device']
+        logger.info(f"Device {disk_name} got attached as {volume_name}")
+        return volume_name
+
     def destroy(self):
         super().destroy()
         if self._instance:
