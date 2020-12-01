@@ -161,7 +161,7 @@ class RookBase(ABC):
             self.kubernetes.kubectl, "-n rook-ceph get pods",
             log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 2),
-            attempts=60, interval=5)
+            attempts=120, interval=10)
 
         logger.info("Wait for myfs to be active")
         pattern = re.compile(r'.*active')
@@ -169,7 +169,7 @@ class RookBase(ABC):
             self.execute_in_ceph_toolbox, "ceph fs status myfs",
             log_stdout=False,
             matcher=common.regex_matcher(pattern),
-            attempts=60, interval=5)
+            attempts=120, interval=10)
         logger.info("Ceph FS successfully installed and ready!")
 
     def get_number_of_osds(self):
