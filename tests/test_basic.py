@@ -203,7 +203,7 @@ def test_add_storage(rook_cluster):
     # this may take a while
     i = 0
     while osds < osds_expected:
-        if i == 60:
+        if i == 120:
             pytest.fail("rook was not able to add {new_osds} of required osds")
             break
         time.sleep(10)
@@ -279,7 +279,7 @@ def test_rbd_pvc(rook_cluster):
     pattern = re.compile(r'.*rook-ceph-block*')
     common.wait_for_result(rook_cluster.kubernetes.kubectl, "get sc",
                            matcher=common.regex_matcher(pattern),
-                           attempts=10, interval=6)
+                           attempts=30, interval=10)
 
     # create an rbd based PVC
     output = rook_cluster.kubernetes.kubectl_apply(
@@ -291,7 +291,7 @@ def test_rbd_pvc(rook_cluster):
     pattern = re.compile(r'.*Bound*')
     common.wait_for_result(rook_cluster.kubernetes.kubectl, "get pvc rbd-pvc",
                            matcher=common.regex_matcher(pattern),
-                           attempts=10, interval=6)
+                           attempts=30, interval=10)
 
     # create a pod using the PVC
     output = rook_cluster.kubernetes.kubectl_apply(
@@ -304,7 +304,7 @@ def test_rbd_pvc(rook_cluster):
     common.wait_for_result(rook_cluster.kubernetes.kubectl,
                            "get pod csirbd-demo-pod",
                            matcher=common.regex_matcher(pattern),
-                           attempts=10, interval=10)
+                           attempts=30, interval=10)
 
     rook_cluster.kubernetes.kubectl('delete pod csirbd-demo-pod')
     rook_cluster.kubernetes.kubectl('delete pvc rbd-pvc')

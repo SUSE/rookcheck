@@ -1,8 +1,7 @@
 [openstack]
 
 # The node image by either ID or NAME
-# os_node_image = "openSUSE-Leap-15.2-JeOS.x86_64-OpenStack-Cloud"
-node_image = "b73a273d-6e63-43f2-8e73-defe0da54fd6"
+node_image = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
 
 # The node size or flavour name as known by the provider
 node_size = "m1.medium"

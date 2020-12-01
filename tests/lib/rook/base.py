@@ -81,22 +81,15 @@ class RookBase(ABC):
         self.kubernetes.kubectl("create namespace rook-ceph")
         self._install_operator()
 
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'cluster.yaml'))
-        self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'toolbox.yaml'))
-
         # reduce wait time to discover devices
         self.kubernetes.kubectl(
             "-n rook-ceph set env "
             "deployment/rook-ceph-operator ROOK_DISCOVER_DEVICES_INTERVAL=2m")
 
-        logger.info("Wait for rook-ceph-operator running")
-        pattern = re.compile(r'.*rook-ceph-operator.*Running')
-        common.wait_for_result(
-            self.kubernetes.kubectl, "-n rook-ceph get pods",
-            matcher=common.regex_count_matcher(pattern, 1),
-            attempts=30, interval=10)
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'cluster.yaml'))
+        self.kubernetes.kubectl_apply(
+            os.path.join(self.ceph_dir, 'toolbox.yaml'))
 
         logger.info("Wait for OSD prepare to complete "
                     "(this may take a while...)")
@@ -134,6 +127,13 @@ class RookBase(ABC):
             logger.info('Deploying rook operator - using kubectl apply ...')
             self._install_operator_kubectl()
 
+        logger.info("Wait for rook-ceph-operator running")
+        pattern = re.compile(r'.*rook-ceph-operator.*Running')
+        common.wait_for_result(
+            self.kubernetes.kubectl, "-n rook-ceph get pods",
+            matcher=common.regex_count_matcher(pattern, 1),
+            attempts=30, interval=10)
+
         # set operator log level
         self.kubernetes.kubectl(
             "--namespace rook-ceph set env "
@@ -161,7 +161,7 @@ class RookBase(ABC):
             self.kubernetes.kubectl, "-n rook-ceph get pods",
             log_stdout=False,
             matcher=common.regex_count_matcher(pattern, 2),
-            attempts=60, interval=5)
+            attempts=120, interval=10)
 
         logger.info("Wait for myfs to be active")
         pattern = re.compile(r'.*active')
@@ -169,7 +169,7 @@ class RookBase(ABC):
             self.execute_in_ceph_toolbox, "ceph fs status myfs",
             log_stdout=False,
             matcher=common.regex_matcher(pattern),
-            attempts=60, interval=5)
+            attempts=120, interval=10)
         logger.info("Ceph FS successfully installed and ready!")
 
     def get_number_of_osds(self):
