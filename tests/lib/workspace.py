@@ -282,7 +282,7 @@ class Workspace():
                 dirs_exist_ok=True
             )
         except Exception:
-            logging.warning(
+            logging.exception(
                 f"Unable to copy {self.working_dir} to gather logs dir")
 
     def __enter__(self):
