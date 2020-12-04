@@ -77,6 +77,10 @@ class RookBase(ABC):
     def _get_helm(self):
         pass
 
+    @abstractmethod
+    def _install_operator_helm(self):
+        pass
+
     def install(self):
         self.kubernetes.kubectl("create namespace rook-ceph")
         self._install_operator()

@@ -72,6 +72,7 @@ class RookCluster(RookBase):
 
     def _get_charts(self):
         super()._get_charts()
+        logger.info(f"Adding rook chart helm repo {self.rook_chart}")
         self.kubernetes.helm(f"repo add rook-upstream {self.rook_chart}")
 
     def get_rook(self):
@@ -125,6 +126,10 @@ class RookCluster(RookBase):
         version = ""
         if settings.UPSTREAM_ROOK.VERSION != "master":
             version = f"--version {settings.UPSTREAM_ROOK.VERSION}"
+        logger.info(
+            "Installing rook operator with helm rook-upstream/rook-ceph"
+            f" {version}"
+        )
         self.kubernetes.helm(
             f"install -n rook-ceph rook-ceph rook-upstream/rook-ceph"
             f" {version}")
