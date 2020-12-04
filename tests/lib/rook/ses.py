@@ -64,6 +64,7 @@ class RookSes(RookBase):
 
     def _get_charts(self):
         super()._get_charts()
+        logger.info(f"Grabbing chart {self.rook_chart}")
         self.kubernetes.helm(f"chart pull {self.rook_chart}")
         self.kubernetes.helm(f"chart export {self.rook_chart}"
                              f" -d {self.workspace.helm_dir}")
@@ -73,6 +74,11 @@ class RookSes(RookBase):
         logger.info('Helm binary is installed via package on ses')
 
     def _install_operator_helm(self):
+        logger.info(
+            "Installing rook operator with helm "
+            f"{self.workspace.helm_dir}/rook-ceph with values"
+            f"{self.workspace.helm_dir}/rook-ceph/values.yaml"
+        )
         self.kubernetes.helm(
             f"install -n rook-ceph rook-ceph "
             f"{self.workspace.helm_dir}/rook-ceph"
