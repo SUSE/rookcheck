@@ -146,7 +146,7 @@ class KubernetesBase(ABC):
                         self.v1.read_namespaced_pod_log(pod_name, namespace)
                     )
             except Exception:
-                logger.exception(f"Unable to get logs for pod {pod_name}")
+                logger.warning(f"Unable to get logs for pod {pod_name}")
             try:
                 with open(os.path.join(pod_logs_dest_dir,
                                        f'describe_{pod_name}.txt'), 'w') as f:
@@ -155,7 +155,7 @@ class KubernetesBase(ABC):
                         log_stdout=False)
                     f.write(stdout)
             except Exception:
-                logger.exception(f"Unable to describe pod {pod_name}")
+                logger.warning(f"Unable to describe pod {pod_name}")
 
     def __enter__(self):
         return self
