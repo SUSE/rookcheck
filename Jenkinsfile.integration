@@ -42,7 +42,7 @@ pipeline {
     stages {
         stage('Prep env') {
             steps {
-                sh "mkdir artifacts"
+                sh "mkdir ${env.WORKSPACE}/artifacts"
             }
         }
         stage('Test distros') {
@@ -59,7 +59,7 @@ pipeline {
                         ROOKCHECK_DISTRO = "openSUSE_k8s"
                         ROOKCHECK_NODE_IMAGE_USER = "opensuse"
                         ROOKCHECK_OPENSTACK__NODE_IMAGE = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
-                        ROOKCHECK__GATHER_LOGS_DIR = "artifacts/openSUSE_k8s"
+                        ROOKCHECK__GATHER_LOGS_DIR = "${env.WORKSPACE}/artifacts/openSUSE_k8s"
                     }
                     steps{
                         sh "env"
@@ -78,7 +78,7 @@ pipeline {
                         ROOKCHECK_SES__TARGET = "${params.SES_TARGET}"
                         ROOKCHECK_NODE_IMAGE_USER = "sles"
                         ROOKCHECK_OPENSTACK__NODE_IMAGE = "SLES15-SP2-JeOS.x86_64-15.2-OpenStack-Cloud-GM"
-                        ROOKCHECK__GATHER_LOGS_DIR = "artifacts/SLES_CaaSP"
+                        ROOKCHECK__GATHER_LOGS_DIR = "${env.WORKSPACE}/artifacts/SLES_CaaSP"
                     }
                     steps{
                         sh "env"
@@ -91,7 +91,7 @@ pipeline {
     post {
         always {
             junit 'junit-results/*.xml'
-            dir('artifacts') {
+            dir("${env.WORKSPACE}/artifacts") {
                 archiveArtifacts artifacts: '**', allowEmptyArchive: true
             }
         }
