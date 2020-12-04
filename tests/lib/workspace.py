@@ -278,8 +278,7 @@ class Workspace():
                     "go*",
                     "src",
                     "*.tar*"
-                ),
-                dirs_exist_ok=True
+                )
             )
         except Exception:
             logging.exception(
