@@ -173,6 +173,7 @@ class Node(NodeBase):
         self._disks[name] = {
             'path': disk_path,
             'attached': False,
+            'volume_name': None,
             'xml': None
         }
         logger.info(f"disk {name} created")
@@ -209,8 +210,12 @@ class Node(NodeBase):
                "block_device": block_device
                })
         self._disks[name]['xml'] = disk
+        self._disks[name]['volume_name'] = block_device
         self._dom.attachDevice(disk)
         logger.info(f"Attached volume {name} as device {block_device}")
+
+    def get_device_name(self, name):
+        return self._disks[name]['volume_name']
 
     def disk_detach(self, name):
         """
