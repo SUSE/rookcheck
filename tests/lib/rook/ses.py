@@ -14,11 +14,12 @@
 
 import logging
 import os
+import yaml
 
 from tests.lib.common import execute, recursive_replace
 from tests.lib.rook.base import RookBase
 
-from tests.config import settings
+from tests.config import settings, converter
 
 logger = logging.getLogger(__name__)
 
@@ -32,21 +33,54 @@ class RookSes(RookBase):
             f"SES.{settings.SES.TARGET}.rook_ceph_chart")
 
     def build(self):
+        if not converter('@bool', settings.SES.BUILD_ROOK_FROM_GIT):
+            return
+
+        image = 'localhost/rook/ceph'
+        tag = f"{settings.SES.VERSION}-rookcheck"
+        self.rook_image = f"{image}:{tag}"
         super().build()
-        logger.info('SES based rook does not require building')
+
+    def upload_rook_image(self):
+        super().upload_rook_image()
+        self.kubernetes.hardware.ansible_run_playbook(
+            "playbook_rook_ses_upstream.yaml")
 
     def preinstall(self):
         super().preinstall()
+        if converter('@bool', settings.SES.BUILD_ROOK_FROM_GIT):
+            self.upload_rook_image()
         repo_vars = {
             'ses_repositories':
                 settings(f'SES.{settings.SES.TARGET}.repositories')
         }
         self.kubernetes.hardware.ansible_run_playbook(
             'playbook_rook_ses.yaml', extra_vars=repo_vars)
-        self._get_rook()
+        self._get_rook_yaml()
         self._fix_yaml()
 
-    def _get_rook(self):
+    def get_rook(self):
+        if not converter('@bool', settings.SES.BUILD_ROOK_FROM_GIT):
+            return
+
+        super().get_rook()
+        logger.info("Clone rook version %s from repo %s" % (
+            settings.SES.VERSION,
+            settings.SES.REPO))
+        execute(
+            "git clone -b %s %s %s" % (
+                settings.SES.VERSION,
+                settings.SES.REPO,
+                self.build_dir),
+            log_stderr=False
+        )
+
+    def _get_rook_yaml(self):
+        # do not use rpm-package for self-built rook images
+        if converter('@bool', settings.SES.BUILD_ROOK_FROM_GIT):
+            self.ceph_dir = os.path.join(
+                self.build_dir, 'cluster/examples/kubernetes/ceph')
+            return
         # TODO (bleon)
         # This is not optima. Need to retrieve RPM directly and extract files
         # out of it. RPM URL should be configurable
@@ -58,9 +92,37 @@ class RookSes(RookBase):
     def _fix_yaml(self):
         # Replacements are to point container paths and/or versions to the
         # expected ones to test.
-        replacements = settings(
-            f'SES.{settings.SES.TARGET}.yaml_substitutions')
-        recursive_replace(self.ceph_dir, replacements)
+        if converter('@bool', settings.SES.BUILD_ROOK_FROM_GIT):
+            # Replace image reference if we built it in this run
+            with open(os.path.join(self.ceph_dir, 'operator.yaml')) as file:
+                docs = yaml.load_all(file, Loader=yaml.FullLoader)
+                for doc in docs:
+                    try:
+                        image = doc['spec']['template']['spec'][
+                                'containers'][0]['image']
+                        break
+                    except KeyError:
+                        pass
+                logger.info("replacing %s by %s", image, self.rook_image)
+                replacements = {image: self.rook_image}
+                recursive_replace(self.ceph_dir, replacements)
+            with open(os.path.join(self.ceph_dir, 'cluster.yaml')) as file:
+                docs = yaml.load_all(file, Loader=yaml.FullLoader)
+                for doc in docs:
+                    try:
+                        image = doc['spec']['cephVersion']['image']
+                        break
+                    except KeyError:
+                        pass
+                logger.info("replacing %s by %s", image, settings(
+                    f"SES.{settings.SES.TARGET}.ceph_image"))
+                replacements = {image: settings(
+                    f"SES.{settings.SES.TARGET}.ceph_image")}
+                recursive_replace(self.ceph_dir, replacements)
+        else:
+            replacements = settings(
+                f'SES.{settings.SES.TARGET}.yaml_substitutions')
+            recursive_replace(self.ceph_dir, replacements)
 
     def _get_charts(self):
         super()._get_charts()
