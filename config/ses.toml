@@ -8,7 +8,11 @@ target = "devel7"
   [ses.ses7]
     rook_ceph_chart = "registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph:latest"
     [ses.ses7.yaml_substitutions]
-      # "suse.com" = "suse.de/devel/storage/7.0/containers"
+      # "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
+
+    [ses.ses7.helm_values_substitutions]
+      # We can't predict the pinned versions of containers, so instead of
+      # supplying extra values.yaml files we perform substitutions
 
     [ses.ses7.repositories]
       # Each key/value under this sub-heading is a repository
@@ -21,6 +25,18 @@ target = "devel7"
     [ses.devel7.yaml_substitutions]
       "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
       "# ROOK_CSI_" = "ROOK_CSI_"
+
+    [ses.devel7.helm_values_substitutions]
+      # We can't predict the pinned versions of containers, so instead of
+      # supplying extra values.yaml files we perform substitutions
+      "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
+      "#image: registry" = "image: registry"
+      "#cephcsi:" = "cephcsi:"
+      "#registrar:" = "registrar:"
+      "#provisioner:" = "provisioner:"
+      "#snapshotter:" = "snapshotter:"
+      "#attacher:" = "attacher:"
+      "#resizer:" = "resizer:"
 
     [ses.devel7.repositories]
       # Each key/value under this sub-heading is a repository

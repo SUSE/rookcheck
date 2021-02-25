@@ -27,7 +27,9 @@ class RookSes(RookBase):
     def __init__(self, workspace, kubernetes):
         super().__init__(workspace, kubernetes)
         self.ceph_dir = os.path.join(
-            self.workspace.working_dir, 'rook', 'ceph')
+            self.workspace.working_dir, 'rook/ceph')
+        self.helm_dir = os.path.join(
+            self.workspace.working_dir, 'helm/rook-ceph')
         self.rook_chart = settings(
             f"SES.{settings.SES.TARGET}.rook_ceph_chart")
 
@@ -45,6 +47,7 @@ class RookSes(RookBase):
             'playbook_rook_ses.yaml', extra_vars=repo_vars)
         self._get_rook()
         self._fix_yaml()
+        self._fix_chart_values()
 
     def _get_rook(self):
         # TODO (bleon)
@@ -61,6 +64,13 @@ class RookSes(RookBase):
         replacements = settings(
             f'SES.{settings.SES.TARGET}.yaml_substitutions')
         recursive_replace(self.ceph_dir, replacements)
+
+    def _fix_chart_values(self):
+        # Replacements are to point container paths and/or versions to the
+        # expected ones to test.
+        replacements = settings(
+            f'SES.{settings.SES.TARGET}.helm_values_substitutions')
+        recursive_replace(self.helm_dir, replacements)
 
     def _get_charts(self):
         super()._get_charts()
