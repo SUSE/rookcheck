@@ -77,6 +77,13 @@ class NodeBase(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_device_name(self, disk_name):
+        """
+        Get the volume name of an attached disk
+        """
+        pass
+
     @property
     def name(self):
         return self._name.replace("_", "-")

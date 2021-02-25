@@ -374,3 +374,88 @@ def test_add_remove_node(rook_cluster):
         time.sleep(10)
         osds_current = rook_cluster.get_number_of_osds()
         i += 1
+
+
+def set_storage_pattern(rook_cluster, pattern=""):
+    # cleanup basic installation
+    cluster_original = os.path.join(rook_cluster.ceph_dir, 'cluster.yaml')
+    rook_cluster.kubernetes.kubectl('delete -f ' + cluster_original)
+    i = 0
+    while rook_cluster.get_number_of_osds() != 0:
+        if i == 10:
+            pytest.fail("There are still OSDs up and running")
+        logger.info("Still osds running")
+        time.sleep(10)
+        i += 1
+
+    # re-start rook operator to get new osd-prepare jobs
+    operator = rook_cluster.get_operator_pod()
+    rook_cluster.kubernetes.kubectl('-n rook-ceph delete pod ' + operator)
+    # wait for new operator pod
+    while operator == rook_cluster.get_operator_pod():
+        time.sleep(15)
+
+    # wait for operator pod running
+    re_pattern = re.compile(r'.*Running*')
+    common.wait_for_result(rook_cluster.kubernetes.kubectl,
+                           "-n rook-ceph get pod "
+                           + rook_cluster.get_operator_pod(),
+                           matcher=common.regex_matcher(re_pattern),
+                           attempts=10, interval=10)
+
+    time.sleep(600)
+
+    # add a disk of 10 G the node
+    nodes = rook_cluster.kubernetes.hardware.workers
+    disk_name = nodes[0].disk_create(10)
+    nodes[0].disk_attach(name=disk_name)
+
+    # get the device name of the new volume
+    volume_name = nodes[0].get_device_name(disk_name)
+
+    # create a working-copy of cluster.yaml
+    cluster_working = os.path.join(rook_cluster.ceph_dir, 'cluster_test.yaml')
+    cluster_original = os.path.join(rook_cluster.ceph_dir, 'cluster.yaml')
+
+    with open(cluster_original, 'r') as cluster_orig_f:
+        cluster_object = yaml.full_load(cluster_orig_f)
+
+    pattern = pattern + re.split(r'/', volume_name)[-1]
+    cluster_object['spec']['storage']['deviceFilter'] = pattern
+
+    with open(cluster_working, 'a') as cluster_work_f:
+        cluster_work_f.write(yaml.dump(cluster_object, Dumper=yaml.Dumper))
+
+    # install the rook-cluster
+    rook_cluster.install_ceph("cluster_test.yaml", False)
+
+    logger.info("Wait for exactly one OSD to run ")
+    pattern = re.compile(r'.*rook-ceph-osd-*')
+    common.wait_for_result(
+        rook_cluster.kubernetes.kubectl,
+        "--namespace rook-ceph get deployments",
+        matcher=common.regex_exact_matcher(pattern, 1),
+        attempts=90, interval=10)
+
+    time.sleep(60)
+
+    logger.info("Check if there is still only one OSD running")
+    common.wait_for_result(
+        rook_cluster.kubernetes.kubectl,
+        "--namespace rook-ceph get deployments",
+        matcher=common.regex_exact_matcher(pattern, 1),
+        attempts=90, interval=10)
+
+
+def test_storage_pattern(rook_cluster):
+    # set storage pattern to cluster.yaml
+    # set device filter to e.g. ^vdc
+    # pattern = "^" + re.split(r'/', volume_name)[-1]
+    pattern = "^"
+    set_storage_pattern(rook_cluster, pattern)
+
+    # test full path pattern
+    set_storage_pattern(rook_cluster)
+
+    # get back to basic installation
+    rook_cluster.install_ceph(health_test=False)
