@@ -111,6 +111,14 @@ class RookBase(ABC):
             matcher=common.regex_count_matcher(pattern, 1),
             attempts=30, interval=10)
 
+        # As of Nautilus v14.2.20 and Octopus v15.2.11, clusters intentionally
+        # come up in HEALTH_WARN (AUTH_INSECURE_GLOBAL_ID_RECLAIM) and to
+        # achieve HEALTH_OK we have to disallow this insecure feature.
+        self.execute_in_ceph_toolbox(
+            "ceph config set mon auth_allow_insecure_global_id_reclaim false"
+            " || true"
+        )
+
         logger.info("Wait for Ceph HEALTH_OK")
         pattern = re.compile(r'.*HEALTH_OK')
         common.wait_for_result(
