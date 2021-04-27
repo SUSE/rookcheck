@@ -1,0 +1,21 @@
+---
+- hosts: all
+  # TODO(toabctl): find a better structure for that
+  tasks:
+    - name: add podman packages
+      vars:
+        pkg:
+          - podman
+      zypper:
+          name: '{{ pkg }}'
+          state: present
+          update_cache: yes
+
+    - name: copy rook ceph image to cluster nodes
+      copy:
+        src: "{{ rookcheck_workspace_dir }}/build/rook/rook-ceph.tar.gz"
+        dest: "/root/.images/"
+        mode: '0644'
+
+    - name: load rook ceph image with podman  # noqa 301
+      command: podman load --input /root/.images/rook-ceph.tar.gz

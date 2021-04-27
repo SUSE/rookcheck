@@ -323,6 +323,7 @@ def test_add_remove_node(rook_cluster):
     # NodeRole.WORKER adds the disk for us
     rook_cluster.kubernetes.hardware.node_add(node)
     rook_cluster.kubernetes.hardware.prepare_nodes(limit_to_nodes=[node])
+    rook_cluster.upload_rook_image()
     # add the node the k8s cluster
     rook_cluster.kubernetes.join([node])
 
@@ -368,7 +369,7 @@ def test_add_remove_node(rook_cluster):
 
     i = 0
     while osds_current != workers_current:
-        if i == 10:
+        if i == 90:
             pytest.fail("rook did not remove additional OSD "
                         "after node removal")
         time.sleep(10)

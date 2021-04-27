@@ -15,9 +15,11 @@
 import logging
 import os
 import re
+import requests
 
-from tests.config import settings
+from tests.config import settings, converter
 from tests.lib import common
+from tests.lib.common import execute
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,8 @@ class RookBase(ABC):
         self.kubernetes = kubernetes
         self.toolbox_pod = None
         self.ceph_dir = None
+        self.rook_image = None
+        self.build_dir = os.path.join(self.workspace.build_dir, 'rook')
         logger.info(f"rook init on {self.kubernetes.hardware}")
 
     @property
@@ -37,9 +41,28 @@ class RookBase(ABC):
 
     @abstractmethod
     def build(self):
-        # Having the method in child classes allows easier test writing
-        # when using threads to speed things up
-        pass
+        self.get_rook()
+
+        self.get_golang()
+        logger.info("Compiling rook...")
+        execute(
+            command=f"make --directory {self.build_dir} "
+                    f"-j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
+            env={"PATH": f"{self.workspace.bin_dir}/go/bin:"
+                         f"{os.environ['PATH']}",
+                 "TMPDIR": self.workspace.tmp_dir,
+                 "GOCACHE": self.workspace.tmp_dir,
+                 "GOPATH": self.workspace.build_dir},
+            log_stderr=False)
+
+        logger.info(f"Tag image as {self.rook_image}")
+        execute(f'docker tag "rook-build/ceph-amd64" {self.rook_image}')
+
+        logger.info("Save image tar")
+        # TODO(jhesketh): build arch may differ
+        execute(f"docker save {self.rook_image} | gzip > %s"
+                % os.path.join(self.build_dir, 'rook-ceph.tar.gz'))
+        self._rook_built = True
 
     @abstractmethod
     def preinstall(self):
@@ -70,6 +93,10 @@ class RookBase(ABC):
             command, self.toolbox_pod, log_stdout=False)
 
     @abstractmethod
+    def get_rook(self):
+        pass
+
+    @abstractmethod
     def _get_charts(self):
         pass
 
@@ -81,9 +108,21 @@ class RookBase(ABC):
     def _install_operator_helm(self):
         pass
 
+    @abstractmethod
+    def upload_rook_image(self):
+        if converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
+            pass
+        else:
+            return
+
     def install(self):
         self.kubernetes.kubectl("create namespace rook-ceph")
         self._install_operator()
+
+        # CRDs are in an own file in rook >= 1.5
+        if os.path.isfile(os.path.join(self.ceph_dir, 'crds.yaml')):
+            self.kubernetes.kubectl_apply(
+                os.path.join(self.ceph_dir, 'crds.yaml'))
 
         # reduce wait time to discover devices
         self.kubernetes.kubectl(
@@ -132,7 +171,9 @@ class RookBase(ABC):
         """
         Install operator using either kubectl of helm
         """
-        if settings.OPERATOR_INSTALLER == "helm":
+        if (settings.OPERATOR_INSTALLER == "helm" and not
+                converter('@bool',
+                          settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT)):
             logger.info('Deploying rook operator - using Helm')
             self._install_operator_helm()
         else:
@@ -197,6 +238,14 @@ class RookBase(ABC):
         mons = len(mons)
         logger.info("cluster has %s mon pods running", mons)
         return mons
+
+    def get_golang(self):
+        url = 'https://golang.org/VERSION?m=text'
+        version = requests.get(url).content.decode("utf-8")
+        self.workspace.get_unpack(
+            "https://dl.google.com/go/%s.linux-amd64.tar.gz" % version,
+            unpack_folder=self.workspace.bin_dir
+        )
 
     def __enter__(self):
         return self

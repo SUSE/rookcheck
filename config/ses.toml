@@ -1,5 +1,16 @@
 [ses]
 
+# Whether or not to build rook from git. If not, the target version of SES images
+# are used.
+build_rook_from_git = false
+
+# Rook repo url
+repo = "https://github.com/SUSE/rook"
+
+# The rook version you want to test. This is the tag to be checked out so it must
+# exist for real within rook repo
+version = "master"
+
 # The target version of SES to install. This must match a key below that
 # contains the repositories and yaml substitutions.
 
@@ -7,6 +18,7 @@ target = "devel7"
 
   [ses.ses7]
     rook_ceph_chart = "registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph:latest"
+    ceph_image = "registry.suse.de/devel/storage/7.0/containers/ses/7/rook/ceph:latest"
     [ses.ses7.yaml_substitutions]
       # "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
 
@@ -21,6 +33,7 @@ target = "devel7"
 
   [ses.devel7]
     rook_ceph_chart = "registry.suse.de/devel/storage/7.0/charts/ses/7/charts/rook-ceph:latest"
+    ceph_image = "registry.suse.de/devel/storage/7.0/containers/ses/7/rook/ceph:latest"
 
     [ses.devel7.yaml_substitutions]
       "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"

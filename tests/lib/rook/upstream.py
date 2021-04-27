@@ -29,40 +29,18 @@ class RookCluster(RookBase):
     def __init__(self, workspace, kubernetes):
         super().__init__(workspace, kubernetes)
         self._rook_built = False
-        self.build_dir = os.path.join(self.workspace.build_dir, 'rook')
         self.ceph_dir = os.path.join(
             self.build_dir, 'cluster/examples/kubernetes/ceph')
         self.rook_chart = settings.UPSTREAM_ROOK.ROOK_CEPH_CHART
 
     def build(self):
-        super().build()
-        self.get_rook()
         if not converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
             return
-
-        self.get_golang()
-        logger.info("Compiling rook...")
-        execute(
-            command=f"make --directory {self.build_dir} "
-                    f"-j BUILD_REGISTRY='rook-build' IMAGES='ceph'",
-            env={"PATH": f"{self.workspace.bin_dir}/go/bin:"
-                         f"{os.environ['PATH']}",
-                 "TMPDIR": self.workspace.tmp_dir,
-                 "GOCACHE": self.workspace.tmp_dir,
-                 "GOPATH": self.workspace.build_dir},
-            log_stderr=False)
 
         image = 'rook/ceph'
         tag = f"{settings.UPSTREAM_ROOK.VERSION}-rookcheck"
         self.rook_image = f"{image}:{tag}"
-        logger.info(f"Tag image as {image}:{tag}")
-        execute(f'docker tag "rook-build/ceph-amd64" {image}:{tag}')
-
-        logger.info("Save image tar")
-        # TODO(jhesketh): build arch may differ
-        execute(f"docker save {image}:{tag} | gzip > %s"
-                % os.path.join(self.build_dir, 'rook-ceph.tar.gz'))
-        self._rook_built = True
+        super().build()
 
     def preinstall(self):
         super().preinstall()
@@ -74,26 +52,6 @@ class RookCluster(RookBase):
         super()._get_charts()
         logger.info(f"Adding rook chart helm repo {self.rook_chart}")
         self.kubernetes.helm(f"repo add rook-upstream {self.rook_chart}")
-
-    def get_rook(self):
-        logger.info("Clone rook version %s from repo %s" % (
-            settings.UPSTREAM_ROOK.VERSION,
-            settings.UPSTREAM_ROOK.REPO))
-        execute(
-            "git clone -b %s %s %s" % (
-                settings.UPSTREAM_ROOK.VERSION,
-                settings.UPSTREAM_ROOK.REPO,
-                self.build_dir),
-            log_stderr=False
-        )
-
-    def get_golang(self):
-        url = 'https://golang.org/VERSION?m=text'
-        version = requests.get(url).content.decode("utf-8")
-        self.workspace.get_unpack(
-            "https://dl.google.com/go/%s.linux-amd64.tar.gz" % version,
-            unpack_folder=self.workspace.bin_dir
-        )
 
     def _get_helm(self):
         super()._get_helm()
@@ -119,6 +77,7 @@ class RookCluster(RookBase):
         recursive_replace(dir=self.ceph_dir, replacements=replacements)
 
     def upload_rook_image(self):
+        super().upload_rook_image()
         self.kubernetes.hardware.ansible_run_playbook(
             "playbook_rook_upstream.yaml")
 
@@ -133,3 +92,19 @@ class RookCluster(RookBase):
         self.kubernetes.helm(
             f"install -n rook-ceph rook-ceph rook-upstream/rook-ceph"
             f" {version}")
+
+    def get_rook(self):
+        if not converter('@bool', settings.UPSTREAM_ROOK.BUILD_ROOK_FROM_GIT):
+            return
+
+        super().get_rook()
+        logger.info("Clone rook version %s from repo %s" % (
+            settings.UPSTREAM_ROOK.VERSION,
+            settings.UPSTREAM_ROOK.REPO))
+        execute(
+            "git clone -b %s %s %s" % (
+                settings.UPSTREAM_ROOK.VERSION,
+                settings.UPSTREAM_ROOK.REPO,
+                self.build_dir),
+            log_stderr=False
+        )
