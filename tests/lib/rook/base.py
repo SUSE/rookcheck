@@ -15,6 +15,7 @@
 import logging
 import os
 import re
+import yaml
 
 from tests.config import settings
 from tests.lib import common
@@ -81,6 +82,29 @@ class RookBase(ABC):
     def _install_operator_helm(self):
         pass
 
+    def _modify_liveness(self, input_cluster):
+        # input_cluster: The example file to load
+        # Returns: A path to a fixed cluster.yaml
+
+        # In our CI environment the liveness tests are failing due to taking
+        # too long. We should increase them.
+        # See https://github.com/rook/rook/issues/3370 and
+        # https://github.com/rook/rook/blob/master/Documentation/
+        # ceph-cluster-crd.md#health-settings
+
+        with open(input_cluster) as f:
+            cluster = yaml.safe_load(f)
+
+        for mod in ['mon', 'mgr', 'osd']:
+            cluster['spec']['healthCheck']['livenessProbe'][mod][
+                'disabled'] = True
+
+        newfile = os.path.join(self.ceph_dir, 'rookcheck_cluster.yaml')
+        with open(newfile, 'w') as f:
+            yaml.dump(cluster, f, default_flow_style=False)
+
+        return newfile
+
     def install(self):
         self.kubernetes.kubectl("create namespace rook-ceph")
         self._install_operator()
@@ -90,8 +114,15 @@ class RookBase(ABC):
             "-n rook-ceph set env "
             "deployment/rook-ceph-operator ROOK_DISCOVER_DEVICES_INTERVAL=2m")
 
+        # Load cluster.yaml as object
+        # Modify livenessProbe
+        # Save yaml somewhere
+        # apply new yaml
+
+
         self.kubernetes.kubectl_apply(
-            os.path.join(self.ceph_dir, 'cluster.yaml'))
+            self._modify_liveness(os.path.join(self.ceph_dir, 'cluster.yaml'))
+        )
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'toolbox.yaml'))
 
