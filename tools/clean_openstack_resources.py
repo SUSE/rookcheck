@@ -29,6 +29,8 @@ def parse_args():
     parser.add_argument('-d', '--dry-run', action='store_true',
                         help="Do not actually remove resources. "
                              " Prints what would happen.")
+    parser.add_argument('-f', '--force', action='store_true',
+                        help="Force delete resources in error state.")
     # TODO(jhesketh): Fix importing settings
     parser.add_argument('-s', '--search', type=str,
                         # default=settings.CLUSTER_PREFIX,
@@ -102,8 +104,9 @@ def main():
 
     for node in nodes:
         if node.status == 'ERROR':
-            print(f"Skipping {node.name} in error state")
-            continue
+            if not args.force:
+                print(f"Skipping {node.name} in error state")
+                continue
         print(f"Deleting {node.name}")
         conn.delete_server(node.id, delete_ips=True, wait=True)
 
