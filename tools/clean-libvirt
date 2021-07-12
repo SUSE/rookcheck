@@ -1,11 +1,15 @@
 #!/bin/bash
 
-for i in $(sudo virsh list --all --name | grep ^rookcheck); do
+export ROOKCHECK_PREFIX=${ROOKCHECK_PREFIX:-"rookcheck-"}
+export ROOKCHECK_PREFIX=${1:-"$ROOKCHECK_PREFIX"}
+echo "Using prefix '$ROOKCHECK_PREFIX' to cleanup libvirt"
+
+for i in $(sudo virsh list --all --name | grep ^$ROOKCHECK_PREFIX); do
 	sudo virsh destroy $i
 	sudo virsh undefine $i
 done
 
-for i in $(sudo virsh net-list --all --name | grep ^rookcheck) ; do
+for i in $(sudo virsh net-list --all --name | grep ^$ROOKCHECK_PREFIX) ; do
 	sudo virsh net-destroy $i
 done
 
