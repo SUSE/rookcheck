@@ -364,7 +364,13 @@ def test_add_remove_node(rook_cluster):
         workers_current = len(rook_cluster.kubernetes.hardware.workers)
         i += 1
 
+    # NOTE(jhesketh): Rook purposefully (for safety) does not remove OSD's in
+    #                 any scenario, instead requiring it to be done manually.
+    #                 As such, even though the node has gone, the OSD is still
+    #                 trying to map to the host in case it comes back up.
+
     # wait for OSDs to be back at the number of nodes
+    # NOTE(jhesketh): get_number_of_osds returns only up osds
     workers_current = len(rook_cluster.kubernetes.hardware.workers)
     osds_current = rook_cluster.get_number_of_osds()
 
@@ -376,3 +382,5 @@ def test_add_remove_node(rook_cluster):
         time.sleep(10)
         osds_current = rook_cluster.get_number_of_osds()
         i += 1
+
+    # TODO(jhesketh): Test manually removing the OSD to clean up.
