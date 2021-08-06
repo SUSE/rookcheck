@@ -213,6 +213,11 @@ def test_add_storage(rook_cluster):
     if osds != osds_expected:
         pytest.fail(f"we expect {osds_expected} osds, but have got {osds}")
 
+    # NOTE(jhesketh): This test currently does not clean up the extra disk
+    #                 or OSD created. Therefore the following tests will
+    #                 need to expect there to be 4 osds.
+    #                 This will be cleaned up when the hardware is torn down.
+
 
 def test_mons_up_down(rook_cluster):
     cluster_yaml = os.path.join(rook_cluster.ceph_dir, 'cluster.yaml')
