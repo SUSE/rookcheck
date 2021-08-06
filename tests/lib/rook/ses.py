@@ -47,6 +47,7 @@ class RookSes(RookBase):
             'playbook_rook_ses.yaml', extra_vars=repo_vars)
         self._get_rook()
         self._fix_yaml()
+        self.enable_discovery_daemon()
         self._fix_chart_values()
 
     def _get_rook(self):
@@ -70,6 +71,12 @@ class RookSes(RookBase):
         # expected ones to test.
         replacements = settings(
             f'SES.{settings.SES.TARGET}.helm_values_substitutions')
+        recursive_replace(self.helm_dir, replacements)
+
+    def enable_discovery_daemon(self):
+        replacements = {
+            "enableDiscoveryDaemon: false": "enableDiscoveryDaemon: true",
+        }
         recursive_replace(self.helm_dir, replacements)
 
     def _get_charts(self):
