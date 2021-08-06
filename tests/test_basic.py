@@ -315,9 +315,6 @@ def test_rbd_pvc(rook_cluster):
     rook_cluster.kubernetes.kubectl('delete pvc rbd-pvc')
     rook_cluster.kubernetes.kubectl('delete sc rook-ceph-block')
 
-
-@pytest.mark.xfail(reason="This is currently failing due to "
-                          "https://github.com/rook/rook/issues/6214")
 def test_add_remove_node(rook_cluster):
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
