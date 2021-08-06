@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import re
@@ -219,11 +220,17 @@ class RookBase(ABC):
         logger.info("Ceph FS successfully installed and ready!")
 
     def get_number_of_osds(self):
+        # NOTE(jhesketh): The number of OSD pods is not necessarily the number
+        #                 of running OSDs. Instead consult the ceph toolbox.
+        """
         # get number of osds
         osds = self.kubernetes.get_pods_by_app_label("rook-ceph-osd")
         osds = len(osds)
         logger.info("cluster has %s osd pods running", osds)
-        return osds
+        """
+        rc, stdout, stderr = \
+            self.execute_in_ceph_toolbox("ceph -f json status")
+        return json.loads(stdout)['osdmap']['num_up_osds']
 
     def get_number_of_mons(self):
         # get number of mons
