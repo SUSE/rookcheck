@@ -62,7 +62,10 @@ class RookBase(ABC):
         pass
 
     def execute_in_ceph_toolbox(self, command, log_stdout=False):
-        if not self.toolbox_pod:
+        # if not self.toolbox_pod:
+        if True:
+            # NOTE(jhesketh): Do no cache the toolbox pod in case it gets
+            #                 rescheduled.
             toolbox_pods = self.kubernetes.get_pods_by_app_label(
                 "rook-ceph-tools")
             self.toolbox_pod = toolbox_pods[0]
