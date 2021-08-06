@@ -26,6 +26,77 @@ from tests.lib import common
 logger = logging.getLogger(__name__)
 
 
+def test_add_remove_node(rook_cluster):
+    workers_old = len(rook_cluster.kubernetes.hardware.workers)
+    # add a node to the cluster
+    node_name = "%s-worker-%s" % (rook_cluster.workspace.name, "test-node")
+    node = rook_cluster.kubernetes.hardware.node_create(node_name,
+                                                        NodeRole.WORKER,
+                                                        ["worker"])
+    # NodeRole.WORKER adds the disk for us
+    rook_cluster.kubernetes.hardware.node_add(node)
+    rook_cluster.kubernetes.hardware.prepare_nodes(limit_to_nodes=[node])
+    # add the node the k8s cluster
+    rook_cluster.kubernetes.join([node])
+
+    # get number of new workers
+    workers_new = len(rook_cluster.kubernetes.hardware.workers)
+    i = 0
+    while workers_new == workers_old:
+        if i == 10:
+            rook_cluster.kubernetes.hardware.node_remove(node)
+            pytest.fail("Was not able to add an additional node")
+        time.sleep(10)
+        workers_new = len(rook_cluster.kubernetes.hardware.workers)
+        i += 1
+
+    # get number of new osds
+    osds = rook_cluster.get_number_of_osds()
+
+    i = 0
+    while osds != workers_new:
+        if i == 90:
+            rook_cluster.kubernetes.hardware.node_remove(node)
+            pytest.fail("rook did not add an additional osd-node."
+                        f"Removed node {node} again")
+        time.sleep(10)
+        osds = rook_cluster.get_number_of_osds()
+        i += 1
+
+    # now remove the node again
+    workers_current = len(rook_cluster.kubernetes.hardware.workers)
+    workers_expected = workers_current - 1
+    i = 0
+    rook_cluster.kubernetes.hardware.node_remove(node)
+    while workers_expected != workers_current:
+        if i == 10:
+            pytest.fail(f"Was not able to remove node {node}")
+        time.sleep(10)
+        workers_current = len(rook_cluster.kubernetes.hardware.workers)
+        i += 1
+
+    # NOTE(jhesketh): Rook purposefully (for safety) does not remove OSD's in
+    #                 any scenario, instead requiring it to be done manually.
+    #                 As such, even though the node has gone, the OSD is still
+    #                 trying to map to the host in case it comes back up.
+
+    # wait for OSDs to be back at the number of nodes
+    # NOTE(jhesketh): get_number_of_osds returns only up osds
+    workers_current = len(rook_cluster.kubernetes.hardware.workers)
+    osds_current = rook_cluster.get_number_of_osds()
+
+    i = 0
+    while osds_current != workers_current:
+        if i == 10:
+            pytest.fail("rook did not remove additional OSD "
+                        "after node removal")
+        time.sleep(10)
+        osds_current = rook_cluster.get_number_of_osds()
+        i += 1
+
+    # TODO(jhesketh): Test manually removing the OSD to clean up.
+
+
 def test_deploy_filesystem(rook_cluster):
     # rook_cluster checks the filesystem is deployed before continuing
     rook_cluster.deploy_rbd()
@@ -314,73 +385,3 @@ def test_rbd_pvc(rook_cluster):
     rook_cluster.kubernetes.kubectl('delete pod csirbd-demo-pod')
     rook_cluster.kubernetes.kubectl('delete pvc rbd-pvc')
     rook_cluster.kubernetes.kubectl('delete sc rook-ceph-block')
-
-def test_add_remove_node(rook_cluster):
-    workers_old = len(rook_cluster.kubernetes.hardware.workers)
-    # add a node to the cluster
-    node_name = "%s-worker-%s" % (rook_cluster.workspace.name, "test-node")
-    node = rook_cluster.kubernetes.hardware.node_create(node_name,
-                                                        NodeRole.WORKER,
-                                                        ["worker"])
-    # NodeRole.WORKER adds the disk for us
-    rook_cluster.kubernetes.hardware.node_add(node)
-    rook_cluster.kubernetes.hardware.prepare_nodes(limit_to_nodes=[node])
-    # add the node the k8s cluster
-    rook_cluster.kubernetes.join([node])
-
-    # get number of new workers
-    workers_new = len(rook_cluster.kubernetes.hardware.workers)
-    i = 0
-    while workers_new == workers_old:
-        if i == 10:
-            rook_cluster.kubernetes.hardware.node_remove(node)
-            pytest.fail("Was not able to add an additional node")
-        time.sleep(10)
-        workers_new = len(rook_cluster.kubernetes.hardware.workers)
-        i += 1
-
-    # get number of new osds
-    osds = rook_cluster.get_number_of_osds()
-
-    i = 0
-    while osds != workers_new:
-        if i == 90:
-            rook_cluster.kubernetes.hardware.node_remove(node)
-            pytest.fail("rook did not add an additional osd-node."
-                        f"Removed node {node} again")
-        time.sleep(10)
-        osds = rook_cluster.get_number_of_osds()
-        i += 1
-
-    # now remove the node again
-    workers_current = len(rook_cluster.kubernetes.hardware.workers)
-    workers_expected = workers_current - 1
-    i = 0
-    rook_cluster.kubernetes.hardware.node_remove(node)
-    while workers_expected != workers_current:
-        if i == 10:
-            pytest.fail(f"Was not able to remove node {node}")
-        time.sleep(10)
-        workers_current = len(rook_cluster.kubernetes.hardware.workers)
-        i += 1
-
-    # NOTE(jhesketh): Rook purposefully (for safety) does not remove OSD's in
-    #                 any scenario, instead requiring it to be done manually.
-    #                 As such, even though the node has gone, the OSD is still
-    #                 trying to map to the host in case it comes back up.
-
-    # wait for OSDs to be back at the number of nodes
-    # NOTE(jhesketh): get_number_of_osds returns only up osds
-    workers_current = len(rook_cluster.kubernetes.hardware.workers)
-    osds_current = rook_cluster.get_number_of_osds()
-
-    i = 0
-    while osds_current != workers_current:
-        if i == 10:
-            pytest.fail("rook did not remove additional OSD "
-                        "after node removal")
-        time.sleep(10)
-        osds_current = rook_cluster.get_number_of_osds()
-        i += 1
-
-    # TODO(jhesketh): Test manually removing the OSD to clean up.
