@@ -123,7 +123,6 @@ class RookBase(ABC):
         # Save yaml somewhere
         # apply new yaml
 
-
         self.kubernetes.kubectl_apply(
             self._modify_liveness(os.path.join(self.ceph_dir, 'cluster.yaml'))
         )
