@@ -4,7 +4,7 @@
 node_image = "openSUSE-Leap-15.2-JeOS-OpenStack-Cloud-Build31.149"
 
 # The node size or flavour name as known by the provider
-node_size = "m1.medium"
+node_size = "m1.medlarge"
 
 # The external network that smoke-rook can create floating ip's on
 external_network = "@jinja {{env['OS_EXTERNAL_NETWORK'] or 'floating'}}"
