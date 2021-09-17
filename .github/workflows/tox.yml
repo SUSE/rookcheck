@@ -29,4 +29,3 @@ jobs:
       run: tox -e lint-docs
     - name: utils unit tests
       run: tox -e py -- tests/test_utils.py
-
