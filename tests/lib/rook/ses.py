@@ -82,7 +82,7 @@ class RookSes(RookBase):
     def _get_charts(self):
         super()._get_charts()
         logger.info(f"Grabbing chart {self.rook_chart}")
-        self.kubernetes.helm(f"chart pull {self.rook_chart}")
+        # self.kubernetes.helm(f"chart pull {self.rook_chart}")
         self.kubernetes.helm(f"chart export {self.rook_chart}"
                              f" -d {self.workspace.helm_dir}")
 
