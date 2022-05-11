@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+import requests
 import yaml
 
 from tests.config import settings
@@ -78,9 +79,14 @@ class RookBase(ABC):
     def _get_charts(self):
         pass
 
-    @abstractmethod
     def _get_helm(self):
-        pass
+        url = "https://api.github.com/repos/helm/helm/releases/latest"
+        version = requests.get(url).json()["tag_name"]
+        version = "v3.9.0-rc.1"
+        self.workspace.get_unpack(
+            "https://get.helm.sh/helm-%s-linux-amd64.tar.gz" % version)
+        os.rename(os.path.join(self.workspace.tmp_dir, 'linux-amd64', 'helm'),
+                  os.path.join(self.workspace.bin_dir, 'helm3'))
 
     @abstractmethod
     def _install_operator_helm(self):
