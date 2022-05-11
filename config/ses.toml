@@ -6,7 +6,7 @@
 target = "devel7"
 
   [ses.ses7]
-    rook_ceph_chart = "registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph:latest"
+    rook_ceph_chart = "oci://registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph"
     [ses.ses7.yaml_substitutions]
       # "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
 
@@ -20,7 +20,7 @@ target = "devel7"
       storage_updates = "http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/"
 
   [ses.devel7]
-    rook_ceph_chart = "registry.suse.de/devel/storage/7.0/charts/ses/7/charts/rook-ceph:latest"
+    rook_ceph_chart = "oci://registry.suse.de/devel/storage/7.0/charts/ses/7/charts/rook-ceph"
 
     [ses.devel7.yaml_substitutions]
       "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"

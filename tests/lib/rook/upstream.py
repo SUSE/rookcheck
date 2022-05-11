@@ -95,15 +95,6 @@ class RookCluster(RookBase):
             unpack_folder=self.workspace.bin_dir
         )
 
-    def _get_helm(self):
-        super()._get_helm()
-        url = "https://api.github.com/repos/helm/helm/releases/latest"
-        version = requests.get(url).json()["tag_name"]
-        self.workspace.get_unpack(
-            "https://get.helm.sh/helm-%s-linux-amd64.tar.gz" % version)
-        os.rename(os.path.join(self.workspace.tmp_dir, 'linux-amd64', 'helm'),
-                  os.path.join(self.workspace.bin_dir, 'helm3'))
-
     def _fix_yaml(self):
         # Replace image reference if we built it in this run
         with open(os.path.join(self.ceph_dir, 'operator.yaml')) as file:

@@ -29,7 +29,7 @@ class RookSes(RookBase):
         self.ceph_dir = os.path.join(
             self.workspace.working_dir, 'rook/ceph')
         self.helm_dir = os.path.join(
-            self.workspace.working_dir, 'helm/rook-ceph')
+            self.workspace.working_dir, 'helm')
         self.rook_chart = settings(
             f"SES.{settings.SES.TARGET}.rook_ceph_chart")
 
@@ -82,13 +82,8 @@ class RookSes(RookBase):
     def _get_charts(self):
         super()._get_charts()
         logger.info(f"Grabbing chart {self.rook_chart}")
-        # self.kubernetes.helm(f"chart pull {self.rook_chart}")
-        self.kubernetes.helm(f"chart export {self.rook_chart}"
-                             f" -d {self.workspace.helm_dir}")
-
-    def _get_helm(self):
-        super()._get_helm()
-        logger.info('Helm binary is installed via package on ses')
+        self.kubernetes.helm(f"pull {self.rook_chart}"
+                             f" --untar --untardir {self.workspace.helm_dir}")
 
     def _install_operator_helm(self):
         logger.info(
