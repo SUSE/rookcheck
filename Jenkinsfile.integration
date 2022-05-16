@@ -13,7 +13,7 @@ pipeline {
         string(name: 'OS_EXTERNAL_NETWORK', defaultValue: 'floating', description: 'the OpenStack external network')
         string(name: 'OS_FLAVOR', defaultValue: 'm1.medium', description: 'the OpenStack image flavor')
 
-        choice(name: 'DISTRO', choices: ['all', 'openSUSE_k8s', 'SLES_CaaSP'], defaultValue: 'SLES_CaaSP', description: 'The OS/K8S distro tuple')
+        choice(name: 'DISTRO', choices: ['SLES_CaaSP', 'openSUSE_k8s', 'all'], description: 'The OS/K8S distro tuple')
         choice(name: 'SES_TARGET', choices: ['cr_ses71', 'devel71'], description: 'The set of repositories to use when building SLES_CaaSP (see ses.toml).')
 
         booleanParam(name: 'NOTIFY_ROCKETCHAT', defaultValue: false, description: "Whether or not to send notifications to SUSE's rocketchat")
