@@ -3,33 +3,17 @@
 # The target version of SES to install. This must match a key below that
 # contains the repositories and yaml substitutions.
 
-target = "devel7"
+target = "cr_ses71"
 
-  [ses.ses7]
-    rook_ceph_chart = "oci://registry.suse.de/suse/sle-15-sp2/update/products/ses7/charts/rook-ceph"
-    [ses.ses7.yaml_substitutions]
-      # "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
+  [ses.cr_ses71]
+    rook_ceph_chart = "oci://registry.suse.de/suse/sle-15-sp3/update/products/ses7/update/cr/charts/ses/7.1/charts/rook-ceph"
+    [ses.cr_ses71.yaml_substitutions]
+      "registry.suse.com" = "registry.suse.de/suse/sle-15-sp3/update/products/ses7/update/cr/containers"
 
-    [ses.ses7.helm_values_substitutions]
+    [ses.cr_ses71.helm_values_substitutions]
       # We can't predict the pinned versions of containers, so instead of
       # supplying extra values.yaml files we perform substitutions
-
-    [ses.ses7.repositories]
-      # Each key/value under this sub-heading is a repository
-      storage         = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
-      storage_updates = "http://download.suse.de/ibs/SUSE/Updates/Storage/7/x86_64/update/"
-
-  [ses.devel7]
-    rook_ceph_chart = "oci://registry.suse.de/devel/storage/7.0/charts/ses/7/charts/rook-ceph"
-
-    [ses.devel7.yaml_substitutions]
-      "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
-      "# ROOK_CSI_" = "ROOK_CSI_"
-
-    [ses.devel7.helm_values_substitutions]
-      # We can't predict the pinned versions of containers, so instead of
-      # supplying extra values.yaml files we perform substitutions
-      "registry.suse.com" = "registry.suse.de/devel/storage/7.0/containers"
+      "registry.suse.com" = "registry.suse.de/suse/sle-15-sp3/update/products/ses7/update/cr/containers"
       "#image: registry" = "image: registry"
       "#cephcsi:" = "cephcsi:"
       "#registrar:" = "registrar:"
@@ -38,8 +22,32 @@ target = "devel7"
       "#attacher:" = "attacher:"
       "#resizer:" = "resizer:"
 
-    [ses.devel7.repositories]
+    [ses.cr_ses71.repositories]
       # Each key/value under this sub-heading is a repository
-      storage        = "http://download.suse.de/ibs/SUSE/Products/Storage/7/x86_64/product/"
-      storage_devel  = "http://download.suse.de/ibs/Devel:/Storage:/7.0/SLE_15_SP2"
-      storage_update = "http://download.suse.de/ibs/SUSE:/SLE-15-SP2:/Update:/Products:/SES7/standard/"
+      storage         = "http://download.suse.de/ibs/SUSE/Products/Storage/7.1/x86_64/product/"
+      storage_updates = "http://download.suse.de/ibs/SUSE/Updates/Storage/7.1/x86_64/update/"
+
+  [ses.devel71]
+    rook_ceph_chart = "oci://registry.suse.de/devel/storage/7.0/pacific/charts/ses/7.1/charts/rook-ceph"
+
+    [ses.devel71.yaml_substitutions]
+      "registry.suse.com" = "registry.suse.de/devel/storage/7.0/pacific/containers"
+      "# ROOK_CSI_" = "ROOK_CSI_"
+
+    [ses.devel71.helm_values_substitutions]
+      # We can't predict the pinned versions of containers, so instead of
+      # supplying extra values.yaml files we perform substitutions
+      "registry.suse.com" = "registry.suse.de/devel/storage/7.0/pacific/containers"
+      "#image: registry" = "image: registry"
+      "#cephcsi:" = "cephcsi:"
+      "#registrar:" = "registrar:"
+      "#provisioner:" = "provisioner:"
+      "#snapshotter:" = "snapshotter:"
+      "#attacher:" = "attacher:"
+      "#resizer:" = "resizer:"
+
+    [ses.devel71.repositories]
+      # Each key/value under this sub-heading is a repository
+      storage        = "http://download.suse.de/ibs/SUSE/Products/Storage/7.1/x86_64/product/"
+      storage_devel  = "https://download.suse.de/ibs/Devel:/Storage:/7.0:/Pacific/SLE_15_SP3/"
+      storage_update = "https://download.suse.de/ibs/SUSE:/SLE-15-SP3:/Update:/Products:/SES7:/Update/standard/"
