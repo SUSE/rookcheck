@@ -250,7 +250,7 @@ def test_add_remove_node(rook_cluster):
     osds = rook_cluster.get_number_of_osds()
 
     i = 0
-    while osds != orig_osds:
+    while osds != orig_osds + 1:
         if i == 90:
             rook_cluster.kubernetes.hardware.node_remove(node)
             pytest.fail("rook did not add an additional osd-node."
