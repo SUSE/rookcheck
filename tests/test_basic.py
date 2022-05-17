@@ -219,8 +219,10 @@ def test_add_storage(rook_cluster):
 
 
 def test_add_remove_node(rook_cluster):
+    orig_osds = rook_cluster.get_number_of_osds()
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
+    logger.info("Creating a new node+disk and enrollign it in kubernetes")
     node_name = "%s-worker-%s" % (rook_cluster.workspace.name, "test-node")
     node = rook_cluster.kubernetes.hardware.node_create(node_name,
                                                         NodeRole.WORKER,
@@ -242,11 +244,13 @@ def test_add_remove_node(rook_cluster):
         workers_new = len(rook_cluster.kubernetes.hardware.workers)
         i += 1
 
+    logger.info("node is up, no waiting for OSDs to be created")
+
     # get number of new osds
     osds = rook_cluster.get_number_of_osds()
 
     i = 0
-    while osds != workers_new:
+    while osds != orig_osds:
         if i == 90:
             rook_cluster.kubernetes.hardware.node_remove(node)
             pytest.fail("rook did not add an additional osd-node."
@@ -254,6 +258,9 @@ def test_add_remove_node(rook_cluster):
         time.sleep(10)
         osds = rook_cluster.get_number_of_osds()
         i += 1
+
+    logger.info("New OSD is created. Now test removing the node.")
+    time.sleep(60)
 
     # now remove the node again
     workers_current = len(rook_cluster.kubernetes.hardware.workers)
@@ -272,13 +279,13 @@ def test_add_remove_node(rook_cluster):
     #                 As such, even though the node has gone, the OSD is still
     #                 trying to map to the host in case it comes back up.
 
-    # wait for OSDs to be back at the number of nodes
+    # wait for OSD containers to be back at the number of nodes
     # NOTE(jhesketh): get_number_of_osds returns only up osds
     workers_current = len(rook_cluster.kubernetes.hardware.workers)
     osds_current = rook_cluster.get_number_of_osds()
 
     i = 0
-    while osds_current != workers_current:
+    while osds_current != orig_osds:
         if i == 10:
             pytest.fail("rook did not remove additional OSD "
                         "after node removal")
