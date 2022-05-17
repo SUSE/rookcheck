@@ -183,6 +183,41 @@ def test_service_rbd(rook_cluster):
     # NOTE(jhesketh): This test leaves the rgw running in the cluster.
 
 
+def test_add_storage(rook_cluster):
+    # get number of currently configured osds
+    osds = rook_cluster.get_number_of_osds()
+    # get a worker node
+    nodes = rook_cluster.kubernetes.hardware.workers
+
+    new_osds = 0
+    # add a disk of 10 G the node
+    disk_name = nodes[0].disk_create(10)
+    nodes[0].disk_attach(name=disk_name)
+    new_osds += 1
+
+    # expecting an additional osd
+    osds_expected = osds + new_osds
+
+    # wait for the additional osd
+    # this may take a while
+    i = 0
+    while osds < osds_expected:
+        if i == 120:
+            pytest.fail("rook was not able to add {new_osds} of required osds")
+            break
+        time.sleep(10)
+        osds = rook_cluster.get_number_of_osds()
+        i += 1
+    # here we also detect if there are added more osds than required
+    if osds != osds_expected:
+        pytest.fail(f"we expect {osds_expected} osds, but have got {osds}")
+
+    # NOTE(jhesketh): This test currently does not clean up the extra disk
+    #                 or OSD created. Therefore the following tests will
+    #                 need to expect there to be 4 osds.
+    #                 This will be cleaned up when the hardware is torn down.
+
+
 def test_add_remove_node(rook_cluster):
     workers_old = len(rook_cluster.kubernetes.hardware.workers)
     # add a node to the cluster
@@ -252,41 +287,6 @@ def test_add_remove_node(rook_cluster):
         i += 1
 
     # TODO(jhesketh): Test manually removing the OSD to clean up.
-
-
-def test_add_storage(rook_cluster):
-    # get number of currently configured osds
-    osds = rook_cluster.get_number_of_osds()
-    # get a worker node
-    nodes = rook_cluster.kubernetes.hardware.workers
-
-    new_osds = 0
-    # add a disk of 10 G the node
-    disk_name = nodes[0].disk_create(10)
-    nodes[0].disk_attach(name=disk_name)
-    new_osds += 1
-
-    # expecting an additional osd
-    osds_expected = osds + new_osds
-
-    # wait for the additional osd
-    # this may take a while
-    i = 0
-    while osds < osds_expected:
-        if i == 120:
-            pytest.fail("rook was not able to add {new_osds} of required osds")
-            break
-        time.sleep(10)
-        osds = rook_cluster.get_number_of_osds()
-        i += 1
-    # here we also detect if there are added more osds than required
-    if osds != osds_expected:
-        pytest.fail(f"we expect {osds_expected} osds, but have got {osds}")
-
-    # NOTE(jhesketh): This test currently does not clean up the extra disk
-    #                 or OSD created. Therefore the following tests will
-    #                 need to expect there to be 4 osds.
-    #                 This will be cleaned up when the hardware is torn down.
 
 
 def test_mons_up_down(rook_cluster):
