@@ -115,6 +115,27 @@ class RookBase(ABC):
 
         return newfile
 
+    def disable_bluefs_buffered_io(self):
+        # Disable bluefs_buffered_io to work around discovery bug
+        # https://github.com/rook/rook/issues/8023
+
+        logger.info("Disabling bluefs buffered io")
+
+        self.config_yaml = os.path.join(self.ceph_dir, '_cluster_config.yaml')
+        with open(self.config_yaml, 'w') as f:
+            f.write("""
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rook-config-override
+  namespace: rook-ceph # namespace:cluster
+data:
+  config: |
+    [global]
+    bluefs_buffered_io = false
+            """)
+        self.kubernetes.kubectl_apply(self.config_yaml)
+
     def install(self):
         self.kubernetes.kubectl("create namespace rook-ceph")
         self._install_operator()
@@ -129,9 +150,13 @@ class RookBase(ABC):
         # Save yaml somewhere
         # apply new yaml
 
+        self.disable_bluefs_buffered_io()
+
+        logger.info("Installing cluster.yaml...")
         self.kubernetes.kubectl_apply(
             self._modify_liveness(os.path.join(self.ceph_dir, 'cluster.yaml'))
         )
+        logger.info("Installing toolbox.yaml...")
         self.kubernetes.kubectl_apply(
             os.path.join(self.ceph_dir, 'toolbox.yaml'))
 
