@@ -128,7 +128,7 @@ def test_file_creation(rook_cluster):
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=0 -n rook-ceph")
 
-    time.sleep(10)
+    time.sleep(60)
 
     rook_cluster.kubernetes.kubectl(
         "scale deployment rook-direct-mount --replicas=1 -n rook-ceph")
@@ -319,6 +319,10 @@ def test_mons_up_down(rook_cluster):
     rook_cluster.kubernetes.kubectl_apply(cluster_yaml_modded)
     rook_cluster.kubernetes.wait_for_pods_by_app_label(
         "rook-ceph-mon", count=mons+deltamon)
+
+    # NOTE(jhesketh): Taking mons down takes a very long time, limit this
+    #                 test to just increasing the count for now.
+    return
 
     time.sleep(120)
 
