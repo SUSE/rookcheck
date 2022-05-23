@@ -6,7 +6,7 @@ flake8
 kubernetes
 mypy
 netaddr
-openstacksdk
+openstacksdk==0.61.0
 paramiko
 pytest
 pyyaml
