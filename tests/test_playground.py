@@ -22,3 +22,7 @@ def test_playground(workspace, hardware, kubernetes, linear_rook_cluster):
     rook_cluster = linear_rook_cluster
     import code
     code.interact(local=locals())
+
+def test_playground_no_rook(workspace, hardware, kubernetes):
+    import code
+    code.interact(local=locals())
