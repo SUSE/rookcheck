@@ -45,6 +45,8 @@ target = "cr_ses71"
       "#snapshotter:" = "snapshotter:"
       "#attacher:" = "attacher:"
       "#resizer:" = "resizer:"
+      "#  image: registry.k8s.io/sig-storage" = "  image: registry.suse.de/devel/storage/7.0/pacific/containers/ses/7.1/cephcsi"
+      "#  image: registry.suse.de/devel/storage/7.0/pacific/containers/ses/7.1/cephcsi/cephcsi" = "  image: registry.suse.de/devel/storage/7.0/pacific/containers/ses/7.1/cephcsi/cephcsi"
 
     [ses.devel71.repositories]
       # Each key/value under this sub-heading is a repository
