@@ -50,4 +50,3 @@ target = "cr_ses71"
       # Each key/value under this sub-heading is a repository
       storage        = "http://download.suse.de/ibs/SUSE/Products/Storage/7.1/x86_64/product/"
       storage_devel  = "https://download.suse.de/ibs/Devel:/Storage:/7.0:/Pacific/SLE_15_SP3/"
-      storage_update = "https://download.suse.de/ibs/SUSE:/SLE-15-SP3:/Update:/Products:/SES7:/Update/standard/"
