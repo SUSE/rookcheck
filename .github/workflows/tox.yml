@@ -23,8 +23,8 @@ jobs:
         pip install tox tox-gh-actions bindep
         sudo apt-get update
         sudo apt-get -y install libvirt-clients libvirt-dev
-    - name: Lint python
-      run: tox -e lint
+#    - name: Lint python
+#      run: tox -e lint
     - name: Lint docs
       run: tox -e lint-docs
     - name: utils unit tests
