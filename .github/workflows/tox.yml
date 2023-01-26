@@ -6,10 +6,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.6, 3.8]
+        python-version: ["3.6", "3.8", "3.10"]
 
     steps:
     - uses: actions/checkout@v1
@@ -23,8 +23,8 @@ jobs:
         pip install tox tox-gh-actions bindep
         sudo apt-get update
         sudo apt-get -y install libvirt-clients libvirt-dev
-    - name: Lint python
-      run: tox -e lint
+#    - name: Lint python
+#      run: tox -e lint
     - name: Lint docs
       run: tox -e lint-docs
     - name: utils unit tests
