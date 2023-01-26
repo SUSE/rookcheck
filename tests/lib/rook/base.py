@@ -81,7 +81,9 @@ class RookBase(ABC):
 
     def _get_helm(self):
         url = "https://api.github.com/repos/helm/helm/releases/latest"
-        version = requests.get(url).json()["tag_name"]
+        r = requests.get(url)
+        r.raise_for_status()
+        version = r.json()["tag_name"]
         version = "v3.9.0-rc.1"
         self.workspace.get_unpack(
             "https://get.helm.sh/helm-%s-linux-amd64.tar.gz" % version)
